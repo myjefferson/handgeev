@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PersonalDataController extends Controller
 {
@@ -11,7 +13,9 @@ class PersonalDataController extends Controller
      */
     public function index()
     {
-        return view('pages.dashboard.personal_data.index');
+        $id_user = Auth::user()->id;
+        $personal_data = User::where(['id' => $id_user])->first();
+        return view('pages.dashboard.personal_data.index', compact(['personal_data']));
     }
 
     /**
@@ -43,7 +47,8 @@ class PersonalDataController extends Controller
      */
     public function edit(string $id)
     {
-        return view('pages.dashboard.personal_data.edit');
+        $personal_data = User::where(['id' => $id])->first();
+        return view('pages.dashboard.personal_data.edit', compact(['personal_data']));
     }
 
     /**
@@ -51,7 +56,17 @@ class PersonalDataController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        try {
+            User::findOrFail($id)->update([
+                'name' => $request->name,
+                'surname' => $request->surname,
+                'email' => $request->email,
+            ]);
+
+            return redirect(route('dashboard.home'))->with(['success' => 'Conta criada com sucesso!']);
+        } catch (\Exception $e) {
+            return redirect(route('dashboard.home'))->with(['error' => 'Ocorreu um erro ao criar a conta. Reporte os detalhes: ' . $e->getMessage()]);
+        }
     }
 
     /**

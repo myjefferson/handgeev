@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class RegisterController extends Controller
 {
@@ -27,7 +29,18 @@ class RegisterController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        try {
+            User::create([
+                'name' => $request->name,
+                'surname' => $request->surname,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+            ]);
+            
+            return redirect(route('dashboard.home'))->with(['success' => 'Conta criada com sucesso!']);
+        } catch (\Exception $e) {
+            return redirect(route('dashboard.home'))->with(['error' => 'Ocorreu um erro ao criar a conta. Reporte os detalhes: ' . $e->getMessage()]);
+        }
     }
 
     /**

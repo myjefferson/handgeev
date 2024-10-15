@@ -1,6 +1,6 @@
 @extends('layout.template')
 
-@section('content')
+@section('content_dashboard')
     <div class="bg-slate-800 p-3 rounded-xl">
         <div class="flex justify-between items-center">
             <h3 class="text-xl font-medium">Editar projeto pessoal</h3>

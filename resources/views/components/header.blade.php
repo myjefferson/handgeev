@@ -2,7 +2,7 @@
 
 <div class="flex justify-between items-center">
     <h3 class="text-xl font-medium">{{ $title }}</h3>
-    <div class="flex gap-2">
+    <div class="flex gap-3">
         @if (isset($options))
             @foreach ($options as $option)
                 <a href="{{ $option['link'] }}" class="flex items-center font-medium bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl py-2 px-4">

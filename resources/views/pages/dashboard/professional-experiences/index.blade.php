@@ -1,6 +1,6 @@
 @extends('layout.template')
 
-@section('content')
+@section('content_dashboard')
     <div>
         @include('components.header' , [
             'title' => 'Experiencias profissionais',

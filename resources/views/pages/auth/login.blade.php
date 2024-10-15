@@ -28,7 +28,7 @@
                             <!--<h1 class="text-xl font-bold leading-tight tracking-tight md:text-2xl ">
                                 Entrar
                             </h1>-->
-                            <form class="space-y-3 md:space-y-4" action="{{route('login.store')}}" method="POST">
+                            <form class="space-y-3 md:space-y-4" action="{{route('login.auth')}}" method="POST">
                                 @csrf
                                 <div>
                                     <label for="email" class="block mb-2 text-sm font-medium ">Email</label>

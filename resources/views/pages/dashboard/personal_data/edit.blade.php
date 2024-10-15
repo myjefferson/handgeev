@@ -1,13 +1,25 @@
 @extends('layout.template')
 
-@section('content')
+@section('content_dashboard')
     <div class="bg-slate-800 p-3 rounded-xl">
         <div class="flex justify-between items-center">
-            <h3 class="text-xl font-medium">Editar Informações pessoais</h3>
+            <h3 class="text-xl font-medium">Editar Informações Pessoais</h3>
         </div>
         <div>
-            <form class="space-y-3 md:space-y-4" action="{{route('login.store')}}" method="POST">
+            <form class="space-y-3 md:space-y-4" action="{{route('dashboard.personal-data.update', ['id' => Auth::user()->id])}}" method="POST">
                 @csrf
+                @method('PUT')
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="name" class="block mb-2 text-sm font-medium ">Nome</label>
+                        <input type="text" value="{{$personal_data->name ? $personal_data->name : ''}}" name="name" id="name" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    </div>
+                    <div>
+                        <label for="surname" class="block mb-2 text-sm font-medium ">Sobrenome</label>
+                        <input type="text" value="{{$personal_data->surname ? $personal_data->surname : ''}}" name="surname" id="surname" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="Ex: Carvalho">
+                    </div>
+                </div>
                 <div>
                     <label for="about_me" class="block mb-2 text-sm font-medium">Sobre mim</label>
                     <textarea
@@ -15,12 +27,11 @@
                         id="about_me"
                         placeholder="Descreva um pouco sobre você"
                         class=" bg-slate-700 sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full h-40 min-h-28 max-h-96 p-3"
-                    >
-                    </textarea>
+                    ></textarea>
                 </div>
                 <div>
                     <label for="email" class="block mb-2 text-sm font-medium ">Email</label>
-                    <input type="email" name="email" id="email" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <input type="email" value="{{$personal_data->email ? $personal_data->email : ''}}" name="email" id="email" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
                 </div>
                 <div>
                     <label for="personal_site" class="block mb-2 text-sm font-medium ">Site Pessoal</label>
@@ -33,19 +44,6 @@
                 <div>
                     <label for="github" class="block mb-2 text-sm font-medium ">GitHub</label>
                     <input type="text" name="github" id="github" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
-                </div>
-
-                <div>
-                    <label for="instagram" class="block mb-2 text-sm font-medium ">Instagram</label>
-                    <input type="text" name="instagram" id="instagram" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
-                </div>
-                <div>
-                    <label for="behance" class="block mb-2 text-sm font-medium ">Behance</label>
-                    <input type="text" name="behance" id="behance" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
-                </div>
-                <div>
-                    <label for="dev_community" class="block mb-2 text-sm font-medium ">DEV Community</label>
-                    <input type="text" name="dev_community" id="dev_community" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
                 </div>
                 <div>
                     <label class="block text-sm font-medium ">Resumo/ Currículo</label>

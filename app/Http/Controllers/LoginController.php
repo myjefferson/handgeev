@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Session;
 
 class LoginController extends Controller
 {
@@ -15,50 +19,33 @@ class LoginController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Authentication Login
      */
-    public function create()
+    public function auth(Request $request)
     {
-        //
-    }
+        $request->only('email', 'password');
+        $user = User::where('email', $request->email)->firstOrFail();
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        if(!$user){
+            return redirect()->route('login.index')->withErrors(['error' => 'Email ou senha inválidos']);
+        }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+        if(!Hash::check($request->password, $user->password)){
+            return redirect()->route('login.index')->withErrors(['error' => 'Email ou senha inválidos']);
+        }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
+        Auth::loginUsingId($user->id);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
+        return redirect()->route('dashboard.courses')->with(['success' => 'Você entrou!']);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function logout()
     {
-        //
+        Auth::logout();
+        Session::flush();
+        return redirect()->route('login.index');
     }
 }
