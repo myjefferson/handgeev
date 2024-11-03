@@ -2,63 +2,32 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Experiences;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ApiController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function getPersonalData(string $userId/*, string $hash*/)
     {
-        //
+        try {
+            $personal_data = User::where(['id' => $userId])->first();
+            return response()->json($personal_data);
+        } catch (\Exception $e) {
+            //Retornar pra página de hash inválido, ou configuração de ambiente incompleta
+            //return redirect(route('dashboard.personal-data'))->with(['error' => 'Ocorreu um erro ao atualizar os dados pessoais. Reporte os detalhes: ' . $e->getMessage()]);
+        }
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function getExperiences(string $userId/*, string $hash*/)
     {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        try {
+            $experiences = Experiences::where(['id_user' => $userId])->get();
+            return response()->json($experiences);
+        } catch (\Exception $e) {
+            //Retornar pra página de hash inválido, ou configuração de ambiente incompleta
+            //return redirect(route('dashboard.personal-data'))->with(['error' => 'Ocorreu um erro ao atualizar os dados pessoais. Reporte os detalhes: ' . $e->getMessage()]);
+        }
     }
 }

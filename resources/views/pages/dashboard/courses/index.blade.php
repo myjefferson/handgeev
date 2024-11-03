@@ -3,7 +3,15 @@
 @section('content_dashboard')
     <div>
         @include('components.header' ,[
-            'title' => 'Acadêmico e cursos'
+            'title' => 'Acadêmico e cursos',
+            'options' => [[
+                'route' => route('dashboard.courses.create'),
+                'title' => 'Adicionar'
+            ]],
+            'buttonJson' => [
+                'active' => true,
+                'route' => ''
+            ]
         ])
     </div>
 

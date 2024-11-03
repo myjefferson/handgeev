@@ -45,27 +45,42 @@ class PersonalDataController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit()
     {
-        $personal_data = User::where(['id' => $id])->first();
+        $personal_data = User::where(['id' => Auth::user()->id])->first();
         return view('pages.dashboard.personal_data.edit', compact(['personal_data']));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request)
     {
         try {
-            User::findOrFail($id)->update([
+            User::findOrFail(Auth::user()->id)->update([
+                'email' => $request->email,
                 'name' => $request->name,
                 'surname' => $request->surname,
-                'email' => $request->email,
+                'about_me' => $request->about_me,
+                'phone' => $request->phone,
+                'nationality' => $request->nationality,
+                'marital_status' => $request->marital_status,
+                'driver_license_category' => $request->driver_license_category,
+                'birthdate' => $request->birthdate,
+                'social' => $request->social,
+                'postal_code' => $request->postal_code,
+                'street' => $request->street,
+                'complement' => $request->complement,
+                'neighborhood' => $request->neighborhood,
+                'city' => $request->city,
+                'state' => $request->state,
+                'portfolio' => $request->portfolio,
+                'personal_site' => $request->personal_site,
             ]);
 
-            return redirect(route('dashboard.home'))->with(['success' => 'Conta criada com sucesso!']);
+            return redirect(route('dashboard.personal-data'))->with(['success' => 'Conta criada com sucesso!']);
         } catch (\Exception $e) {
-            return redirect(route('dashboard.home'))->with(['error' => 'Ocorreu um erro ao criar a conta. Reporte os detalhes: ' . $e->getMessage()]);
+            return redirect(route('dashboard.personal-data'))->with(['error' => 'Ocorreu um erro ao atualizar os dados pessoais. Reporte os detalhes: ' . $e->getMessage()]);
         }
     }
 
