@@ -39,9 +39,9 @@ INSERT INTO users ("name",surname,email,"password",about_me,social,portfolio, ha
 CREATE TABLE experiences (
     id SERIAL PRIMARY KEY,
     id_user INT NOT NULL,
-    enterprise VARCHAR(30),
-    responsibility VARCHAR(30),
-    description VARCHAR(40),
+    enterprise VARCHAR(80),
+    responsibility VARCHAR(80),
+    description TEXT,
     technologies_used TEXT,
     start_date DATE,
     end_date DATE,
@@ -49,7 +49,7 @@ CREATE TABLE experiences (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-drop table experiences;
+--drop table experiences;
 select * from experiences;
 
 CREATE TABLE courses (
@@ -72,7 +72,7 @@ select * from courses;
 
 CREATE TABLE projects (
     id SERIAL PRIMARY KEY,              -- Identificador único do projeto
-    user_id INT NOT NULL,               -- Relacionamento com o usuário (dono do projeto)
+    id_user INT NOT NULL,               -- Relacionamento com o usuário (dono do projeto)
     title VARCHAR(255) NOT NULL,        -- Título do projeto
     subtitle VARCHAR(255),              -- Subtítulo ou breve resumo do projeto
     description TEXT,                   -- Descrição detalhada do projeto
@@ -85,6 +85,9 @@ CREATE TABLE projects (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Data de criação do registro
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  -- Data de atualização do registro
 );
+
+--drop table projects;
+select * from projects;
 
 
 CREATE TABLE images (
