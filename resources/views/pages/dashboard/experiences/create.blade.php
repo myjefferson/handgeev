@@ -10,11 +10,11 @@
                 @csrf
                 <div>
                     <label for="enterprise" class="block mb-2 text-sm font-medium ">Empresa</label>
-                    <input type="text" name="enterprise" id="enterprise" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <input type="text" name="enterprise" id="enterprise" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required>
                 </div>
                 <div>
                     <label for="responsibility" class="block mb-2 text-sm font-medium ">Cargo</label>
-                    <input type="text" name="responsibility" id="responsibility" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <input type="text" name="responsibility" id="responsibility" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required>
                 </div>
                 <div>
                     <label for="description" class="block mb-2 text-sm font-medium">Descrição</label>
@@ -26,23 +26,23 @@
                     ></textarea>
                 </div>
                 <div>
-                    <label for="technologies" class="block mb-2 text-sm font-medium ">Tecnologias utilizadas</label>
-                    <input type="text" name="technologies" id="technologies" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <label for="technologies_used" class="block mb-2 text-sm font-medium ">Tecnologias utilizadas</label>
+                    <input type="text" name="technologies_used" id="technologies_used" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required>
                 </div>
                 <div>
-                    <label for="entry_date" class="block mb-2 text-sm font-medium ">Data de entrada</label>
-                    <input type="date" name="entry_date" id="entry_date" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <label for="start_date" class="block mb-2 text-sm font-medium ">Data de entrada</label>
+                    <input type="date" name="start_date" id="start_date" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required>
                 </div>
 
                 <div>
-                    <label for="departure_date" class="block mb-2 text-sm font-medium ">Data de saida</label>
-                    <input type="date" name="departure_date" id="departure_date" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <label for="end_date" class="block mb-2 text-sm font-medium ">Data de saida</label>
+                    <input type="date" name="end_date" id="end_date" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required>
                 </div>
 
                 {{--<div class="flex items-center justify-between">
                     <div class="flex items-start">
                         <div class="flex items-center h-5">
-                            <input id="remember" aria-describedby="remember" type="checkbox" class="w-4 h-4  -gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:-gray-600 dark:focus:ring-primary-600 dark:ring-offset-gray-800" required="">
+                            <input id="remember" aria-describedby="remember" type="checkbox" class="w-4 h-4  -gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:-gray-600 dark:focus:ring-primary-600 dark:ring-offset-gray-800" required>
                         </div>
                             <div class="ml-3 text-sm">
                             <label for="remember" class="text-gray-500 dark:text-gray-300">Remember me</label>

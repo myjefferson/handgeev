@@ -4,5 +4,8 @@
         <label class="text-sm">empresa</label>
         <p class="mb-2 font-bold tracking-tight text-gray-900 dark:text-white">{{ $experience->enterprise }}</p>
     </div>
-    <p class="font-normal text-gray-700 dark:text-gray-400">Here are the biggest enterprise technology acquisitions of 2021 so far, in reverse chronological order.</p>
+    <div>
+        <label class="text-sm">descrição</label>
+        <p class="mb-2 font-bold tracking-tight text-gray-900 dark:text-white">{{ $experience->description }}</p>
+    </div>
 </a>

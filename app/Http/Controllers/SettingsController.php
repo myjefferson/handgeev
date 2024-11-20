@@ -2,16 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
-class PersonalProjectsController extends Controller
+class SettingsController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        return view('pages.dashboard.personal_projects.index');
+        $settings = User::select('hash_api')->where(['id' => Auth::user()->id])->first();
+        return view('pages.dashboard.settings.index', compact('settings'));
     }
 
     /**
@@ -43,7 +46,7 @@ class PersonalProjectsController extends Controller
      */
     public function edit(string $id)
     {
-        return view('pages.dashboard.personal_projects.edit');
+        //
     }
 
     /**

@@ -14,8 +14,8 @@ class PersonalDataController extends Controller
     public function index()
     {
         $id_user = Auth::user()->id;
-        $personal_data = User::where(['id' => $id_user])->first();
-        return view('pages.dashboard.personal_data.index', compact(['personal_data']));
+        $user = User::where(['id' => $id_user])->first();
+        return view('pages.dashboard.user.index', compact(['user']));
     }
 
     /**
@@ -47,8 +47,8 @@ class PersonalDataController extends Controller
      */
     public function edit()
     {
-        $personal_data = User::where(['id' => Auth::user()->id])->first();
-        return view('pages.dashboard.personal_data.edit', compact(['personal_data']));
+        $user = User::where(['id' => Auth::user()->id])->first();
+        return view('pages.dashboard.user.edit', compact(['user']));
     }
 
     /**

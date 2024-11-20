@@ -5,9 +5,10 @@ use App\Http\Controllers\CoursesController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\PersonalDataController;
-use App\Http\Controllers\PersonalProjectsController;
+use App\Http\Controllers\ProjectsController;
 use App\Http\Controllers\ExperiencesController;
 use App\Http\Controllers\RegisterController;
+use App\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -34,14 +35,17 @@ Route::middleware(['auth'])->group(function(){
         Route::put('/dashboard/personal-data/update', 'update')->name('dashboard.personal-data.update');
     });
 
-    Route::controller(PersonalProjectsController::class)->group(function(){
-        Route::get('/dashboard/personal-projects', 'index')->name('dashboard.personal-projects');
-        Route::get('/dashboard/personal-projects/edit', 'edit')->name('dashboard.personal-projects.edit');
+    Route::controller(ProjectsController::class)->group(function(){
+        Route::get('/dashboard/projects', 'index')->name('dashboard.projects');
+        Route::get('/dashboard/projects/create', 'create')->name('dashboard.projects.create');
+        Route::post('/dashboard/projects/store', 'store')->name('dashboard.projects.store');
+        Route::get('/dashboard/projects/edit', 'edit')->name('dashboard.projects.edit');
     });
 
     Route::controller(CoursesController::class)->group(function(){
         Route::get('/dashboard/courses', 'index')->name('dashboard.courses');
         Route::get('/dashboard/courses/create', 'create')->name('dashboard.courses.create');
+        Route::post('/dashboard/courses/store', 'store')->name('dashboard.courses.store');
     });
 
     Route::controller(ExperiencesController::class)->group(function(){
@@ -49,12 +53,21 @@ Route::middleware(['auth'])->group(function(){
         Route::get('/dashboard/experiences/create', 'create')->name('dashboard.experiences.create');
         Route::post('/dashboard/experiences/store', 'store')->name('dashboard.experiences.store');
     });
+
+    Route::controller(SettingsController::class)->group(function(){
+        Route::get('/dashboard/settings', 'index')->name('dashboard.settings');
+        // Route::get('/dashboard/experiences/create', 'create')->name('dashboard.experiences.create');
+        // Route::post('/dashboard/experiences/store', 'store')->name('dashboard.experiences.store');
+    });
 });
 
 //Api
 Route::controller(ApiController::class)->group(function(){
-    Route::get('/api/personal-data/{userId}', 'getPersonalData')->name('api.personal-data');
+    Route::get('/api/profile/{userId}', 'getPersonalData')->name('api.personal-data');
     Route::get('/api/experiences/{userId}', 'getExperiences')->name('api.experiences');
+    Route::get('/api/courses/{userId}', 'getCourses')->name('api.courses');
+    Route::get('/api/projects/{userId}', 'getProjects')->name('api.projects');
+    // Route::get('/api/experiences/{userId}', 'getPersonalProjects')->name('api.projects');
 });
 
 

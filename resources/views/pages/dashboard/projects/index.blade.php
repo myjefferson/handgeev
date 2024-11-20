@@ -3,9 +3,9 @@
 @section('content_dashboard')
     <div>
         @include('components.header' ,[
-            'title' => 'Acadêmico e cursos',
+            'title' => 'Projetos pessoais',
             'options' => [[
-                'route' => route('dashboard.courses.create'),
+                'route' => route('dashboard.projects.create'),
                 'title' => 'Adicionar'
             ]],
             'buttonJson' => [
@@ -16,10 +16,10 @@
     </div>
 
     <div class="w-full flex items-center justify-center mt-7 gap-4">
-        @forelse ($courses as $course)
-            @include('components.card-course', ['course' => $course])
+        @forelse ($projects as $project)
+            @include('components.card-project', ['project' => $project])
         @empty
-            <p>Adicione acadêmicos e cursos</p>
+            <p>Adicione seus projetos</p>
         @endforelse
     </div>
 @endsection

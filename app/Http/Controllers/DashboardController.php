@@ -19,7 +19,7 @@ class DashboardController extends Controller
      */
     public function personalData()
     {
-        return view('pages.personal_data.personal.data');
+        return view('pages.user.personal.data');
     }
 
     /**

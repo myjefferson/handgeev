@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Experiences;
+use App\Models\Experience;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -13,7 +13,7 @@ class ExperiencesController extends Controller
      */
     public function index()
     {
-        $experiences = Experiences::where(['id_user' => Auth::user()->id])->get();
+        $experiences = Experience::where(['id_user' => Auth::user()->id])->get();
         return view('pages.dashboard.experiences.index', compact('experiences'));
     }
 
@@ -30,19 +30,19 @@ class ExperiencesController extends Controller
      */
     public function store(Request $request)
     {
+        Experience::create([
+            'id_user' => Auth::user()->id,
+            'enterprise' => $request->enterprise,
+            'responsibility' => $request->responsibility,
+            'description' => $request->description,
+            'technologies_used' => $request->technologies_used,
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date
+        ]);
         try {
-            Experiences::create([
-                'id_user' => Auth::user()->id,
-                'enterprise' => $request->enterprise,
-                'responsibility' => $request->responsibility,
-                'description' => $request->description,
-                'technologies' => $request->technologies,
-                'entry_date' => $request->entry_date,
-                'departure_date' => $request->departure_date
-            ]);
-            return redirect(route('dashboard.experiences'))->with(['success' => 'Conta criada com sucesso!']);
+            return redirect(route('dashboard.experiences'))->with(['success' => 'Experiência adicionada com sucesso!']);
         } catch (\Exception $e) {
-            return redirect(route('dashboard.experiences'))->with(['error' => 'Ocorreu um erro ao atualizar os dados pessoais. Reporte os detalhes: ' . $e->getMessage()]);
+            return redirect(route('dashboard.experiences'))->with(['error' => 'Ocorreu um erro ao adicionar a experiência. Reporte os detalhes: ' . $e->getMessage()]);
         }
     }
 

@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Course;
+use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class CoursesController extends Controller
+class ProjectsController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $courses = Course::select()->where(['id_user' => Auth::user()->id])->get();
-        return view('pages.dashboard.courses.index', compact('courses'));
+        $id_user = Auth::user()->id;
+        $projects = Project::where(['id_user' => $id_user])->get();
+        return view('pages.dashboard.projects.index', compact('projects'));
     }
 
     /**
@@ -22,7 +23,7 @@ class CoursesController extends Controller
      */
     public function create()
     {
-        return view('pages.dashboard.courses.create');
+        return view('pages.dashboard.projects.create');
     }
 
     /**
@@ -31,18 +32,21 @@ class CoursesController extends Controller
     public function store(Request $request)
     {
         try {
-            Course::create([
+            Project::create([
                 'id_user' => Auth::user()->id,
                 'title' => $request->title,
-                'institution' => $request->institution,
+                'subtitle' => $request->subtitle,
+                'description' => $request->description,
                 'start_date' => $request->start_date,
                 'end_date' => $request->end_date,
-                'duration' => $request->duration,
-                'description' => $request->description
+                'status' => $request->status,
+                'technologies_used' => $request->technologies_used,
+                'project_link' => $request->project_link,
+                'git_repository_link' => $request->git_repository_link
             ]);
-            return redirect(route('dashboard.courses'))->with(['success' => 'Curso criada com sucesso!']);
+            return redirect(route('dashboard.projects'))->with(['success' => 'Projeto adicionado com sucesso!']);
         } catch (\Exception $e) {
-            return redirect(route('dashboard.courses'))->with(['error' => 'Ocorreu um erro criar o urso. Reporte os detalhes: ' . $e->getMessage()]);
+            return redirect(route('dashboard.projects'))->with(['error' => 'Ocorreu um erro ao adiciona o projeto. Reporte os detalhes: ' . $e->getMessage()]);
         }
     }
 
@@ -59,7 +63,7 @@ class CoursesController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        return view('pages.dashboard.projects.edit');
     }
 
     /**

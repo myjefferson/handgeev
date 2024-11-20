@@ -6,38 +6,37 @@
             <h3 class="text-xl font-medium">Adicionar curso</h3>
         </div>
         <div>
-            <form class="space-y-3 md:space-y-4" action="" method="POST">
+            <form class="space-y-3 md:space-y-4" action="{{route('dashboard.courses.store')}}" method="POST">
                 @csrf
                 <div>
-                    <label for="enterprise" class="block mb-2 text-sm font-medium ">Empresa</label>
-                    <input type="enterprise" name="enterprise" id="email" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <label for="title" class="block mb-2 text-sm font-medium ">Nome do curso</label>
+                    <input type="text" name="title" id="title" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="Bacharelado em..." required>
                 </div>
                 <div>
-                    <label for="responsibility" class="block mb-2 text-sm font-medium ">Cargo</label>
-                    <input type="text" name="responsibility" id="responsibility" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <label for="institution" class="block mb-2 text-sm font-medium ">Instituição</label>
+                    <input type="text" name="institution" id="institution" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="Faculdade..." required>
+                </div>
+                <div>
+                    <label for="start_date" class="block mb-2 text-sm font-medium ">Data de entrada</label>
+                    <input type="date" name="start_date" id="start_date" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                </div>
+
+                <div>
+                    <label for="end_date" class="block mb-2 text-sm font-medium ">Data de saida</label>
+                    <input type="date" name="end_date" id="end_date" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                </div>
+                <div>
+                    <label for="duration" class="block mb-2 text-sm font-medium ">Duração do curso em horas</label>
+                    <input type="number" name="duration" id="duration" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="1000" required="">
                 </div>
                 <div>
                     <label for="description" class="block mb-2 text-sm font-medium">Descrição</label>
                     <textarea
                         name="description"
                         id="description"
-                        placeholder="Descreva um pouco sobre você"
+                        placeholder="Descreva um pouco sobre o seu curso"
                         class=" bg-slate-700 sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full h-40 min-h-28 max-h-96 p-3"
-                    >
-                    </textarea>
-                </div>
-                <div>
-                    <label for="technologies" class="block mb-2 text-sm font-medium ">Tecnologias utilizadas</label>
-                    <input type="text" name="technologies" id="technologies" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
-                </div>
-                <div>
-                    <label for="entry_date" class="block mb-2 text-sm font-medium ">Data de entrada</label>
-                    <input type="text" name="github" id="github" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
-                </div>
-
-                <div>
-                    <label for="departure_date" class="block mb-2 text-sm font-medium ">Data de saida</label>
-                    <input type="text" name="departure_date" id="departure_date" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    ></textarea>
                 </div>
 
                 {{--<div class="flex items-center justify-between">
