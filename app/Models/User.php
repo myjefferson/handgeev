@@ -36,6 +36,8 @@ class User extends Authenticatable
         'state',
         'portfolio',
         'personal_site',
+        'primary_hash_api',
+        'secondary_hash_api'
     ];
 
     /**

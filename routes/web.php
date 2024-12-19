@@ -9,6 +9,7 @@ use App\Http\Controllers\ProjectsController;
 use App\Http\Controllers\ExperiencesController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\SettingsController;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 
@@ -56,18 +57,21 @@ Route::middleware(['auth'])->group(function(){
 
     Route::controller(SettingsController::class)->group(function(){
         Route::get('/dashboard/settings', 'index')->name('dashboard.settings');
+        Route::post('/dashboard/settings/generate/newHashApi', 'generateNewHashApi')->name('dashboard.settings.generateNewHashApi');
         // Route::get('/dashboard/experiences/create', 'create')->name('dashboard.experiences.create');
-        // Route::post('/dashboard/experiences/store', 'store')->name('dashboard.experiences.store');
     });
 });
 
 //Api
-Route::controller(ApiController::class)->group(function(){
-    Route::get('/api/profile/{userId}', 'getPersonalData')->name('api.personal-data');
-    Route::get('/api/experiences/{userId}', 'getExperiences')->name('api.experiences');
-    Route::get('/api/courses/{userId}', 'getCourses')->name('api.courses');
-    Route::get('/api/projects/{userId}', 'getProjects')->name('api.projects');
-    // Route::get('/api/experiences/{userId}', 'getPersonalProjects')->name('api.projects');
+Route::middleware(['authTokenApi'])->group(function(){
+    Route::controller(ApiController::class)
+        ->withoutMiddleware(ValidateCsrfToken::class)
+        ->group(function(){
+        Route::any('/api/profile', 'getPersonalData')->name('api.personal-data');
+        Route::any('/api/experiences', 'getExperiences')->name('api.experiences');
+        Route::any('/api/courses', 'getCourses')->name('api.courses');
+        Route::any('/api/projects', 'getProjects')->name('api.projects');
+        // Route::get('/api/experiences/{userId}', 'getPersonalProjects')->name('api.projects');
+    });
 });
-
 

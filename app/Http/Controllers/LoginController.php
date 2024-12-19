@@ -33,8 +33,9 @@ class LoginController extends Controller
         if(!Hash::check($request->password, $user->password)){
             return redirect()->route('login.index')->withErrors(['error' => 'Email ou senha inválidos']);
         }
-
-        Auth::loginUsingId($user->id);
+        $user->primary_hash_api;
+        $user->secondary_hash_api;
+        Auth::login($user);
 
         return redirect()->route('dashboard.courses')->with(['success' => 'Você entrou!']);
     }

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\Authenticate;
+use App\Http\Middleware\AuthTokenApi;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -12,7 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->redirectGuestsTo(fn (Request $request) => route('login.index'));
+        // $middleware->redirectGuestsTo(fn (Request $request) => route('login.index'));
+        $middleware->alias([
+            'auth' => Authenticate::class,
+            'authTokenApi' => AuthTokenApi::class
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -10,7 +10,9 @@
                 ]],
             'buttonJson' => [
                 'active' => true,
-                'route' => route('api.personal-data', ['userId' => $user->id])
+                'route' => route('api.personal-data'),
+                'primary_hash_api' => Auth::user()->primary_hash_api,
+                'secondary_hash_api' => Auth::user()->secondary_hash_api,
             ]
         ])
 
@@ -48,7 +50,7 @@
             <div class="my-5">
                 <div>
                     <label class="text-sm text-gray-300">Sobre mim</label>
-                    <p class="font-medium">{{$user->about_us ? $user->about_us: 'Não informado'}}</p>
+                    <p class="font-medium">{{$user->about_me ? $user->about_me : 'Não informado'}}</p>
                 </div>
             </div>
             <hr class="h-px my-6 bg-gray-600 border-0"/>

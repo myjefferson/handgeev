@@ -23,7 +23,8 @@ CREATE TABLE users (
     city  VARCHAR(30),
     state  VARCHAR(30),
     portfolio VARCHAR(20),
-    hash_api text,
+    primary_hash_api text,
+    secondary_hash_api text,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -31,9 +32,8 @@ CREATE TABLE users (
 SELECT * FROM users;
 -- DROP TABLE users;
 
-INSERT INTO users ("name",surname,email,"password",about_me,social,portfolio, hash_api,created_at,updated_at) VALUES
-	 ('maria',NULL,'maria@gmail.com','$2y$12$Y62b7H5kMiaV7liM6AiEH.aTUjplLcRgXCmbcIqbXxU6lhBqe5FQ6',NULL,NULL,null, 'c4ca4238a0b923820dcc509a6f75849b','2024-10-14 21:57:19','2024-10-14 21:57:19'),
-	 ('Jefferson','Carvalho','jcs@gmail.com','$2y$12$UQIjsl96TDvXLzf33HHWjuOU140OIDQ4Lx01lICb9LONBOP9FG8CO',NULL,NULL,NULL, 'c81e728d9d4c2f636f067f89cc14862c','2024-10-14 22:16:37','2024-10-14 22:16:37');
+INSERT INTO users ("name",surname,email,"password",about_me,social,portfolio, primary_hash_api, secondary_hash_api, created_at,updated_at) VALUES
+	 ('Jefferson','Carvalho','jcs@gmail.com','$2y$12$UQIjsl96TDvXLzf33HHWjuOU140OIDQ4Lx01lICb9LONBOP9FG8CO',NULL,NULL,NULL, 'c81e728d9d4c2f636f067f89cc14862c', '6f067f89cc14862cc81e728d9d4c2f63','2024-10-14 22:16:37','2024-10-14 22:16:37');
 
 
 CREATE TABLE experiences (
