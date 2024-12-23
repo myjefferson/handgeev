@@ -18,8 +18,11 @@
     </div>
 
     <div class="w-full flex items-center justify-center mt-7 gap-4">
-        @forelse ($projects as $project)
-            @include('components.card-project', ['project' => $project])
+        @forelse ($projects as $index => $project)
+            @include('components.card-project', [
+                $project,
+                $index
+            ])
         @empty
             <p>Adicione seus projetos</p>
         @endforelse

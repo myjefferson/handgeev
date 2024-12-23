@@ -59,7 +59,11 @@ class ExperiencesController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        $experience = Experience::select()->where([
+            'id' => $id,
+            'id_user' => Auth::user()->id
+        ])->first();
+        return view('pages.dashboard.experiences.edit', compact('experience'));
     }
 
     /**
@@ -67,7 +71,22 @@ class ExperiencesController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        Experience::where([
+            'id' => $id,
+            'id_user' => Auth::user()->id
+        ])->update([
+            'enterprise' => $request->enterprise,
+            'responsibility' => $request->responsibility,
+            'description' => $request->description,
+            'technologies_used' => $request->technologies_used,
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date
+        ]);
+        try {
+            return redirect(route('dashboard.experiences'))->with(['success' => 'Experiência atualizada com sucesso!']);
+        } catch (\Exception $e) {
+            return redirect(route('dashboard.experiences'))->with(['error' => 'Ocorreu um erro ao atualizar a experiência. Reporte os detalhes: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -75,6 +94,14 @@ class ExperiencesController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        Experience::where([
+            'id' => $id,
+            'id_user' => Auth::user()->id,
+        ])->delete();
+        try {
+            return redirect(route('dashboard.experiences'))->with(['success' => 'Experiência removida com sucesso!']);
+        } catch (\Exception $e) {
+            return redirect(route('dashboard.experiences'))->with(['error' => 'Ocorreu um erro ao remover a experiência. Reporte os detalhes: ' . $e->getMessage()]);
+        }
     }
 }

@@ -9,7 +9,7 @@
             <form class="space-y-3 md:space-y-4" action="{{route('dashboard.projects.store')}}" method="POST">
                 @csrf
                 <div>
-                    <label for="title" class="block mb-2 text-sm font-medium ">Título</label>
+                    <label for="title" class="block mb-2 text-sm font-medium ">Nome do projeto</label>
                     <input type="text" name="title" id="title" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
                 </div>
                 <div>

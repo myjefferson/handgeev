@@ -6,7 +6,7 @@
             'title' => 'Informações pessoais',
             'options' => [[
                 'title' => 'Editar',
-                'route' => route('dashboard.personal-data.edit', ['id' => $user->id])
+                'route' => route('dashboard.personal-data.edit')
                 ]],
             'buttonJson' => [
                 'active' => true,

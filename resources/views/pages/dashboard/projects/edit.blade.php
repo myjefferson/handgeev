@@ -3,11 +3,20 @@
 @section('content_dashboard')
     <div class="bg-slate-800 p-3 rounded-xl">
         <div class="flex justify-between items-center">
-            <h3 class="text-xl font-medium">Editar projeto pessoal</h3>
+            <h3 class="text-xl font-medium">Alterar projeto pessoal</h3>
         </div>
         <div>
-            <form class="space-y-3 md:space-y-4" action="{{route('login.store')}}" method="POST">
+            <form class="space-y-3 md:space-y-4" action="{{route('dashboard.projects.update', ['id' => $project->id])}}" method="POST">
                 @csrf
+                <div>
+                    <label for="title" class="block mb-2 text-sm font-medium ">Nome do projeto</label>
+                    <input type="text" name="title" id="title" value="{{ $project->title ? $project->title : '' }}" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                </div>
+                <div>
+                    <label for="subtitle" class="block mb-2 text-sm font-medium ">Subtítulo</label>
+                    <input type="text" name="subtitle" id="subtitle" value="{{ $project->subtitle ? $project->subtitle : '' }}" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                </div>
+
                 <div>
                     <label for="description" class="block mb-2 text-sm font-medium">Descrição</label>
                     <textarea
@@ -15,46 +24,39 @@
                         id="description"
                         placeholder="Descreva um pouco sobre você"
                         class=" bg-slate-700 sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full h-40 min-h-28 max-h-96 p-3"
-                    >
-                    </textarea>
+                    >{{ $project->description ? $project->description : '' }}</textarea>
                 </div>
                 <div>
-                    <label for="email" class="block mb-2 text-sm font-medium ">Email</label>
-                    <input type="email" name="email" id="email" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <label for="technologies_used" class="block mb-2 text-sm font-medium ">Tecnologias utilizadas</label>
+                    <input type="text" name="technologies_used" id="technologies_used" value="{{ $project->technologies_used ? $project->technologies_used : '' }}" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
                 </div>
                 <div>
-                    <label for="personal_site" class="block mb-2 text-sm font-medium ">Site Pessoal</label>
-                    <input type="text" name="personal_site" id="personal_site" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <label for="start_date" class="block mb-2 text-sm font-medium ">Data de entrada</label>
+                    <input type="date" name="start_date" id="start_date" value="{{ $project->start_date ? $project->start_date : '' }}" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
                 </div>
                 <div>
-                    <label for="linkedin" class="block mb-2 text-sm font-medium ">LinkedIn</label>
-                    <input type="text" name="linkedin" id="linkedin" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
-                </div>
-                <div>
-                    <label for="github" class="block mb-2 text-sm font-medium ">GitHub</label>
-                    <input type="text" name="github" id="github" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <label for="status" class="block mb-2 text-sm font-medium ">Status</label>
+                    <select name="status" id="status" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3">
+                        <option value="">Selecione...</option>
+                        <option value="active" {{ $project->status == 'active' ? 'selected' : '' }}>Em desenvolvimento</option>
+                        <option value="completed" {{ $project->status == 'completed' ? 'selected' : '' }}>Finalizado</option>
+                        <option value="archived"{{ $project->status == 'archived' ? 'selected' : '' }}>Arquivado</option>
+                    </select>
                 </div>
 
                 <div>
-                    <label for="instagram" class="block mb-2 text-sm font-medium ">Instagram</label>
-                    <input type="text" name="instagram" id="instagram" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <label for="end_date" class="block mb-2 text-sm font-medium ">Data de saida</label>
+                    <input type="date" name="end_date" id="end_date" value="{{ $project->end_date ? $project->end_date : '' }}" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
                 </div>
                 <div>
-                    <label for="behance" class="block mb-2 text-sm font-medium ">Behance</label>
-                    <input type="text" name="behance" id="behance" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <label for="project_link" class="block mb-2 text-sm font-medium ">Link do Projeto / Site</label>
+                    <input type="text" name="project_link" id="project_link" value="{{ $project->project_link ? $project->project_link : '' }}" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
                 </div>
                 <div>
-                    <label for="dev_community" class="block mb-2 text-sm font-medium ">DEV Community</label>
-                    <input type="text" name="dev_community" id="dev_community" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <label for="git_repository_link" class="block mb-2 text-sm font-medium ">Link do repositório Git</label>
+                    <input type="text" name="git_repository_link" id="git_repository_link" value="{{ $project->git_repository_link ? $project->git_repository_link : '' }}" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
                 </div>
-                <div>
-                    <label class="block text-sm font-medium ">Resumo/ Currículo</label>
-                    <div class="flex gap-2">
-                        <button type="submit" class="w-full text-white bg-sky-600 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-md px-5 py-3 text-center mt-2">Escolher</button>
-                        <input type="file" class="hidden">
-                        <button type="submit" class="w-full text-white bg-slate-600 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-md px-5 py-3 text-center mt-2">Download</button>
-                    </div>
-                </div>
+
                 {{--<div class="flex items-center justify-between">
                     <div class="flex items-start">
                         <div class="flex items-center h-5">

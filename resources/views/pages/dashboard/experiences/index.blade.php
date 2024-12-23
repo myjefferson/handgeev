@@ -17,8 +17,11 @@
         ])
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-6">
-            @foreach ($experiences as $experience)
-                @include('components.card-experience', ['experience' => $experience])
+            @foreach ($experiences as $index => $experience)
+                @include('components.card-experience', [
+                    $index,
+                    $experience
+                ])
             @endforeach
         </div>
     </div>

@@ -40,19 +40,27 @@ Route::middleware(['auth'])->group(function(){
         Route::get('/dashboard/projects', 'index')->name('dashboard.projects');
         Route::get('/dashboard/projects/create', 'create')->name('dashboard.projects.create');
         Route::post('/dashboard/projects/store', 'store')->name('dashboard.projects.store');
-        Route::get('/dashboard/projects/edit', 'edit')->name('dashboard.projects.edit');
+        Route::get('/dashboard/projects/{id}/edit', 'edit')->name('dashboard.projects.edit');
+        Route::post('/dashboard/projects/{id}/update', 'update')->name('dashboard.projects.update');
+        Route::post('/dashboard/projects/{id}/delete', 'destroy')->name('dashboard.projects.delete');
     });
 
     Route::controller(CoursesController::class)->group(function(){
         Route::get('/dashboard/courses', 'index')->name('dashboard.courses');
         Route::get('/dashboard/courses/create', 'create')->name('dashboard.courses.create');
         Route::post('/dashboard/courses/store', 'store')->name('dashboard.courses.store');
+        Route::get('/dashboard/courses/{id}/edit', 'edit')->name('dashboard.courses.edit');
+        Route::post('/dashboard/courses/{id}/update', 'update')->name('dashboard.courses.update');
+        Route::post('/dashboard/courses/{id}/delete', 'destroy')->name('dashboard.courses.delete');
     });
 
     Route::controller(ExperiencesController::class)->group(function(){
         Route::get('/dashboard/experiences', 'index')->name('dashboard.experiences');
         Route::get('/dashboard/experiences/create', 'create')->name('dashboard.experiences.create');
         Route::post('/dashboard/experiences/store', 'store')->name('dashboard.experiences.store');
+        Route::get('/dashboard/experiences/{id}/edit', 'edit')->name('dashboard.experiences.edit');
+        Route::post('/dashboard/experiences/{id}/update', 'update')->name('dashboard.experiences.update');
+        Route::post('/dashboard/experiences/{id}/delete', 'destroy')->name('dashboard.experiences.delete');
     });
 
     Route::controller(SettingsController::class)->group(function(){

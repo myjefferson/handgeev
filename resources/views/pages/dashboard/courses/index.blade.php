@@ -18,8 +18,8 @@
     </div>
 
     <div class="w-full flex items-center justify-center mt-7 gap-4">
-        @forelse ($courses as $course)
-            @include('components.card-course', ['course' => $course])
+        @forelse ($courses as $index => $course)
+            @include('components.card-course', [$course, $index])
         @empty
             <p>Adicione acadêmicos e cursos</p>
         @endforelse
