@@ -114,7 +114,10 @@
                     </div>
                     <p class="mb-3 text-sm text-blue-800 dark:text-blue-400">
                         Portfoline ainda está em versão de testes. --}}
-                    </p>
+                    <div class="mt-5 flex space-x-3 bg-slate-700 text-slate-400 justify-center rounded-full">
+                        <p> {{ env('APP_VERSION') }} </p>
+                        <a href="#">Sobre</a>
+                    </div>
                     {{-- <a class="text-sm text-blue-800 underline font-medium hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300" href="#">Turn new navigation off</a> --}}
                 {{-- </div> --}}
             </div>

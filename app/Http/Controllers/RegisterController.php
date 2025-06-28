@@ -38,11 +38,11 @@ class RegisterController extends Controller
                 'password' => Hash::make($request->password),
             ]);
 
-            Auth::loginUsingId($register->id);
+            Auth::login($register);
 
-            return redirect(route('dashboard.personal-data.edit'))->with(['success' => 'Conta criada com sucesso!']);
+            return redirect()->route('dashboard.personal-data.edit')->with(['success' => 'Conta criada com sucesso!']);
         } catch (\Exception $e) {
-            return redirect(route('register.index'))->with(['error' => 'Ocorreu um erro ao criar a conta. Reporte os detalhes: ' . $e->getMessage()]);
+            return redirect()->route('register.index')->with(['error' => 'Ocorreu um erro ao criar a conta. Reporte os detalhes: ' . $e->getMessage()]);
         }
     }
 

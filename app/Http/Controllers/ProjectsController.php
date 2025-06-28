@@ -23,7 +23,7 @@ class ProjectsController extends Controller
      */
     public function create()
     {
-        return view('pages.dashboard.projects.create');
+        return view('pages.dashboard.projects.form');
     }
 
     /**
@@ -67,7 +67,7 @@ class ProjectsController extends Controller
             'id_user' => Auth::user()->id,
             'id' => $id
         ])->first();
-        return view('pages.dashboard.projects.edit', compact('project'));
+        return view('pages.dashboard.projects.form', compact('project'));
     }
 
     /**

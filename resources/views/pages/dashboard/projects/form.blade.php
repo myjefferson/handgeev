@@ -1,20 +1,40 @@
 @extends('layout.template')
 
+@php
+    $isEdit = false;
+    if(isset($project->id)){
+        $isEdit = true;
+    }
+@endphp
+
 @section('content_dashboard')
     <div class="bg-slate-800 p-3 rounded-xl">
+        <div class="text-left">
+            <button type="submit" onclick="window.history.back()" class="flex items-center w-max text-teal-400 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-md text-center dark:hover:bg-primary-700 dark:focus:ring-primary-800 mb-4">
+                <svg class="mr-1" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="48" d="M244 400L100 256l144-144M120 256h292"/></svg>
+                Voltar
+            </button>
+        </div>
         <div class="flex justify-between items-center">
-            <h3 class="text-xl font-medium">Adicionar projeto pessoal</h3>
+            <h3 class="text-xl font-medium">
+                {{ $isEdit ? "Editar projeto pessoal" : "Adicionar projeto pessoal" }}
+            </h3>
         </div>
         <div>
-            <form class="space-y-3 md:space-y-4" action="{{route('dashboard.projects.store')}}" method="POST">
+            @isset($project->id)
+                <form class="space-y-3 md:space-y-4" action="{{route('dashboard.projects.update', ['id' => $project->id])}}" method="POST">
+            @else
+                <form class="space-y-3 md:space-y-4" action="{{route('dashboard.projects.store')}}" method="POST">
+            @endisset
+
                 @csrf
                 <div>
                     <label for="title" class="block mb-2 text-sm font-medium ">Nome do projeto</label>
-                    <input type="text" name="title" id="title" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <input value="{{ $isEdit ? $project->title : "" }}" type="text" name="title" id="title" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
                 </div>
                 <div>
                     <label for="subtitle" class="block mb-2 text-sm font-medium ">Subtítulo</label>
-                    <input type="text" name="subtitle" id="subtitle" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <input value="{{ $isEdit ? $project->subtitle : "" }}" type="text" name="subtitle" id="subtitle" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
                 </div>
 
                 <div>
@@ -24,37 +44,37 @@
                         id="description"
                         placeholder="Descreva um pouco sobre você"
                         class=" bg-slate-700 sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full h-40 min-h-28 max-h-96 p-3"
-                    ></textarea>
+                    >{{ $isEdit ? $project->description : "" }}</textarea>
                 </div>
                 <div>
                     <label for="technologies_used" class="block mb-2 text-sm font-medium ">Tecnologias utilizadas</label>
-                    <input type="text" name="technologies_used" id="technologies_used" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <input value="{{ $isEdit ? $project->technologies_used : "" }}" type="text" name="technologies_used" id="technologies_used" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
                 </div>
                 <div>
                     <label for="start_date" class="block mb-2 text-sm font-medium ">Data de entrada</label>
-                    <input type="date" name="start_date" id="start_date" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <input value="{{ $isEdit ? $project->start_date : "" }}" type="date" name="start_date" id="start_date" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
                 </div>
                 <div>
                     <label for="status" class="block mb-2 text-sm font-medium ">Status</label>
                     <select name="status" id="status" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3">
                         <option value="">Selecione...</option>
-                        <option value="active">Em desenvolvimento</option>
-                        <option value="completed">Finalizado</option>
-                        <option value="archived">Arquivado</option>
+                        <option value="active" {{ ($isEdit && $project->status == "active") ? 'selected' : '' }}>Em desenvolvimento</option>
+                        <option value="completed" {{ ($isEdit && $project->status == "completed") ? 'selected' : '' }}>Finalizado</option>
+                        <option value="archived" {{ ($isEdit && $project->status == "archived") ? 'selected' : '' }}>Arquivado</option>
                     </select>
                 </div>
 
                 <div>
                     <label for="end_date" class="block mb-2 text-sm font-medium ">Data de saida</label>
-                    <input type="date" name="end_date" id="end_date" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <input value="{{ $isEdit ? $project->end_date : "" }}" type="date" name="end_date" id="end_date" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
                 </div>
                 <div>
                     <label for="project_link" class="block mb-2 text-sm font-medium ">Link do Projeto / Site</label>
-                    <input type="text" name="project_link" id="project_link" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <input value="{{ $isEdit ? $project->project_link : "" }}" type="text" name="project_link" id="project_link" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
                 </div>
                 <div>
                     <label for="git_repository_link" class="block mb-2 text-sm font-medium ">Link do repositório Git</label>
-                    <input type="text" name="git_repository_link" id="git_repository_link" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
+                    <input value="{{ $isEdit ? $project->git_repository_link : "" }}" type="text" name="git_repository_link" id="git_repository_link" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="name@company.com" required="">
                 </div>
 
                 {{--<div class="flex items-center justify-between">

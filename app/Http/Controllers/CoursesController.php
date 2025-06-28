@@ -22,7 +22,7 @@ class CoursesController extends Controller
      */
     public function create()
     {
-        return view('pages.dashboard.courses.create');
+        return view('pages.dashboard.courses.form');
     }
 
     /**
@@ -63,7 +63,7 @@ class CoursesController extends Controller
             'id' => $id,
             'id_user' => Auth::user()->id
         ])->first();
-        return view('pages.dashboard.courses.edit', compact('course'));
+        return view('pages.dashboard.courses.form', compact('course'));
     }
 
     /**

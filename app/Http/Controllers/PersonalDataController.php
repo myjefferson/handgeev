@@ -48,7 +48,7 @@ class PersonalDataController extends Controller
     public function edit()
     {
         $user = User::where(['id' => Auth::user()->id])->first();
-        return view('pages.dashboard.user.edit', compact(['user']));
+        return view('pages.dashboard.user.form', compact(['user']));
     }
 
     /**
