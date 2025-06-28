@@ -1,6 +1,5 @@
 CREATE DATABASE portfoline;
-
-\c portfoline  -- Conectar ao banco de dados 'kyrios'
+USE portfoline;
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -32,8 +31,9 @@ CREATE TABLE users (
 SELECT * FROM users;
 -- DROP TABLE users;
 
-INSERT INTO users ("name",surname,email,"password",about_me,social,portfolio, primary_hash_api, secondary_hash_api, created_at,updated_at) VALUES
-	 ('Jefferson','Carvalho','jcs@gmail.com','$2y$12$UQIjsl96TDvXLzf33HHWjuOU140OIDQ4Lx01lICb9LONBOP9FG8CO',NULL,NULL,NULL, 'c81e728d9d4c2f636f067f89cc14862c', '6f067f89cc14862cc81e728d9d4c2f63','2024-10-14 22:16:37','2024-10-14 22:16:37');
+INSERT INTO users (name, surname, email, password, about_me, social, portfolio, primary_hash_api, secondary_hash_api, created_at, updated_at) 
+VALUES ('Jefferson','Carvalho','jcs@gmail.com','$2y$12$UQIjsl96TDvXLzf33HHWjuOU140OIDQ4Lx01lICb9LONBOP9FG8CO',NULL,NULL,NULL, 'c81e728d9d4c2f636f067f89cc14862c', '6f067f89cc14862cc81e728d9d4c2f63','2024-10-14 22:16:37','2024-10-14 22:16:37');
+-- Password: 78**
 
 
 CREATE TABLE experiences (
@@ -49,11 +49,11 @@ CREATE TABLE experiences (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
---drop table experiences;
+-- drop table experiences;
 select * from experiences;
 
 CREATE TABLE courses (
-    id BIGSERIAL PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     id_user INT NOT NULL,
     title VARCHAR(255) NOT NULL,
     institution VARCHAR(255) NOT NULL,
