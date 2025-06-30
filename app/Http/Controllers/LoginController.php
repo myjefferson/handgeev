@@ -37,7 +37,7 @@ class LoginController extends Controller
         $user->secondary_hash_api;
         Auth::login($user);
 
-        return redirect()->route('dashboard.courses')->with(['success' => 'Você entrou!']);
+        return redirect()->route('dashboard.home')->with(['success' => 'Você entrou!']);
     }
 
     /**

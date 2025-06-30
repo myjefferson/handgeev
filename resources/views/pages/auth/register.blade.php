@@ -19,8 +19,8 @@
     <body class="font-sans antialiased bg-slate-950 text-white">
         <div>
             <section>
-                <div class="w-full grid grid-cols-[auto_400px] items-start mx-auto md:h-screen lg:py-0 text-white">
-                    <div class="p-5 h-full flex flex-col justify-between">
+                <div class="w-full grid grid-cols-1 md:grid-cols-[auto_400px] items-start mx-auto md:h-screen lg:py-0 text-white">
+                    <div class="p-5 hidden sm:hidden md:flex h-full flex-col justify-between">
                         <div>
                             <img class="mb-5 w-56" src="assets/images/logo.png" alt="Portfoline">
                         </div>
@@ -33,9 +33,12 @@
                             </div>
                         </div>
                     </div>
-                    <div class="w-full h-full relative bg-slate-800 border-l-2 border-teal-400 md:mt-0 sm:max-w-md xl:p-0">
+                    <div class="w-full h-dvh relative bg-slate-800 md:border-l-2 border-teal-400 md:mt-0 sm:max-w-md xl:p-0">
                         <div class="px-4 py-4 h-full flex items-center space-y-4 md:space-y-6">
                             <div>
+                                <div class="flex md:hidden w-full justify-center mb-5">
+                                    <img class="mb-5 w-56" src="assets/images/logo.png" alt="Portfoline">
+                                </div>
                                 <h1 class="text-xl font-semibold leading-tight tracking-tight md:text-2xl">
                                     Criar conta
                                 </h1>
@@ -76,7 +79,7 @@
                                     <div class="">
                                         <button type="submit" class="w-full text-slate-900 bg-teal-400 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-md px-5 py-3 text-center dark:hover:bg-primary-700 dark:focus:ring-primary-800 mt-4">Criar conta</button>
                                         <p class="text-sm mt-4 text-gray-300 text-center">
-                                            Ao crair a conta no Portfoline, você concorda com os nossos Termos e Política de Privacidade.
+                                            Ao criar a conta no Portfoline, você concorda com os nossos Termos e Política de Privacidade.
                                         </p>
                                     </div>
                                 </form>

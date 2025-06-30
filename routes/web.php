@@ -28,6 +28,7 @@ Route::middleware(['auth'])->group(function(){
     Route::controller(DashboardController::class)->group(function(){
         Route::get('/dashboard/home', 'index')->name('dashboard.home');
         Route::get('/dashboard/personal-data', '')->name('dashboard');
+        Route::get('/dashboard/about', 'about')->name('dashboard.about');
     });
 
     Route::controller(PersonalDataController::class)->group(function(){
