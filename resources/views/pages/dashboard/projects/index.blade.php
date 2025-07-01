@@ -17,7 +17,7 @@
         ])
     </div>
 
-    <div class="w-full flex items-center justify-center mt-7 gap-4">
+    <div class="w-full items-center justify-center grid md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 mt-7 gap-4">
         @forelse ($projects as $index => $project)
             @include('components.card-project', [
                 $project,

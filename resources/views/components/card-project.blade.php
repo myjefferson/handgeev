@@ -8,7 +8,7 @@
         <p class="mb-2 font-bold tracking-tight text-gray-900 dark:text-white">{{ $project->title }}</p>
     </div>
     <div>
-        <label class="text-sm">description</label>
-        <p class="mb-2 font-bold tracking-tight text-gray-900 dark:text-white">{{ $project->description }}</p>
+        <label class="text-sm">sobre</label>
+        <p class="mb-2 font-bold tracking-tight text-gray-900 dark:text-white">{{ $project->subtitle }}</p>
     </div>
 </div>
