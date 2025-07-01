@@ -10,7 +10,7 @@
             ]],
             'buttonJson' => [
                 'active' => true,
-                'route' => route('api.courses'),
+                'route' => route('api.projects'),
                 'primary_hash_api' => Auth::user()->primary_hash_api,
                 'secondary_hash_api' => Auth::user()->secondary_hash_api,
             ]
