@@ -37,6 +37,7 @@ class ProjectsController extends Controller
                 'title' => $request->title,
                 'subtitle' => $request->subtitle,
                 'description' => $request->description,
+                'images' => $this->mapImages($request->all()),
                 'start_date' => $request->start_date,
                 'end_date' => $request->end_date,
                 'status' => $request->status,
@@ -83,6 +84,7 @@ class ProjectsController extends Controller
                 'title' => $request->title,
                 'subtitle' => $request->subtitle,
                 'description' => $request->description,
+                'images' => $this->mapImages($request->all()),
                 'start_date' => $request->start_date,
                 'end_date' => $request->end_date,
                 'status' => $request->status,
@@ -94,6 +96,16 @@ class ProjectsController extends Controller
         } catch (\Exception $e) {
             return redirect(route('dashboard.projects'))->with(['error' => 'Ocorreu um erro ao atualizar o projeto. Reporte os detalhes: ' . $e->getMessage()]);
         }
+    }
+
+    public function mapImages($requestAll){
+        $images = collect($requestAll)
+            ->filter(function ($value, $key){
+                return str_starts_with($key, 'image-') && $value !== null;
+            })->values();
+
+        //imagem para array
+        return json_encode($images->toArray());
     }
 
     /**

@@ -8,11 +8,9 @@
                 'route' => route('dashboard.projects.create'),
                 'title' => 'Adicionar'
             ]],
-            'buttonJson' => [
+            'buttonViewJson' => [
                 'active' => true,
-                'route' => route('api.projects'),
-                'primary_hash_api' => Auth::user()->primary_hash_api,
-                'secondary_hash_api' => Auth::user()->secondary_hash_api,
+                'route' => route('api.projects')
             ]
         ])
     </div>
@@ -21,7 +19,7 @@
         @forelse ($projects as $index => $project)
             @include('components.card-project', [
                 $project,
-                $index
+                $index,
             ])
         @empty
             <p>Adicione seus projetos</p>

@@ -1,6 +1,13 @@
 
 <div class="relative block w-full p-5 border border-gray-700 rounded-lg shadow bg-gray-800">
-    <div class="absolute right-2 top-2">
+    <div class="flex justify-end space-x-2 right-2 top-2">
+        @include('components.buttons.button-card-viewjson', [
+            'buttonViewJson' => [
+                'route' => route('api.courseById'),
+                'inputValue' => $course->id,
+                'inputName' => 'idCourse'
+            ],
+        ])
         @include('components.course.dropdown-options', [ $index, $course ])
     </div>
     <div>

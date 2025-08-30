@@ -1,7 +1,14 @@
 
 <div class="relative block w-full p-6 bg-white border border-gray-200 rounded-lg shadow hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700">
     <div>
-        <div class="absolute right-2 top-2">
+        <div class="flex justify-end space-x-2 right-2 top-2">
+            @include('components.buttons.button-card-viewjson', [
+                'buttonViewJson' => [
+                    'route' => route('api.projectById'),
+                    'inputValue' => $project->id,
+                    'inputName' => 'idProject'
+                ],
+            ])
             @include('components.projects.dropdown-options', [ $index, $project ])
         </div>
         <label class="text-sm">projeto</label>

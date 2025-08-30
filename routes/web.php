@@ -79,7 +79,9 @@ Route::middleware(['authTokenApi'])->group(function(){
         Route::any('/api/profile', 'getPersonalData')->name('api.personal-data');
         Route::any('/api/experiences', 'getExperiences')->name('api.experiences');
         Route::any('/api/courses', 'getCourses')->name('api.courses');
+        Route::any('/api/coursebyid', 'getCourseById')->name('api.courseById');
         Route::any('/api/projects', 'getProjects')->name('api.projects');
+        Route::any('/api/projectbyid', 'getProjectById')->name('api.projectById');
         // Route::get('/api/experiences/{userId}', 'getPersonalProjects')->name('api.projects');
     });
 });

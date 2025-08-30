@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\Experience;
 use App\Models\Project;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class ApiController extends Controller
@@ -51,10 +52,66 @@ class ApiController extends Controller
         }
     }
 
+    public function getCourseById(Request $request)
+    {
+        try {
+            $courses = Course::where([
+                'id_user' => $this->getUserId($request),
+                'id' => $request->idCourse
+            ])->get();
+            return response()->json($courses);
+        } catch (\Exception $e) {
+            //Retornar pra página de hash inválido, ou configuração de ambiente incompleta
+            //return redirect(route('dashboard.personal-data'))->with(['error' => 'Ocorreu um erro ao atualizar os dados pessoais. Reporte os detalhes: ' . $e->getMessage()]);
+        }
+    }
+
     public function getProjects(Request $request)
     {
         try {
-            $courses = Project::where(['id_user' => $this->getUserId($request)])->get();
+            $courses = Project::select(
+                'id',
+                'title',
+                'subtitle',
+                'description',
+                DB::raw('JSON_UNQUOTE(JSON_EXTRACT(images, "$[0]")) as cover'),
+                'images',
+                'start_date',
+                'end_date',
+                'status',
+                'technologies_used',
+                'project_link',
+                'git_repository_link'
+            )->where([
+                'id_user' => $this->getUserId($request)
+            ])->get();
+            return response()->json($courses);
+        } catch (\Exception $e) {
+            //Retornar pra página de hash inválido, ou configuração de ambiente incompleta
+            //return redirect(route('dashboard.personal-data'))->with(['error' => 'Ocorreu um erro ao atualizar os dados pessoais. Reporte os detalhes: ' . $e->getMessage()]);
+        }
+    }
+
+    public function getProjectById(Request $request)
+    {
+        try {
+            $courses = Project::select(
+                'id',
+                'title',
+                'subtitle',
+                'description',
+                DB::raw('JSON_UNQUOTE(JSON_EXTRACT(images, "$[0]")) as cover'),
+                'images',
+                'start_date',
+                'end_date',
+                'status',
+                'technologies_used',
+                'project_link',
+                'git_repository_link'
+            )->where([
+                'id_user' => $this->getUserId($request), 
+                'id' => $request->idProject
+            ])->first();
             return response()->json($courses);
         } catch (\Exception $e) {
             //Retornar pra página de hash inválido, ou configuração de ambiente incompleta

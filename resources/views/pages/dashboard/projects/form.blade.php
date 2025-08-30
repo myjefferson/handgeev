@@ -1,6 +1,7 @@
 @extends('layout.template')
 
 @php
+    $imageItems = 0;
     $isEdit = false;
     if(isset($project->id)){
         $isEdit = true;
@@ -33,8 +34,20 @@
                         <label for="title" class="block mb-2 text-sm font-medium ">Imagens do projeto</label>
                         <button type="button" id="buttonAddInputImage" onclick="addInputUrlImage()" class="w-max text-slate-900 bg-teal-400 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-md px-4 py-1 text-center dark:hover:bg-primary-700 dark:focus:ring-primary-800 mb-4">Adicionar campo URL</button>
                     </div>
+                    
                     <div class="content-input-images">
-                        <input type="text" name="title" id="title" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="Cole a URL da imagem do seu projeto">
+                    @if ($isEdit)
+                        @foreach (json_decode($project->images) as $key => $item)
+                            <div class="flex items-center mt-4 space-x-3 input-section">
+                                <input type="text" name="image-{{$key}}" value="{{$item}}" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="Cole a URL da imagem do seu projeto">
+                                @if($imageItems++ > 0)
+                                    <button onclick="removeInput(this)" type="button" class="w-max text-slate-900 bg-red-400 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-md px-4 py-2.5 text-center dark:hover:bg-primary-700 dark:focus:ring-primary-800">Remover</button>
+                                @endif
+                            </div>
+                        @endforeach
+                    @else
+                        <input type="text" name="image-1" class="bg-slate-600  sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="Cole a URL da imagem do seu projeto">
+                    @endif                            
                     </div>
                 </div>
                 <div>
@@ -120,10 +133,14 @@
             $('#buttonAddInputImage').prop('disabled', numberOfInputs >= MAX_INPUTS)
         }
 
+        function getRandomInt() {
+            return Math.floor(Math.random() * 10000);
+        }
+
         function addInputUrlImage(){
             $('.content-input-images').append(`
                 <div class="flex items-center mt-3 space-x-3 input-section">
-                    <input type="text" name="title" id="title" class="bg-slate-600 sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="Cole a URL da imagem do seu projeto">
+                    <input type="text" name="image-${getRandomInt()}" class="bg-slate-600 sm:text-sm rounded-lg focus:ring-primary-600 focus:-teal-600 block w-full p-3" placeholder="Cole a URL da imagem do seu projeto">
                     <button onclick="removeInput(this)" type="button" class="w-max text-slate-900 bg-red-400 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-md px-4 py-2.5 text-center dark:hover:bg-primary-700 dark:focus:ring-primary-800">Remover</button>
                 </div>
             `)

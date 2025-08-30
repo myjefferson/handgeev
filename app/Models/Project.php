@@ -21,6 +21,7 @@ class Project extends Model
         'title',
         'subtitle',
         'description',
+        'images',
         'start_date',
         'end_date',
         'status',

@@ -8,11 +8,9 @@
                 'title' => 'Adicionar Experiência',
                 'route' => route('dashboard.experiences.create')
             ]],
-            'buttonJson' => [
+            'buttonViewJson' => [
                 'active' => true,
-                'route' => route('api.experiences'),
-                'primary_hash_api' => Auth::user()->primary_hash_api,
-                'secondary_hash_api' => Auth::user()->secondary_hash_api,
+                'route' => route('api.experiences')
             ]
         ])
 

@@ -8,11 +8,9 @@
                 'title' => 'Editar',
                 'route' => route('dashboard.personal-data.edit')
                 ]],
-            'buttonJson' => [
+            'buttonViewJson' => [
                 'active' => true,
                 'route' => route('api.personal-data'),
-                'primary_hash_api' => Auth::user()->primary_hash_api,
-                'secondary_hash_api' => Auth::user()->secondary_hash_api,
             ]
         ])
 
