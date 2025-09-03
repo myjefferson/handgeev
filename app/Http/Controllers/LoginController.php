@@ -23,7 +23,6 @@ class LoginController extends Controller
      */
     public function auth(Request $request)
     {
-        $request->only('email', 'password');
         $user = User::where('email', $request->email)->firstOrFail();
 
         if(!$user){

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
-class SettingsController extends Controller
+class SettingController extends Controller
 {
     /**
      * Display a listing of the resource.

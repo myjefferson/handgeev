@@ -1,4 +1,4 @@
 import './bootstrap';
 
-import { copyToClipboard } from './functionHelper'
+import { copyToClipboard } from './globalFunctions'
 window.copyToClipboard = copyToClipboard
