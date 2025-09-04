@@ -11,6 +11,7 @@ use App\Http\Controllers\TopicController;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/', function (){ return view('landing.portfoline'); } )->name('landing.portfoline');
 
 Route::controller(LoginController::class)->group(function(){
     Route::get('/login', 'index')->name('login.index');
@@ -32,13 +33,13 @@ Route::middleware(['auth'])->group(function(){
     Route::controller(FieldController::class)->group(function(){
         Route::post('/field/store', 'store')->name('field.store');
         Route::put('/field/{id}/update', 'update')->name('field.update');
-        Route::delete('/field/destroy', 'destroy')->name('field.destroy');
+        Route::delete('/field/{id}/destroy', 'destroy')->name('field.destroy');
     });
 
     Route::controller(TopicController::class)->group(function(){
         Route::post('/topic/store', 'store')->name('topic.store');
         Route::put('/topic/{id}/update', 'update')->name('topic.update');
-        Route::delete('/topic/destroy', 'destroy')->name('topic.destroy');
+        Route::delete('/topic/{id}/destroy', 'destroy')->name('topic.destroy');
     });
 
     Route::controller(DashboardController::class)->group(function(){
@@ -69,12 +70,6 @@ Route::middleware(['authTokenApi'])->group(function(){
     Route::controller(ApiController::class)
         ->withoutMiddleware(ValidateCsrfToken::class)
         ->group(function(){
-        Route::get('/api/profile', 'getPersonalData')->name('api.personal-data');
-        Route::get('/api/experiences', 'getExperiences')->name('api.experiences');
-        Route::get('/api/courses', 'getCourses')->name('api.courses');
-        Route::get('/api/coursebyid', 'getCourseById')->name('api.courseById');
-        Route::get('/api/projects', 'getProjects')->name('api.projects');
-        Route::get('/api/projectbyid', 'getProjectById')->name('api.projectById');
-        // Route::get('/api/experiences/{userId}', 'getPersonalProjects')->name('api.projects');
+        Route::get('/api/{id}/workspace', 'getWorkspaceData')->name('api.workspace');
     });
 });

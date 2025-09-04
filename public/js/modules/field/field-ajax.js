@@ -100,23 +100,47 @@ export function updateField(row, topic_id, route_update = {}) {
 }
 
 // Função para DELETE um campo
-export function deleteField(row, callback) {
+export function deleteField(row, topic_id, route_delete = {}) {
+    const visibility = row.find('.visibility-checkbox').is(':checked') ? 1 : 0;
+    const key_name = row.find('.key-input').val();
+    const value = row.find('.value-input').val();
     const fieldId = row.attr('data-id');
+
     if (!fieldId) {
         // Se não tem ID, é uma linha nova não salva ainda
         row.remove();
-        if (callback) callback();
         return;
     }
-    
+
     if (!confirm('Tem certeza que deseja excluir este campo?')) {
         return;
     }
     
-    const url = routesField.delete.replace(':id', fieldId);
-    
-    ajaxRequest(url, 'DELETE', {}, function(response) {
-        row.remove();
-        if (callback) callback(response);
+    const data = {
+        topic_id,
+        visibility,
+        key_name,
+        value
+    };
+
+    $.ajax({
+        url: route_delete,
+        method: 'DELETE',
+        data,
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+        },
+        success: function(response) {
+            // if (successCallback) successCallback(response);
+            row.attr('data-id', response.data.id);
+            showSaveFeedback(row);
+        },
+        error: function(xhr, status, error) {
+            console.error('Erro na requisição:', error);
+            // if (errorCallback) errorCallback(xhr, status, error);
+            
+            // Mostrar mensagem de erro
+            alert('Erro ao remover: ' + (xhr.responseJSON?.message || 'Erro desconhecido'));
+        }
     });
 }

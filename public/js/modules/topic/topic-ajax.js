@@ -42,15 +42,13 @@ export function updateTopic(topicId) {
 }
 
 // DELETE
-export function deleteTopic(topicId) {
-    const url = routesTopic.deleteTopic.replace(':id', topicId);
-    
+export function deleteTopic(route_create) {    
     $.ajax({
-        url: url,
+        url: route_create,
         method: 'DELETE',
         headers: { 'X-CSRF-TOKEN': csrfToken },
         success: function(response) {
-            window.location.reload();
+            // window.location.reload();
         },
         error: function(xhr) {
             alert('Erro ao excluir tópico: ' + (xhr.responseJSON?.error || 'Erro desconhecido'));

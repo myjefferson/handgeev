@@ -93,11 +93,30 @@
                     </li> --}}
                     @isset($workspaces)
                         @foreach($workspaces as $workspace)
-                            <li>
-                                <a href="{{ route('workspace.index', ['id' => $workspace->id]) }}" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M10.59 4.59C10.21 4.21 9.7 4 9.17 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8z"/></svg>
-                                    <span class="ms-3">{{ $workspace->title }}</span>
-                                </a>
+                            <li class="relative">
+                                <div class="flex p-1 items-center justify-between w-full text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <a href="{{ route('workspace.index', ['id' => $workspace->id]) }}" class="flex w-full items-center p-2 ">       
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M10.59 4.59C10.21 4.21 9.7 4 9.17 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8z"/></svg>
+                                        <span class="ms-3">{{ $workspace->title }}</span>
+                                    </a>
+                                    <div>
+                                        <button id="dropdownDefaultButton" data-dropdown-toggle="dropdown-workspace-{{$workspace->id }}" class="absolute right-2 top-2 text-white bg-slate-700 hover:bg-slate-600 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full p-2 mr-1" type="button">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><circle cx="8" cy="2.5" r=".75"/><circle cx="8" cy="8" r=".75"/><circle cx="8" cy="13.5" r=".75"/></g></svg>
+                                        </button>
+
+                                        <!-- Dropdown menu -->
+                                        <div id="dropdown-workspace-{{$workspace->id }}" class="absolute z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-28 dark:bg-gray-700">
+                                            <ul class="py-2 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="dropdownDefaultButton">
+                                                <li>
+                                                    <a href="#" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Rename</a>
+                                                </li>
+                                                <li>
+                                                    <a href="#" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Delete</a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
                             </li>
                         @endforeach
                     @endisset

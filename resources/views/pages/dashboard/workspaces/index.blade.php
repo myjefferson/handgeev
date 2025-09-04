@@ -5,13 +5,10 @@
         <div class="block mb-8">
             @include('components.header' ,[
                 'title' => $workspace->title,
-                'options' => [[
-                    'route' => '',
-                    'title' => 'Adicionar'
-                ]],
+                'options' => null,
                 'buttonViewJson' => [
                     'active' => true,
-                    'route' => route('api.projects')
+                    'api_route' => route('api.workspace', ['id' => $workspace->id])
                 ]
             ])
             
@@ -140,8 +137,8 @@
 
 @push('scripts')
     <script type="module">
-        import { createTopic } from '/js/modules/topic/topic-ajax.js'
-        import { createField, updateField } from '/js/modules/field/field-ajax.js'
+        import { createTopic, deleteTopic } from '/js/modules/topic/topic-ajax.js'
+        import { createField, updateField, deleteField } from '/js/modules/field/field-ajax.js'
         import '/js/modules/topic/topic-interations.js'
         import { updateSaveIndicator } from '/js/modules/field/field-interations.js'
 
@@ -151,8 +148,10 @@
         const routes = {
             create_field: "{{ route('field.store') }}",
             update_field: "{{ route('field.update', ['id' => ':id']) }}",
-            delete_field: "{{ route('field.destroy', ['id' => ':id']) }}",   
+            delete_field: "{{ route('field.destroy', ['id' => ':id']) }}",
+
             create_topic: "{{ route('topic.store') }}",
+            update_topic: "{{ route('topic.update', ['id' => ':id']) }}",
             delete_topic: "{{ route('topic.destroy', ['id' => ':id']) }}"
         };
 
@@ -201,10 +200,27 @@
         // Evento para remover linha (usando delegation para linhas dinâmicas)
         $(document).on('click', '.remove-row', function() {
             const row = $(this).closest('tr');
-            deleteField(row, function() {
-                // hasUnsavedChanges = true;
-                // $('#saveStatusText').text('Alterações não salvas');
-            });
+            const field_id = row.attr('data-id');
+            
+            const topicContent = row.closest('.topic-content');
+            const topic_id = topicContent.data('topic-id');
+            
+            deleteField(
+                row,
+                topic_id,
+                routes.delete_field.replace(':id', field_id)
+            );
+        });
+
+        
+        // Deletar tópico
+        $('.delete-topic-btn').on('click', function() {
+            const topic_id = $(this).data('topic-id');
+            const topicTitle = $(this).closest('.topic-content').find('h3').text();
+            
+            if (confirm(`Tem certeza que deseja excluir o tópico "${topicTitle}"? Todos os campos serão removidos.`)) {
+                deleteTopic(routes.delete_topic.replace(':id', topic_id));
+            }
         });
 
     </script>

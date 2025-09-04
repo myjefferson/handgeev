@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Topic;
 use App\Models\Workspace;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -47,10 +48,27 @@ class TopicController extends Controller
     /**
      * Exclui um tópico.
      */
-    public function destroy(Topic $topic)
+    public function destroy(string $id)
     {
-        $topic->delete();
+        try{
+            $topic = Topic::with(['workspace', 'fields'])->findOrFail($id);
 
-        return response()->json(null, 204);
+            if($topic->workspace->user_id !== Auth::id()){
+                return response()->json([
+                    'error' => 'Você não tem permissão para excluir este tópico'
+                ], 403);
+            }
+
+            $topic->fields()->delete();
+            $topic->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tópico e todos os seus campos foram excluídos com sucesso',
+                'deleted_fields' => $topic->fields->count()
+            ], 200);
+        }catch(\Exception $e){
+
+        }
     }
 }

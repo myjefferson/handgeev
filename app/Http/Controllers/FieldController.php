@@ -87,15 +87,26 @@ class FieldController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Topic $topic, Field $field)
+    public function destroy(string $id)
     {
-        // Verifica se o usuário autenticado é o dono do campo.
-        if (Auth::id() !== $field->topic->workspace->user_id) {
-            abort(403);
+        try{
+            $field = Field::findOrFail($id);            
+            $field->delete($field);
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Campo removido com sucesso', 
+                'data' => $field
+            ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'error' => 'Erro de validação',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Ocorreu um erro: ' . $e->getMessage()
+            ], 500);
         }
-
-        $field->delete();
-
-        return redirect()->route('topics.show', $topic->id)->with('success', 'Campo excluído com sucesso!');
     }
 }

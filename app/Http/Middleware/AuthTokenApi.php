@@ -6,6 +6,8 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use App\Models\User;
+use Exception;
+use Illuminate\Support\Facades\Auth;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
@@ -21,17 +23,16 @@ class AuthTokenApi
      */
     public function handle(Request $request, Closure $next): Response
     {
-        try {
-            // Tenta autenticar o usuário a partir do token da requisição.
-            // Esta única linha lê o cabeçalho 'Authorization', decodifica o token,
-            // e autentica o usuário. Se for bem-sucedido, o objeto do usuário
-            // fica disponível em Auth::user().
-            $user = JWTAuth::parseToken()->authenticate();
+        try {            
+            if(!Auth::check() && !Auth::user()){
+                $user = JWTAuth::parseToken()->authenticate();
 
-            if (!$user) {
-                // Se o token for válido, mas o usuário não for encontrado no banco de dados.
-                return response()->json(['error' => 'Usuário não encontrado.'], 404);
+                if (!$user && !Auth::check()) {
+                    // Se o token for válido, mas o usuário não for encontrado no banco de dados.
+                    return response()->json(['error' => 'Usuário não encontrado.'], 404);
+                }
             }
+
 
         } catch (TokenExpiredException $e) {
             // Lida com o erro de token expirado.

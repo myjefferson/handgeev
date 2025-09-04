@@ -36,15 +36,7 @@ $(document).ready(function() {
             }
         });
 
-        // Deletar tópico
-        $('.delete-topic-btn').on('click', function() {
-            const topicId = $(this).data('topic-id');
-            const topicTitle = $(this).closest('.topic-content').find('h3').text();
-            
-            if (confirm(`Tem certeza que deseja excluir o tópico "${topicTitle}"? Todos os campos serão removidos.`)) {
-                deleteTopic(topicId);
-            }
-        });
+        
 
 
         // Adicionar novo campo
