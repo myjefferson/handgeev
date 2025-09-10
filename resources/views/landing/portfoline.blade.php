@@ -3,35 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfoline - Sua Plataforma de Portfólios</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Handgeev - Sua Plataforma de Portfólios</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: {
-                            50: '#e6fffe',
-                            100: '#b3fffc',
-                            200: '#80fffa',
-                            300: '#4dfff8',
-                            400: '#1afff6',
-                            500: '#08fff0',
-                            600: '#00e6d8',
-                            700: '#00b3a8',
-                            800: '#008078',
-                            900: '#004d48',
-                        },
-                        dark: {
-                            800: '#1e293b',
-                            900: '#0f172a',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    @vite('resources/css/app.css')
+    @vite('resources/js/app.js')
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -89,7 +64,7 @@
             <div class="container mx-auto px-4 py-4">
                 <div class="flex justify-between items-center">
                     <div class="flex items-center">
-                        <img class="w-40" src="assets/images/logo.png" alt="Portfoline">
+                        <img class="w-40" src="assets/images/logo.png" alt="Handgeev">
                     </div>
                     
                     <nav class="hidden md:flex space-x-10">
@@ -165,7 +140,7 @@
                                         </div>
                                     </div>
                                     <div class="bg-primary-500 text-slate-900 rounded-lg p-4">
-                                        <h3 class="font-semibold mb-2">Dashboard Portfoline</h3>
+                                        <h3 class="font-semibold mb-2">Dashboard Handgeev</h3>
                                         <p class="text-sm">Controle total sobre seu portfólio em um único lugar</p>
                                     </div>
                                 </div>
@@ -418,61 +393,12 @@
         <section class="py-16 gradient-bg">
             <div class="container mx-auto max-w-4xl text-center px-4">
                 <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-6">Pronto para criar seu portfólio profissional?</h2>
-                <p class="text-slate-800 text-lg mb-8">Junte-se a milhares de profissionais que já transformaram suas carreiras com o Portfoline</p>
+                <p class="text-slate-800 text-lg mb-8">Junte-se a milhares de profissionais que já transformaram suas carreiras com o Handgeev</p>
                 <a href="#pricing" class="bg-slate-900 text-primary-400 hover:bg-slate-800 px-8 py-3 rounded-lg font-medium text-lg inline-block transition-colors">Começar Agora</a>
                 <p class="text-slate-800 text-sm mt-4">Teste grátis por 14 dias - Não é necessário cartão de crédito</p>
             </div>
         </section>
 
-        <!-- Footer -->
-        <footer class="bg-slate-900 text-slate-400 py-12 px-4 border-t border-slate-800">
-            <div class="container mx-auto max-w-6xl">
-                <div class="grid md:grid-cols-4 gap-8">
-                    <div>
-                        <div class="flex items-center mb-6">
-                            <img class="w-32" src="assets/images/logo.png" alt="Portfoline">
-                        </div>
-                        <p class="mb-6">Soluções digitais para profissionais criativos exibirem seu trabalho.</p>
-                        <div class="flex space-x-4">
-                            <!-- Social media icons would go here -->
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <h3 class="font-semibold text-lg mb-6 text-slate-200">Produto</h3>
-                        <ul class="space-y-3">
-                            <li><a href="#" class="hover:text-primary-400 transition-colors">Recursos</a></li>
-                            <li><a href="#" class="hover:text-primary-400 transition-colors">Planos</a></li>
-                            <li><a href="#" class="hover:text-primary-400 transition-colors">FAQ</a></li>
-                            <li><a href="#" class="hover:text-primary-400 transition-colors">Blog</a></li>
-                        </ul>
-                    </div>
-                    
-                    <div>
-                        <h3 class="font-semibold text-lg mb-6 text-slate-200">Empresa</h3>
-                        <ul class="space-y-3">
-                            <li><a href="#" class="hover:text-primary-400 transition-colors">Sobre nós</a></li>
-                            <li><a href="#" class="hover:text-primary-400 transition-colors">Carreiras</a></li>
-                            <li><a href="#" class="hover:text-primary-400 transition-colors">Contato</a></li>
-                            <li><a href="#" class="hover:text-primary-400 transition-colors">Imprensa</a></li>
-                        </ul>
-                    </div>
-                    
-                    <div>
-                        <h3 class="font-semibold text-lg mb-6 text-slate-200">Legal</h3>
-                        <ul class="space-y-3">
-                            <li><a href="#" class="hover:text-primary-400 transition-colors">Termos de uso</a></li>
-                            <li><a href="#" class="hover:text-primary-400 transition-colors">Política de privacidade</a></li>
-                            <li><a href="#" class="hover:text-primary-400 transition-colors">Cookies</a></li>
-                            <li><a href="#" class="hover:text-primary-400 transition-colors">Segurança</a></li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <div class="border-t border-slate-800 mt-12 pt-8 text-center">
-                    <p>&copy; 2025 Portfoline. Todos os direitos reservados.</p>
-                </div>
-            </div>
-        </footer>
+        @include('components.footer.footer_login')
     </body>
 </html>

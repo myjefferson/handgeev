@@ -1,19 +1,5 @@
 $(document).ready(function() {
-        let autoSaveTimeout;
-        let hasUnsavedChanges = false;
-        const workspaceId = {{ $workspace->id }};
-        const workspaceType = {{ $workspace->type_workspace_id }};
-        const csrfToken = $('meta[name="csrf-token"]').attr('content');
-        
-        // URLs para as operações CRUD
-        const apiUrls = {
-            createField: "{{ route('field.store') }}",
-            updateField: "{{ route('field.update', ['field' => ':id']) }}",
-            deleteField: "{{ route('field.destroy', ['field' => ':id']) }}",
-            
-            createTopic: "{{ route('topic.store') }}",
-            deleteTopic: "{{ route('topic.destroy', ['topic' => ':id']) }}"
-        };
+       
 
         // Navegação entre tabs de tópicos
         $('.topic-tab').on('click', function() {

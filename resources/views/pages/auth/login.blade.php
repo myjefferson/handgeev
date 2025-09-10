@@ -3,32 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Portfoline</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Login - Handgeev</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: {
-                            50: '#e6fffe',
-                            100: '#b3fffc',
-                            200: '#80fffa',
-                            300: '#4dfff8',
-                            400: '#1afff6',
-                            500: '#08fff0',
-                            600: '#00e6d8',
-                            700: '#00b3a8',
-                            800: '#008078',
-                            900: '#004d48',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    @vite('resources/css/app.css')
+    @vite('resources/js/app.js')
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -93,7 +72,7 @@
         <div class="login-container w-full max-w-md p-8 border border-cyan-400">
             <div class="text-center mb-8">
                 <div class="flex justify-center mb-4">
-                    <img class="w-52" src="assets/images/logo.png" alt="Portfoline Logo">
+                    <img class="w-52" src="assets/images/logo.png" alt="Handgeev Logo">
                 </div>
                 <p class="text-slate-300">Faça login para acessar sua conta</p>
             </div>
@@ -187,45 +166,7 @@
         </div>
     </div>
 
-    <!-- Rodapé -->
-    <footer class="footer py-6 px-4 mt-auto">
-        <div class="max-w-7xl mx-auto">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="flex items-center mb-4 md:mb-0">
-                    <a href="{{ route('landing.portfoline' )}}">
-                    <img class="w-28 opacity-60 grayscale hover:grayscale-0 transition-all" src="assets/images/logo.png" alt="Portfoline Logo">
-                    </a>
-                </div>
-                
-                <div class="flex space-x-6 mb-4 md:mb-0">
-                    <a href="#" class="text-slate-400 hover:text-primary-500 transition-colors text-sm">Termos de Uso</a>
-                    <a href="#" class="text-slate-400 hover:text-primary-500 transition-colors text-sm">Privacidade</a>
-                    <a href="#" class="text-slate-400 hover:text-primary-500 transition-colors text-sm">Suporte</a>
-                </div>
-                
-                <div class="flex space-x-4">
-                    <a href="#" class="social-icon text-slate-400 text-lg">
-                        <i class="fab fa-facebook-f"></i>
-                    </a>
-                    <a href="#" class="social-icon text-slate-400 text-lg">
-                        <i class="fab fa-twitter"></i>
-                    </a>
-                    <a href="#" class="social-icon text-slate-400 text-lg">
-                        <i class="fab fa-instagram"></i>
-                    </a>
-                    <a href="#" class="social-icon text-slate-400 text-lg">
-                        <i class="fab fa-linkedin-in"></i>
-                    </a>
-                </div>
-            </div>
-            
-            <div class="border-t border-slate-700 mt-4 pt-4 text-center">
-                <p class="text-xs text-slate-500">
-                    &copy; 2023 Portfoline. Todos os direitos reservados.
-                </p>
-            </div>
-        </div>
-    </footer>
+    @include('components.footer.footer_login')
 
     <script>
         // Função para alternar a visibilidade da senha

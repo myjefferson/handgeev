@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Field;
+use App\Models\Topic;
 use App\Models\Workspace;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -30,16 +33,21 @@ class WorkspaceController extends Controller
             abort(404, 'Workspace não encontrado ou você não tem permissão para acessá-lo');
         }
 
-        return view('pages.dashboard.workspaces.index', compact('workspace'));
-    }
+        // Obter informações de limite de campos
+        $user = Auth::user();
+        $canAddMoreFields = $user->canAddMoreFields($workspace->id);
+        $fieldsLimit = $user->getFieldsLimit();
+        $currentFieldsCount = $user->getCurrentFieldsCount($workspace->id);
+        $remainingFields = $user->getRemainingFieldsCount($workspace->id);
 
-    /**
- * Mostra o formulário para criar um novo workspace.
-     */
-    // public function create()
-    // {
-    //     return view('workspaces.create');
-    // }
+        return view('pages.dashboard.workspaces.index', compact(
+            'workspace',
+            'canAddMoreFields',
+            'fieldsLimit',
+            'currentFieldsCount',
+            'remainingFields'
+        ));
+    }
 
     /**
      * Armazena um novo workspace no banco de dados.
@@ -58,7 +66,7 @@ class WorkspaceController extends Controller
                 'order' => 1,
                 'title' => 'First Topic',
             ]);
-            return redirect()->route('dashboard.home')->with('success', 'Workspace criado com sucesso!');
+            return redirect()->route('workspace.index', ['id' => $workspace->id])->with('success', 'Workspace criado com sucesso!');
         } catch (ValidationException $e) {
             // return redirect()->back()->withErrors($e->errors())->withInput();
             return $e->errors();
@@ -66,49 +74,24 @@ class WorkspaceController extends Controller
     }
 
     /**
-     * Mostra um único workspace, se ele pertencer ao usuário.
-     */
-    // public function show(Workspace $workspace)
-    // {
-    //     if ($workspace->user_id !== auth()->user()->id) {
-    //         abort(403);
-    //     }
-
-    //     return view('workspaces.show', compact('workspace'));
-    // }
-
-    /**
-     * Mostra o formulário para editar um workspace existente.
-     */
-    public function edit(Workspace $workspace)
-    {
-        if ($workspace->user_id !== auth()->user()->id) {
-            abort(403);
-        }
-
-        return view('workspaces.edit', compact('workspace'));
-    }
-
-    /**
      * Atualiza os dados de um workspace existente.
      */
-    public function update(Request $request, Workspace $workspace)
-    {
-        if ($workspace->user_id !== auth()->user()->id) {
-            abort(403);
-        }
-
+    public function update(Request $request, string $id)
+    {        
         try {
-            $validated = $request->validate([
-                'title' => 'string|max:100',
-                'type_workspace_id' => 'integer|exists:type_workspaces,id',
-                'is_published' => 'boolean',
-            ]);
+            $workspace = Workspace::with(['topics.fields'])->findOrFail($id);
+            
+            if($workspace->user_id !== Auth::id()) {
+                return response()->json([
+                    'error' => 'Você não tem permissão para alterar este workspace'
+                ], 403);
+            }
+            $validatedData = Validator::make($request->all(), Workspace::$rules)->validate();
+            $workspace = $workspace->update($validatedData);
 
-            $workspace->update($validated);
-
-            return redirect()->route('workspaces.index')->with('success', 'Workspace atualizado com sucesso!');
+            return redirect()->route('workspace.index', ['id' => $id])->with('success', 'Workspace atualizado com sucesso!');
         } catch (ValidationException $e) {
+            // return $e->errors();
             return redirect()->back()->withErrors($e->errors())->withInput();
         }
     }
@@ -116,14 +99,60 @@ class WorkspaceController extends Controller
     /**
      * Exclui um workspace.
      */
-    public function destroy(Workspace $workspace)
+    public function destroy(string $id)
     {
-        if ($workspace->user_id !== auth()->user()->id) {
-            abort(403);
+        try {
+            $workspace = Workspace::with(['topics.fields'])->findOrFail($id);
+
+            if($workspace->user_id !== Auth::id()) {
+                return response()->json([
+                    'error' => 'Você não tem permissão para excluir este workspace'
+                ], 403);
+            }
+
+            // CORREÇÃO: Contar os campos antes de deletar
+            $totalFields = 0;
+            foreach ($workspace->topics as $topic) {
+                $totalFields += $topic->fields->count();
+            }
+
+            // Primeiro: deletar todos os campos de todos os tópicos
+            // Usando whereHas para eficiência
+            Field::whereHas('topic', function($query) use ($id) {
+                $query->where('workspace_id', $id);
+            })->delete();
+
+            // Segundo: deletar todos os tópicos do workspace
+            Topic::where('workspace_id', $id)->delete();
+
+            // Terceiro: deletar o workspace
+            $workspace->delete();
+
+            return redirect(route('dashboard.home'))->with([
+                'success' => true,
+                'message' => 'Workspace excluído com sucesso',
+                'deleted_topics' => $workspace->topics->count(),
+                'deleted_fields' => $totalFields
+            ]);
+        } catch(ModelNotFoundException $e) {
+            return redirect()->back()->withErrors($e->errors())->withInput();
+        } catch(\Exception $e) {
+            return redirect()->back()->withErrors($e->errors())->withInput();
         }
+    }
 
-        $workspace->delete();
+    
+    public function stats(Workspace $workspace)
+    {
+        $this->authorize('view', $workspace);
 
-        return redirect()->route('workspaces.index')->with('success', 'Workspace excluído com sucesso!');
+        $stats = [
+            'topics_count' => $workspace->topics()->count(),
+            'fields_count' => $workspace->topics()->withCount('fields')->get()->sum('fields_count'),
+            'views_count' => $workspace->views_count,
+            'collaborators_count' => $workspace->collaborators()->count(),
+        ];
+
+        return response()->json($stats);
     }
 }

@@ -181,15 +181,18 @@ class ApiController extends Controller
                         'id' => $topic->id,
                         'title' => $topic->title,
                         'order' => $topic->order,
-                        'fields' => $topic->fields->map(function($field) {
-                            return [
-                                'id' => $field->id,
-                                'key_name' => $field->key_name,
-                                'value' => $field->value,
-                                'order' => $field->order,
-                                'created_at' => $field->created_at,
-                                'updated_at' => $field->updated_at
-                            ];
+                        // 'fields' => $topic->fields->map(function($field) {
+                        //     return [
+                        //         'id' => $field->id,
+                        //         'key_name' => $field->key_name,
+                        //         'value' => $field->value,
+                        //         'order' => $field->order,
+                        //         'created_at' => $field->created_at,
+                        //         'updated_at' => $field->updated_at
+                        //     ];
+                        // })
+                        'fields' => $topic->fields->mapWithKeys(function($field) {
+                            return [$field->key_name => $field->value];
                         })
                     ];
                 }),

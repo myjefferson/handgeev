@@ -2,12 +2,19 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use View;
+use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Gate;
 use App\Models\TypeWorkspace;
+use App\Models\Workspace;
 
 class AppServiceProvider extends ServiceProvider
 {
+
+    // protected $policies = [
+    //     Workspace::class => WorkspacePolicy::class,
+    // ];
+
     /**
      * Register any application services.
      */
@@ -21,6 +28,26 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->registerPolicies();
+
+        // Gates básicas baseadas no plano
+        Gate::define('export-data', function ($user) {
+            return $user->canExportData();
+        });
+
+        Gate::define('use-api', function ($user) {
+            return $user->canUseApi();
+        });
+
+        Gate::define('create-workspace', function ($user) {
+            return $user->canCreateWorkspace();
+        });
+
+        // Gate para admin apenas
+        Gate::define('view-admin', function ($user) {
+            return $user->isAdmin();
+        });
+        
         // Compartilhar dados com o template específico
         View::composer('template', function ($view) {
             $data = [

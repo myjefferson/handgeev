@@ -1,0 +1,99 @@
+:root {
+    --teal-primary: #08fff0;
+    --teal-secondary: rgba(8, 255, 240, 0.1);
+    --teal-hover: rgba(8, 255, 240, 0.2);
+    --sidebar-width: 255px;
+}
+
+body {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    min-height: 100vh;
+}
+
+.sidebar-gradient {
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    border-right: 1px solid rgba(8, 255, 240, 0.1);
+}
+
+.teal-glow {
+    box-shadow: 0 0 15px rgba(8, 255, 240, 0.3);
+}
+
+.teal-glow:hover {
+    box-shadow: 0 0 20px rgba(8, 255, 240, 0.5);
+}
+
+.nav-item {
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+}
+
+.nav-item:hover {
+    background: var(--teal-hover);
+    border-left-color: var(--teal-primary);
+}
+
+.nav-item.active {
+    background: var(--teal-secondary);
+    border-left-color: var(--teal-primary);
+}
+
+.workspace-item {
+    transition: all 0.3s ease;
+    border-radius: 8px;
+}
+
+.workspace-item:hover {
+    background: rgba(8, 255, 240, 0.05);
+    transform: translateX(5px);
+}
+
+.dropdown-option {
+    transition: all 0.2s ease;
+}
+
+.dropdown-option:hover {
+    background: var(--teal-secondary);
+    color: var(--teal-primary);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.main-content {
+    margin-left: var(--sidebar-width);
+    transition: margin-left 0.3s ease;
+    padding-top: 4rem; /* Espaço para a barra superior */
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0;
+    }
+}
+
+/* Top User Bar Styles */
+.user-menu {
+    background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+    border-bottom: 1px solid rgba(8, 255, 240, 0.1);
+    height: 4rem;
+}
+
+.user-avatar {
+    transition: all 0.3s ease;
+}
+
+.user-avatar:hover {
+    box-shadow: 0 0 0 3px rgba(8, 255, 240, 0.3);
+}
+
+.user-dropdown-option:hover {
+    background-color: rgba(8, 255, 240, 0.1);
+    color: #08fff0;
+}

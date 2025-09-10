@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\HashService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -58,8 +59,8 @@ class SettingController extends Controller
     {
         try {
             // Gera os novos hashes
-            $primaryHash = $this->generateHash();
-            $secondaryHash = $this->generateHash();
+            $primaryHash = HashService::generateUniqueHash();
+            $secondaryHash = HashService::generateUniqueHash();
 
             // Atualiza o usuário autenticado
             $user = User::findOrFail(Auth::user()->id);
@@ -95,11 +96,5 @@ class SettingController extends Controller
         //
     }
 
-    public function generateHash()
-    {
-        $randomString = Str::random(32);
-        $hash = hash('sha256', $randomString);
-        $cleanHash = preg_replace('/[^a-zA-Z0-9]/', '', $hash);
-        return substr($cleanHash, 0, 32);
-    }
+    
 }

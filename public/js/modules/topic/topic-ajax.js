@@ -30,13 +30,13 @@ export function updateTopic(topicId) {
     
     $.ajax({
         url: url,
-        method: 'DELETE',
+        method: 'POST',
         headers: { 'X-CSRF-TOKEN': csrfToken },
         success: function(response) {
             window.location.reload();
         },
         error: function(xhr) {
-            alert('Erro ao excluir tópico: ' + (xhr.responseJSON?.error || 'Erro desconhecido'));
+            alert('Erro ao atualizar tópico: ' + (xhr.responseJSON?.error || 'Erro desconhecido'));
         }
     });
 }

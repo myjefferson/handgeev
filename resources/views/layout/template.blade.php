@@ -4,13 +4,18 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
-        <title>Portfoline</title>
+        <title>Handgeev</title>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
+
+        <!-- Icons -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
         @vite('resources/css/app.css')
+        @vite('resources/views/layout/css/template.css')
+        
         @vite('resources/js/app.js')
 
         {{-- jQuery --}}
@@ -21,153 +26,261 @@
         {{-- Flowbite JS --}}
         <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js"></script>
     </head>
-    <body class="font-sans antialiased bg-slate-950 text-white">
-        {{-- @yield('login_content'); --}}
+    <body class="font-sans antialiased text-white">
 
-        <button data-drawer-target="cta-button-sidebar" data-drawer-toggle="cta-button-sidebar" aria-controls="cta-button-sidebar" type="button" class="inline-flex items-center p-2 mt-2 ms-3 text-sm text-gray-500 rounded-lg sm:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600">
-            <span class="sr-only">Open sidebar</span>
-            <svg class="w-6 h-6" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-            <path clip-rule="evenodd" fill-rule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"></path>
-            </svg>
+        @stack('style')
+
+        <!-- Top User Bar -->
+        <div class="user-menu fixed top-0 right-0 left-0 z-30 flex items-center justify-end px-4 md:px-6">
+            <div class="flex items-center space-x-4">
+                <!-- User profile dropdown -->
+                <div class="relative">
+                    <button id="userDropdownButton" data-dropdown-toggle="userDropdown" class="flex items-center space-x-2 pl-4 text-sm rounded-full focus:ring-2 focus:ring-teal-400">
+                        <span class="hidden md:block text-gray-300">{{ Auth::user()->name ?? 'Usuário' }}</span>
+                        <div class="user-avatar w-10 h-10 rounded-full bg-teal-400/10 flex items-center justify-center border border-teal-400/20">
+                            <i class="fas fa-user text-teal-400"></i>
+                        </div>
+                    </button>
+                    
+                    <!-- Dropdown menu -->
+                    <div id="userDropdown" class="z-40 hidden bg-slate-800 divide-y divide-slate-700 rounded-lg shadow w-44 border border-slate-700">
+                        <div class="px-4 py-3 text-sm text-gray-300">
+                            <div class="font-medium">{{ Auth::user()->name ?? 'Usuário' }}</div>
+                            <div class="truncate text-gray-400">{{ Auth::user()->email ?? 'email@exemplo.com' }}</div>
+                            @if (Auth::user()->current_plan_id === 1)
+                                <p class="bg-primary-600 w-max text-black text-sm rounded-md px-2 py-1 mt-2">
+                                    Conta Free
+                                </p>
+                            @elseif(Auth::user()->current_plan_id === 2)
+                                <div class="flex items-center bg-purple-600 w-max text-white text-sm rounded-md px-2 py-1 mt-2">                                    
+                                    <i class="fas fa-crown text-white w-3 h-3 mr-2 p-0"></i>
+                                    <p>Conta Pro</p>
+                                </div>
+                            @elseif(Auth::user()->current_plan_id === 3)
+                                <div class="flex items-center bg-slate-900 w-max text-white text-sm rounded-md px-2 py-1 mt-2">                                    
+                                    <p>Admin</p>
+                                </div>
+                            @endif
+                        </div>
+                        <ul class="py-2 text-sm text-gray-300">
+                            <li>
+                                <a href="{{ route('dashboard.settings') }}" class="user-dropdown-option block px-4 py-2">
+                                    <i class="fas fa-cog mr-2"></i> Settings
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('logout') }}" class="user-dropdown-option block px-4 py-2">
+                                    <i class="fas fa-sign-out-alt mr-2"></i> Exit
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile sidebar toggle -->
+        <button data-drawer-target="cta-button-sidebar" data-drawer-toggle="cta-button-sidebar" aria-controls="cta-button-sidebar" type="button" class="fixed top-5 left-4 z-50 inline-flex items-center p-2 mt-2 text-sm text-gray-400 rounded-lg md:hidden hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-600 teal-glow">
+            <span class="sr-only">Abrir menu</span>
+            <i class="fas fa-bars text-lg"></i>
         </button>
 
-        <aside id="cta-button-sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0" aria-label="Sidebar">
-            <div class="h-full px-3 py-4 overflow-y-auto bg-slate-800">
-                <div class="flex justify-center">
-                    <img class="mb-4 w-48" src="{{ asset('assets/images/logo.png') }}" alt="Portfoline">
+        <!-- Sidebar -->
+        <aside id="cta-button-sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0 sidebar-gradient" aria-label="Sidebar">
+            <div class="h-full px-5 py-6 overflow-y-auto">
+                <!-- Logo -->
+                <div class="flex justify-center mb-8">
+                    <img class="w-40" src="{{ asset('assets/images/logo.png') }}" alt="Handgeev">
                 </div>
-                <ul class="space-y-2 font-medium">
+                
+                <!-- Navigation -->
+                <ul class="space-y-1 font-medium">
                     <li>
-                        <button data-modal-target="modal-add-workspace" data-modal-toggle="modal-add-workspace" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                            <span class="ms-3">Add Workspace</span>
-                        </button>
+                        @if(auth()->user()->canCreateWorkspace())
+                            <button data-modal-target="modal-add-workspace" data-modal-toggle="modal-add-workspace" class="flex items-center w-full p-3 text-white rounded-lg teal-glow bg-teal-400/10 hover:bg-teal-400/20 transition-colors group mb-4">
+                                <div class="w-8 h-8 rounded-full bg-teal-400 flex items-center justify-center mr-3">
+                                    <i class="fas fa-plus text-slate-900"></i>
+                                </div>
+                                <span class="font-semibold">Add Workspace</span>
+                            </button>
+                        @else
+                            @include('components.buttons.button-upgrade-pro', ['subtitle' => 'Unlock unlimited workspaces'])
+                        @endif
                     </li>
                     <li>
-                        <a href="{{route('dashboard.home')}}" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                            <svg class="w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 22 21">
-                                <path d="M16.975 11H10V4.025a1 1 0 0 0-1.066-.998 8.5 8.5 0 1 0 9.039 9.039.999.999 0 0 0-1-1.066h.002Z"/>
-                                <path d="M12.5 0c-.157 0-.311.01-.565.027A1 1 0 0 0 11 1.02V10h8.975a1 1 0 0 0 1-.935c.013-.188.028-.374.028-.565A8.51 8.51 0 0 0 12.5 0Z"/>
-                            </svg>
-                            <span class="ms-3">Início</span>
+                        <a href="{{route('dashboard.home')}}" class="nav-item flex items-center p-3 text-gray-300 rounded-lg group {{ request()->routeIs('dashboard.home') ? 'active' : '' }}">
+                            <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
+                                <i class="fas fa-home text-teal-400"></i>
+                            </div>
+                            <span class="font-medium">Início</span>
                         </a>
                     </li>
-                    {{-- <li>
-                        <a href="{{route('dashboard.personal-data')}}" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                            <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 18">
-                            <path d="M6.143 0H1.857A1.857 1.857 0 0 0 0 1.857v4.286C0 7.169.831 8 1.857 8h4.286A1.857 1.857 0 0 0 8 6.143V1.857A1.857 1.857 0 0 0 6.143 0Zm10 0h-4.286A1.857 1.857 0 0 0 10 1.857v4.286C10 7.169 10.831 8 11.857 8h4.286A1.857 1.857 0 0 0 18 6.143V1.857A1.857 1.857 0 0 0 16.143 0Zm-10 10H1.857A1.857 1.857 0 0 0 0 11.857v4.286C0 17.169.831 18 1.857 18h4.286A1.857 1.857 0 0 0 8 16.143v-4.286A1.857 1.857 0 0 0 6.143 10Zm10 0h-4.286A1.857 1.857 0 0 0 10 11.857v4.286c0 1.026.831 1.857 1.857 1.857h4.286A1.857 1.857 0 0 0 18 16.143v-4.286A1.857 1.857 0 0 0 16.143 10Z"/>
-                            </svg>
-                            <span class="flex-1 ms-3 whitespace-nowrap">Informações Pessoais</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ route('dashboard.courses') }}" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                            <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="m17.418 3.623-.018-.008a6.713 6.713 0 0 0-2.4-.569V2h1a1 1 0 1 0 0-2h-2a1 1 0 0 0-1 1v2H9.89A6.977 6.977 0 0 1 12 8v5h-2V8A5 5 0 1 0 0 8v6a1 1 0 0 0 1 1h8v4a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-4h6a1 1 0 0 0 1-1V8a5 5 0 0 0-2.582-4.377ZM6 12H4a1 1 0 0 1 0-2h2a1 1 0 0 1 0 2Z"/>
-                            </svg>
-                            <span class="flex-1 ms-3 whitespace-nowrap">Acadêmico e Cursos</span>
-                        </a>
-                    </li> --}}
-                    {{-- <li>
-                        <a href="#" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                            <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 18">
-                            <path d="M14 2a3.963 3.963 0 0 0-1.4.267 6.439 6.439 0 0 1-1.331 6.638A4 4 0 1 0 14 2Zm1 9h-1.264A6.957 6.957 0 0 1 15 15v2a2.97 2.97 0 0 1-.184 1H19a1 1 0 0 0 1-1v-1a5.006 5.006 0 0 0-5-5ZM6.5 9a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9ZM8 10H5a5.006 5.006 0 0 0-5 5v2a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-2a5.006 5.006 0 0 0-5-5Z"/>
-                            </svg>
-                            <span class="flex-1 ms-3 whitespace-nowrap">Ferramentas</span>
-                        </a>
-                    </li> --}}
-                    {{-- <li>
-                        <a href="{{route('dashboard.projects')}}" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                            <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 20">
-                            <path d="M17 5.923A1 1 0 0 0 16 5h-3V4a4 4 0 1 0-8 0v1H2a1 1 0 0 0-1 .923L.086 17.846A2 2 0 0 0 2.08 20h13.84a2 2 0 0 0 1.994-2.153L17 5.923ZM7 9a1 1 0 0 1-2 0V7h2v2Zm0-5a2 2 0 1 1 4 0v1H7V4Zm6 5a1 1 0 1 1-2 0V7h2v2Z"/>
-                            </svg>
-                            <span class="flex-1 ms-3 whitespace-nowrap">Projetos pessoais</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ route('dashboard.experiences') }}" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                            <svg class="text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                                <path fill-rule="evenodd" d="M11 4.717c-2.286-.58-4.16-.756-7.045-.71A1.99 1.99 0 0 0 2 6v11c0 1.133.934 2.022 2.044 2.007 2.759-.038 4.5.16 6.956.791V4.717Zm2 15.081c2.456-.631 4.198-.829 6.956-.791A2.013 2.013 0 0 0 22 16.999V6a1.99 1.99 0 0 0-1.955-1.993c-2.885-.046-4.76.13-7.045.71v15.081Z" clip-rule="evenodd"/>
-                            </svg>
-                            <span class="flex-1 ms-3 whitespace-nowrap">Experiências profissionais</span>
-                        </a>
-                    </li> --}}
-                    @isset($workspaces)
-                        @foreach($workspaces as $workspace)
-                            <li class="relative">
-                                <div class="flex p-1 items-center justify-between w-full text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
-                                    <a href="{{ route('workspace.index', ['id' => $workspace->id]) }}" class="flex w-full items-center p-2 ">       
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M10.59 4.59C10.21 4.21 9.7 4 9.17 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8z"/></svg>
-                                        <span class="ms-3">{{ $workspace->title }}</span>
-                                    </a>
-                                    <div>
-                                        <button id="dropdownDefaultButton" data-dropdown-toggle="dropdown-workspace-{{$workspace->id }}" class="absolute right-2 top-2 text-white bg-slate-700 hover:bg-slate-600 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full p-2 mr-1" type="button">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><circle cx="8" cy="2.5" r=".75"/><circle cx="8" cy="8" r=".75"/><circle cx="8" cy="13.5" r=".75"/></g></svg>
-                                        </button>
 
-                                        <!-- Dropdown menu -->
-                                        <div id="dropdown-workspace-{{$workspace->id }}" class="absolute z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-28 dark:bg-gray-700">
-                                            <ul class="py-2 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="dropdownDefaultButton">
-                                                <li>
-                                                    <a href="#" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Rename</a>
-                                                </li>
-                                                <li>
-                                                    <a href="#" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Delete</a>
-                                                </li>
-                                            </ul>
+                    <!-- Apenas Admin -->
+                    @role('admin')
+                        <div class="border-t border-gray-700 mt-4 pt-4">
+                            <p class="px-4 text-xs text-gray-400 uppercase">Administração</p>
+                            <a href="{{ route('admin.users') }}" class="sidebar-item">
+                                <i class="fas fa-users"></i> Usuários
+                            </a>
+                            <a href="{{ route('admin.plans') }}" class="sidebar-item">
+                                <i class="fas fa-crown"></i> Planos
+                            </a>
+                        </div>
+                    @endrole
+                    
+                    <!-- Workspaces Section -->
+                    <li class="pt-4">
+                        <div class="flex items-center mb-2 px-3">
+                            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Meus Workspaces</span>
+                            <span class="ml-2 text-xs bg-teal-400/20 text-teal-400 px-2 py-0.5 rounded-full">{{ count($workspaces ?? []) }}</span>
+                        </div>
+                        
+                        @isset($workspaces)
+                            @foreach($workspaces as $workspace)
+                                <div class="workspace-item mb-1 animate-fade-in">
+                                    <div class="relative flex items-center justify-between w-full text-gray-300 rounded-lg group">
+                                        <a href="{{ route('workspace.index', ['id' => $workspace->id]) }}" class="flex w-full items-center p-3">       
+                                            <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
+                                                <i class="fas fa-folder text-teal-400"></i>
+                                            </div>
+                                            <span class="text-sm font-medium truncate">{{ $workspace->title }}</span>
+                                        </a>
+                                        <div>
+                                            <button id="optionsButton" data-dropdown-toggle="dropdown-workspace-{{$workspace->id }}" class="text-gray-400 hover:text-teal-400 focus:ring-2 focus:ring-teal-400 rounded-lg p-1 transition-colors" type="button">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+
+                                            <!-- Dropdown menu -->
+                                            <div id="dropdown-workspace-{{$workspace->id }}" class="z-10 hidden bg-slate-800 divide-y divide-slate-700 rounded-lg shadow-sm w-36 overflow-hidden border border-slate-700">
+                                                <ul class="py-1 text-sm text-gray-300">
+                                                    <li>
+                                                        <button class="edit-btn dropdown-option flex items-center w-full px-4 py-2"
+                                                            data-id="{{ $workspace->id }}"
+                                                            data-title="{{ $workspace->title }}"
+                                                            data-route="{{ route('workspace.update', ['id' => $workspace->id]) }}"
+                                                            data-type-id="{{ $workspace->type_workspace_id }}"
+                                                            data-is-published="{{ $workspace->is_published }}">
+                                                            <i class="fas fa-edit mr-2 text-xs"></i> Editar
+                                                        </button>
+                                                    </li>
+                                                    <li>
+                                                        <button type="button" 
+                                                            class="delete-btn dropdown-option flex items-center w-full px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                                                            data-id="{{ $workspace->id }}"
+                                                            data-title="{{ $workspace->title }}"
+                                                            data-route="{{ route('workspace.delete', ['id' => $workspace->id]) }}">
+                                                            <i class="fas fa-trash mr-2 text-xs"></i> Delete
+                                                        </button>
+                                                    </li>
+                                                </ul>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </li>
-                        @endforeach
-                    @endisset
-                    <li>
-                        <a href="{{ route('dashboard.settings') }}" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                            <svg class="text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M10.83 5a3.001 3.001 0 0 0-5.66 0H4a1 1 0 1 0 0 2h1.17a3.001 3.001 0 0 0 5.66 0H20a1 1 0 1 0 0-2h-9.17ZM4 11h9.17a3.001 3.001 0 0 1 5.66 0H20a1 1 0 1 1 0 2h-1.17a3.001 3.001 0 0 1-5.66 0H4a1 1 0 1 1 0-2Zm1.17 6H4a1 1 0 1 0 0 2h1.17a3.001 3.001 0 0 0 5.66 0H20a1 1 0 1 0 0-2h-9.17a3.001 3.001 0 0 0-5.66 0Z"/>
-                            </svg>
-                            <span class="flex-1 ms-3 whitespace-nowrap">Configurações</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ route('logout') }}" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                            <svg class="text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 18 16">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 8h11m0 0L8 4m4 4-4 4m4-11h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-3"/>
-                            </svg>
-                            <span class="flex-1 ms-3 whitespace-nowrap">Sair</span>
-                        </a>
+                            @endforeach
+                        @endisset
                     </li>
                 </ul>
-                {{-- <div id="dropdown-cta" class="p-4 mt-6 rounded-lg bg-blue-50 dark:bg-blue-900" role="alert">
-                    <div class="flex items-center mb-3">
-                        <span class="bg-orange-100 text-orange-800 text-sm font-semibold me-2 px-2.5 py-0.5 rounded dark:bg-orange-200 dark:text-orange-900">Beta</span>
-                        <button type="button" class="ms-auto -mx-1.5 -my-1.5 bg-blue-50 inline-flex justify-center items-center w-6 h-6 text-blue-900 rounded-lg focus:ring-2 focus:ring-blue-400 p-1 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-400 dark:hover:bg-blue-800" data-dismiss-target="#dropdown-cta" aria-label="Close">
-                            <span class="sr-only">Close</span>
-                            <svg class="w-2.5 h-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
-                            </svg>
+                
+                <!-- Beta Banner -->
+                <div id="dropdown-cta" class="p-4 mt-8 rounded-lg bg-teal-400/10 border border-teal-400/20" role="alert">
+                    <div class="flex items-center mb-2">
+                        <span class="bg-teal-400 text-slate-900 text-xs font-bold me-2 px-2.5 py-0.5 rounded">BETA</span>
+                        <button type="button" class="ms-auto -mx-1.5 -my-1.5 inline-flex justify-center items-center w-6 h-6 text-teal-400 rounded-lg focus:ring-2 focus:ring-teal-400 p-1 hover:bg-teal-400/20" data-dismiss-target="#dropdown-cta" aria-label="Close">
+                            <i class="fas fa-times text-xs"></i>
                         </button>
                     </div>
-                    <p class="mb-3 text-sm text-blue-800 dark:text-blue-400">
-                        Portfoline ainda está em versão de testes. --}}
-                    <div class="mt-5 flex space-x-3 bg-slate-700 text-slate-400 justify-center rounded-full">
-                        <p> {{ env('APP_VERSION') }} </p>
-                        <a href="{{route('dashboard.about')}}">Sobre</a>
+                    <p class="text-xs text-teal-300 mb-3">
+                        Handgeev ainda está em versão de testes.
+                    </p>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-gray-400">{{ env('APP_VERSION') }}</span>
+                        <a href="{{route('dashboard.about')}}" class="text-teal-400 hover:text-teal-300 transition-colors">Sobre</a>
                     </div>
-                    {{-- <a class="text-sm text-blue-800 underline font-medium hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300" href="#">Turn new navigation off</a> --}}
-                {{-- </div> --}}
+                </div>
             </div>
         </aside>
 
-        <div class="p-4 sm:ml-64">
-            <div class="bg-slate-800 p-3 rounded-xl">
+        {{-- <!-- Card de Estatísticas (apenas Pro/Admin) -->
+        @can('export-data')
+        <div class="bg-white p-6 rounded-lg shadow-sm">
+            <h3 class="font-semibold mb-4">Estatísticas</h3>
+            <div class="space-y-2">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Visualizações</span>
+                    <span class="font-medium">{{ $totalViews }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Tópicos</span>
+                    <span class="font-medium">{{ $topicsCount }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Campos</span>
+                    <span class="font-medium">{{ $fieldsCount }}</span>
+                </div>
+            </div>
+        </div>
+        @endcan --}}
+
+
+        <!-- Main content -->
+        <div class="main-content min-h-screen p-5">
+            <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 animate-fade-in mt-5">
                 @if (Auth::check())
                     @yield('content_dashboard')
+                @else
+                    <div class="flex items-center justify-center h-64">
+                        <div class="text-center">
+                            <i class="fas fa-exclamation-triangle text-yellow-400 text-4xl mb-4"></i>
+                            <p class="text-gray-400">Faça login para acessar o dashboard</p>
+                            <a href="{{ route('login.index') }}" class="inline-block mt-4 px-4 py-2 bg-teal-400 text-slate-900 rounded-lg font-medium hover:bg-teal-300 transition-colors">Fazer Login</a>
+                        </div>
+                    </div>
                 @endif
             </div>
         </div>
 
-        @include('components.modals.modal-add-workspace')
-
         @stack('scripts')
+
+        @include('components.modals.modal-add-workspace')
+        @include('components.modals.modal-input-text')
+        @include('components.modals.modal-confirm')
+        {{-- @include('components.modals.modal-edit-workspace') --}}
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Adicionar classe active baseado na URL atual
+                const currentPath = window.location.pathname;
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    const link = item.querySelector('a');
+                    if (link && link.getAttribute('href') === currentPath) {
+                        item.classList.add('active');
+                    }
+                });
+                
+                // Melhorar a experiência mobile
+                const sidebar = document.getElementById('cta-button-sidebar');
+                const sidebarToggle = document.querySelector('[data-drawer-toggle="cta-button-sidebar"]');
+                
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('-translate-x-full');
+                });
+                
+                // Fechar sidebar ao clicar fora (em mobile)
+                document.addEventListener('click', function(e) {
+                    if (window.innerWidth < 768 && !sidebar.contains(e.target) && e.target !== sidebarToggle && !sidebarToggle.contains(e.target)) {
+                        sidebar.classList.add('-translate-x-full');
+                    }
+                });
+                
+                // Animações suaves para os elementos
+                setTimeout(() => {
+                    document.querySelectorAll('.workspace-item').forEach((item, index) => {
+                        item.style.animationDelay = `${index * 0.1}s`;
+                    });
+                }, 100);
+            });
+        </script>
     </body>
 </html>
