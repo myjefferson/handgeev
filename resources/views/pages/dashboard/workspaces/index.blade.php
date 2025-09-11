@@ -4,20 +4,20 @@
     <div class="w-full p-4">
         <!-- Indicador de limite de campos -->
         @if(!$canAddMoreFields && $fieldsLimit > 0)
-        <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg dark:bg-yellow-900/20 dark:border-yellow-700">
-            <p class="text-sm text-yellow-800 dark:text-yellow-300">
-                ⚠️ Limite de campos atingido ({{ $currentFieldsCount }}/{{ $fieldsLimit }}). 
-                <a href="{{ route('landing.plans') }}" class="underline font-medium">Faça upgrade</a> 
-                para adicionar mais campos.
-            </p>
-        </div>
-        @elseif($fieldsLimit > 0)
-        <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg dark:bg-blue-900/20 dark:border-blue-700">
-            <p class="text-sm text-blue-800 dark:text-blue-300">
-                📊 Campos utilizados: {{ $currentFieldsCount }}/{{ $fieldsLimit }} 
-                ({{ $remainingFields }} restantes)
-            </p>
-        </div>
+            <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg dark:bg-yellow-900/20 dark:border-yellow-700">
+                <p class="text-sm text-yellow-800 dark:text-yellow-300">
+                    ⚠️ Limite de campos atingido ({{ $currentFieldsCount }}/{{ $fieldsLimit }}). 
+                    <a href="{{ route('landing.plans') }}" class="underline font-medium">Faça upgrade</a> 
+                    para adicionar mais campos.
+                </p>
+            </div>
+            @elseif($fieldsLimit > 0)
+            <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg dark:bg-blue-900/20 dark:border-blue-700">
+                <p class="text-sm text-blue-800 dark:text-blue-300">
+                    📊 Campos utilizados: {{ $currentFieldsCount }}/{{ $fieldsLimit }} 
+                    ({{ $remainingFields }} restantes)
+                </p>
+            </div>
         @endif
 
         <div class="block mb-8">

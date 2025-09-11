@@ -2,6 +2,8 @@
 
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\AuthTokenApi;
+use App\Http\Middleware\RoleMiddleware;
+use Spatie\Permission\Middlewares\PermissionMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -17,7 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // $middleware->redirectGuestsTo(fn (Request $request) => route('login.index'));
         $middleware->alias([
             'auth' => Authenticate::class,
-            'authTokenApi' => AuthTokenApi::class
+            'role' => RoleMiddleware::class,
+            'authTokenApi' => AuthTokenApi::class,
+            // 'permission' => PermissionMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

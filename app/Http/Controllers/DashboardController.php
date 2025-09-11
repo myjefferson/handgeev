@@ -11,6 +11,8 @@ class DashboardController extends Controller
      */
     public function index()
     {
+
+        // Consulta direta nas tabelas do permission
         return view('pages.dashboard.home.index');
     }
 

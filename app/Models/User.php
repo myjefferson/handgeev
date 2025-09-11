@@ -6,8 +6,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\QueryException;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use Spatie\Permission\Traits\HasRoles;
+use DB;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -15,7 +17,7 @@ class User extends Authenticatable implements JWTSubject
     use HasFactory, Notifiable, HasRoles;
 
     const ROLE_FREE = 'free';
-    const ROLE_PREMIUM = 'premium';
+    const ROLE_PRO = 'pro';
     const ROLE_ADMIN = 'admin';
 
     /**
@@ -29,13 +31,10 @@ class User extends Authenticatable implements JWTSubject
         'surname',
         'password',
         'avatar',
-        'email',
         'email_verified_at',
         'timezone',
         'language',
         'phone',
-        'current_plan_id',
-        'plan_expires_at',
         'status',
         'primary_hash_api',
         'secondary_hash_api'
@@ -60,8 +59,7 @@ class User extends Authenticatable implements JWTSubject
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'plan_expires_at' => 'datetime',
+            'password' => 'hashed'
         ];
     }
 
@@ -71,11 +69,6 @@ class User extends Authenticatable implements JWTSubject
     
     public function getJWTCustomClaims() {
         return [];
-    }
-    
-    // Métodos helper para verificar roles
-    public function plan(){
-        return $this->belongsTo(Plan::class, 'current_plan_id');
     }
     
     public function workspaces(){
@@ -88,29 +81,36 @@ class User extends Authenticatable implements JWTSubject
     }
 
     // Método seguro para obter o plano
-    protected function getSafePlan()
+    public function getPlan()
     {
-        // Se a relação plan já estiver carregada e não for nula
-        if ($this->relationLoaded('plan') && $this->plan) {
-            return $this->plan;
+        $roleName = $this->getRoleNames()->first();
+        
+        if (!$roleName) {
+            // Se não tem role, atribui free e retorna plano free
+            $this->assignRole(self::ROLE_FREE);
+            $roleName = self::ROLE_FREE;
         }
+        
+        return Plan::where('name', $roleName)->first();
+    }
 
-        // Se current_plan_id estiver definido, tente carregar o plano
-        if ($this->current_plan_id) {
-            $plan = Plan::find($this->current_plan_id);
-            if ($plan) {
-                return $plan;
-            }
-        }
-
-        // Fallback para plano free padrão
-        return (object) [
-            'name' => 'free',
-            'max_workspaces' => 1,
-            'max_topics' => 3,
-            'max_fields' => 10,
-            'can_export' => false,
-            'can_use_api' => false
+    public function planInfo()
+    {
+        $plan = $this->getPlan();
+        
+        return [
+            'plan' => $plan,
+            'role' => $this->getRoleNames()->first(),
+            'limits' => [
+                'max_workspaces' => $plan->max_workspaces,
+                'max_topics' => $plan->max_topics,
+                'max_fields' => $plan->max_fields,
+                'can_export' => $plan->can_export,
+                'can_use_api' => $plan->can_use_api,
+            ],
+            'is_admin' => $this->isAdmin(),
+            'is_pro' => $this->isPro(),
+            'is_free' => $this->isFree()
         ];
     }
 
@@ -119,9 +119,9 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasRole(self::ROLE_ADMIN);
     }
 
-    public function isPremium(): bool
+    public function isPro(): bool
     {
-        return $this->hasRole(self::ROLE_PREMIUM);
+        return $this->hasRole(self::ROLE_PRO);
     }
 
     public function isFree(): bool
@@ -129,43 +129,94 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasRole(self::ROLE_FREE);
     }
 
+    public function getAllUsers() : array {
+        try{
+            $allUsers = DB::table('users')
+            ->leftJoin('model_has_roles', function($join) {
+                $join->on(['model_has_roles.model_id' => 'users.id'])
+                    ->where('model_has_roles.model_type', 'App\Models\User');
+            })
+            ->leftJoin('roles', ['roles.id' => 'model_has_roles.role_id'])
+            ->leftJoin('plans', ['roles.name' => 'plans.name'])
+            ->select(
+                'users.id',
+                'users.email',
+                'users.name',
+                'users.surname',
+                'roles.name as plan_name',
+                'plans.max_workspaces',
+                'plans.max_topics',
+                'plans.max_fields',
+                'plans.can_export',
+                'plans.is_active',
+            )->get();
+            return $allUsers;
+        }catch(\QueryException $e){
+            dd($e->error());
+        }
+    }
+
+    public function getUserById($userId = null): object
+    {
+        try{
+            $user = DB::table('users')
+            ->leftJoin('model_has_roles', function($join) use ($userId) {
+                $join->on(['model_has_roles.model_id' => 'users.id'])
+                    ->where('model_has_roles.model_type', 'App\Models\User');
+            })
+            ->leftJoin('roles', ['roles.id' => 'model_has_roles.role_id'])
+            ->leftJoin('plans', ['roles.name' => 'plans.name'])
+            ->select(
+                'users.id',
+                'users.email',
+                'users.name',
+                'users.surname',
+                'roles.name as plan_name',
+                'plans.max_workspaces',
+                'plans.max_topics',
+                'plans.max_fields',
+                'plans.can_export',
+                'plans.is_active')
+            ->where(['users.id' => $userId])->first();
+            return $user;
+        }catch(\QueryException $e){
+            dd($e->error());
+        }
+    }
+    
     // Verificar limites do plano COM SEGURANÇA
     public function canCreateWorkspace(): bool
     {
         if ($this->isAdmin()) return true;
         
-        $plan = $this->getSafePlan();
-        $maxWorkspaces = $plan->max_workspaces;
+        $plan = $this->getPlan();
         $currentWorkspaces = $this->workspaces()->count();
         
-        return $maxWorkspaces === 0 || $currentWorkspaces < $maxWorkspaces;
+        return $plan->max_workspaces === 0 || $currentWorkspaces < $plan->max_workspaces;
     }
+
 
     // ========== NOVOS MÉTODOS PARA CONTROLE DE CAMPOS ==========
     
     public function canAddMoreFields($workspaceId = null): bool
     {
-        // Se for admin, não tem limites
-        if ($this->isAdmin()) {
-            return true;
-        }
+        if ($this->isAdmin()) return true;
         
-        $plan = $this->getSafePlan();
+        $plan = $this->getPlan();
+        $currentCount = $this->getCurrentFieldsCount($workspaceId);
         
-        // Se o plano tem campos ilimitados
-        if ($plan->max_fields === 0) {
-            return true;
-        }
-        
-        // Contar campos totais do usuário ou por workspace
-        $fieldsCount = $this->getCurrentFieldsCount($workspaceId);
-        
-        return $fieldsCount < $plan->max_fields;
+        return $plan->max_fields === 0 || $currentCount < $plan->max_fields;
     }
 
     public function getFieldsLimit(): int
     {
-        $plan = $this->getSafePlan();
+        $plan = $this->getPlan();
+        
+        // Planos pro retornam 0 (ilimitado)
+        if ($this->isPro() || $this->isAdmin()) {
+            return 0;
+        }
+        
         return $plan->max_fields;
     }
 
@@ -185,58 +236,27 @@ class User extends Authenticatable implements JWTSubject
         return $this->fields()->count();
     }
 
-    public function getRemainingFieldsCount($workspaceId = null): int
-    {
-        if ($this->isAdmin()) return PHP_INT_MAX;
-        
-        $plan = $this->getSafePlan();
-        
-        // Se for ilimitado
-        if ($plan->max_fields === 0) return PHP_INT_MAX;
-        
-        $currentCount = $this->getCurrentFieldsCount($workspaceId);
-        return max(0, $plan->max_fields - $currentCount);
-    }
+    
+
 
     // ========== FIM DOS NOVOS MÉTODOS ==========
 
     public function canExportData(): bool
     {
-        $plan = $this->getSafePlan();
+        $plan = $this->getPlan();
         return $plan->can_export || $this->isAdmin();
     }
 
     public function canUseApi(): bool
     {
-        $plan = $this->getSafePlan();
+        $plan = $this->getPlan();
         return $plan->can_use_api || $this->isAdmin();
-    }
-
-    // Verificar se a assinatura está ativa
-    public function hasActiveSubscription(): bool
-    {
-        if ($this->isFree() || $this->isAdmin()) {
-            return true;
-        }
-
-        return $this->plan_expires_at && $this->plan_expires_at->isFuture();
-    }
-
-    // Método para garantir que o usuário tenha um plano
-    public function ensurePlan()
-    {
-        if (!$this->current_plan_id) {
-            $freePlan = Plan::where('name', 'free')->first();
-            if ($freePlan) {
-                $this->update(['current_plan_id' => $freePlan->id]);
-            }
-        }
     }
 
     // Accessors para acesso seguro aos dados do plano
     public function getPlanLimitsAttribute()
     {
-        $plan = $this->getSafePlan();
+        $plan = $this->getPlan();
         
         return [
             'max_workspaces' => $plan->max_workspaces,
@@ -255,12 +275,19 @@ class User extends Authenticatable implements JWTSubject
     {
         if ($this->isAdmin()) return PHP_INT_MAX;
         
-        $plan = $this->getSafePlan();
-        $maxWorkspaces = $plan->max_workspaces;
-        
-        if ($maxWorkspaces === 0) return PHP_INT_MAX;
-        
+        $plan = $this->getPlan();
         $currentWorkspaces = $this->workspaces()->count();
-        return max(0, $maxWorkspaces - $currentWorkspaces);
+        
+        return max(0, $plan->max_workspaces - $currentWorkspaces);
+    }
+
+    public function getRemainingFieldsCount($workspaceId = null): int
+    {
+        if ($this->isAdmin()) return PHP_INT_MAX;
+        
+        $plan = $this->getPlan();
+        $currentCount = $this->getCurrentFieldsCount($workspaceId);
+        
+        return max(0, $plan->max_fields - $currentCount);
     }
 }

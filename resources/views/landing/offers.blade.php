@@ -207,7 +207,7 @@
                     </li>
                     <li class="flex items-center">
                         <i class="fas fa-check-circle text-teal-400 mr-2"></i>
-                        <span>Suporte premium</span>
+                        <span>Suporte pro</span>
                     </li>
                 </ul>
                 
@@ -216,11 +216,11 @@
                 </button>
             </div>
             
-            <!-- Plano Premium -->
+            <!-- Plano Pro -->
             <div class="plan-card rounded-2xl p-6 flex flex-col">
                 <div class="mb-6">
-                    <span class="teal-badge text-xs font-semibold px-3 py-1 rounded-full">PREMIUM</span>
-                    <h3 class="text-2xl font-bold mt-4">Premium</h3>
+                    <span class="teal-badge text-xs font-semibold px-3 py-1 rounded-full">PRO</span>
+                    <h3 class="text-2xl font-bold mt-4">Pro</h3>
                     <div class="mt-2">
                         <span class="text-3xl font-bold">Sob Consulta</span>
                     </div>
@@ -279,7 +279,7 @@
                             <th class="pb-4 text-left">Recurso</th>
                             <th class="pb-4 text-center">Free</th>
                             <th class="pb-4 text-center">Pro</th>
-                            <th class="pb-4 text-center">Premium</th>
+                            <th class="pb-4 text-center">Pro</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -351,7 +351,7 @@
                 </div>
                 <div>
                     <h3 class="text-lg font-semibold mb-2">Quais métodos de pagamento são aceitos?</h3>
-                    <p class="text-gray-400">Aceitamos cartão de crédito, débito, PIX e boleto bancário. Para o plano Premium, também aceitamos transferência bancária.</p>
+                    <p class="text-gray-400">Aceitamos cartão de crédito, débito, PIX e boleto bancário. Para o plano Pro, também aceitamos transferência bancária.</p>
                 </div>
                 <div>
                     <h3 class="text-lg font-semibold mb-2">Há garantia de reembolso?</h3>

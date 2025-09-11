@@ -47,20 +47,26 @@
                         <div class="px-4 py-3 text-sm text-gray-300">
                             <div class="font-medium">{{ Auth::user()->name ?? 'Usuário' }}</div>
                             <div class="truncate text-gray-400">{{ Auth::user()->email ?? 'email@exemplo.com' }}</div>
-                            @if (Auth::user()->current_plan_id === 1)
-                                <p class="bg-primary-600 w-max text-black text-sm rounded-md px-2 py-1 mt-2">
-                                    Conta Free
-                                </p>
-                            @elseif(Auth::user()->current_plan_id === 2)
-                                <div class="flex items-center bg-purple-600 w-max text-white text-sm rounded-md px-2 py-1 mt-2">                                    
-                                    <i class="fas fa-crown text-white w-3 h-3 mr-2 p-0"></i>
-                                    <p>Conta Pro</p>
-                                </div>
-                            @elseif(Auth::user()->current_plan_id === 3)
-                                <div class="flex items-center bg-slate-900 w-max text-white text-sm rounded-md px-2 py-1 mt-2">                                    
-                                    <p>Admin</p>
-                                </div>
-                            @endif
+                            @auth
+                                @free
+                                    <p class="bg-primary-600 w-max text-black text-sm rounded-md px-2 py-1 mt-2">
+                                        Conta Free
+                                    </p>
+                                @endfree
+
+                                @pro
+                                    <div class="flex items-center bg-purple-600 w-max text-white text-sm rounded-md px-2 py-1 mt-2">                                    
+                                        <i class="fas fa-crown text-white w-3 h-3 mr-2 p-0"></i>
+                                        <p>Conta Pro</p>
+                                    </div>
+                                @endpro
+                                
+                                @admin
+                                    <div class="flex items-center bg-slate-900 w-max text-white text-sm rounded-md px-2 py-1 mt-2">                                    
+                                        <p>Admin</p>
+                                    </div>
+                                @endadmin
+                            @endauth
                         </div>
                         <ul class="py-2 text-sm text-gray-300">
                             <li>
@@ -80,7 +86,7 @@
         </div>
 
         <!-- Mobile sidebar toggle -->
-        <button data-drawer-target="cta-button-sidebar" data-drawer-toggle="cta-button-sidebar" aria-controls="cta-button-sidebar" type="button" class="fixed top-5 left-4 z-50 inline-flex items-center p-2 mt-2 text-sm text-gray-400 rounded-lg md:hidden hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-600 teal-glow">
+        <button data-drawer-target="cta-button-sidebar" data-drawer-toggle="cta-button-sidebar" aria-controls="cta-button-sidebar" type="button" class="fixed top-2 left-4 z-50 inline-flex items-center py-1 px-2 mt-2 text-sm text-gray-400 rounded-lg md:hidden hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-600 teal-glow">
             <span class="sr-only">Abrir menu</span>
             <i class="fas fa-bars text-lg"></i>
         </button>
@@ -117,17 +123,7 @@
                     </li>
 
                     <!-- Apenas Admin -->
-                    @role('admin')
-                        <div class="border-t border-gray-700 mt-4 pt-4">
-                            <p class="px-4 text-xs text-gray-400 uppercase">Administração</p>
-                            <a href="{{ route('admin.users') }}" class="sidebar-item">
-                                <i class="fas fa-users"></i> Usuários
-                            </a>
-                            <a href="{{ route('admin.plans') }}" class="sidebar-item">
-                                <i class="fas fa-crown"></i> Planos
-                            </a>
-                        </div>
-                    @endrole
+                    
                     
                     <!-- Workspaces Section -->
                     <li class="pt-4">
@@ -135,46 +131,35 @@
                             <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Meus Workspaces</span>
                             <span class="ml-2 text-xs bg-teal-400/20 text-teal-400 px-2 py-0.5 rounded-full">{{ count($workspaces ?? []) }}</span>
                         </div>
+
+                        
+                        @admin
+                            <div class="border-t border-gray-700 mt-4 pt-4">
+                                <p class="px-4 text-xs text-gray-400 uppercase">Administração</p>
+                                <a href="{{ route('admin.users') }}" class="sidebar-item">
+                                    <i class="fas fa-users"></i> Usuários
+                                </a>
+                                <a href="{{ route('admin.plans') }}" class="sidebar-item">
+                                    <i class="fas fa-crown"></i> Planos
+                                </a>
+                            </div>
+                        @endadmin
                         
                         @isset($workspaces)
                             @foreach($workspaces as $workspace)
-                                <div class="workspace-item mb-1 animate-fade-in">
-                                    <div class="relative flex items-center justify-between w-full text-gray-300 rounded-lg group">
+                                <div class="workspace-item mb-1 animate-fade-in ">
+                                    <div class="flex items-center justify-between w-full text-gray-300 rounded-lg group">
                                         <a href="{{ route('workspace.index', ['id' => $workspace->id]) }}" class="flex w-full items-center p-3">       
                                             <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
                                                 <i class="fas fa-folder text-teal-400"></i>
                                             </div>
                                             <span class="text-sm font-medium truncate">{{ $workspace->title }}</span>
                                         </a>
-                                        <div>
-                                            <button id="optionsButton" data-dropdown-toggle="dropdown-workspace-{{$workspace->id }}" class="text-gray-400 hover:text-teal-400 focus:ring-2 focus:ring-teal-400 rounded-lg p-1 transition-colors" type="button">
+                                        <div class="">
+                                            <button id="optionsButton" data-dropdown-toggle="dropdown-workspace-{{$workspace->id }}" class="text-gray-400 hover:text-teal-400 focus:ring-2 focus:ring-teal-400 rounded-full h-7 w-7 mr-3 transition-colors" type="button">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
-
-                                            <!-- Dropdown menu -->
-                                            <div id="dropdown-workspace-{{$workspace->id }}" class="z-10 hidden bg-slate-800 divide-y divide-slate-700 rounded-lg shadow-sm w-36 overflow-hidden border border-slate-700">
-                                                <ul class="py-1 text-sm text-gray-300">
-                                                    <li>
-                                                        <button class="edit-btn dropdown-option flex items-center w-full px-4 py-2"
-                                                            data-id="{{ $workspace->id }}"
-                                                            data-title="{{ $workspace->title }}"
-                                                            data-route="{{ route('workspace.update', ['id' => $workspace->id]) }}"
-                                                            data-type-id="{{ $workspace->type_workspace_id }}"
-                                                            data-is-published="{{ $workspace->is_published }}">
-                                                            <i class="fas fa-edit mr-2 text-xs"></i> Editar
-                                                        </button>
-                                                    </li>
-                                                    <li>
-                                                        <button type="button" 
-                                                            class="delete-btn dropdown-option flex items-center w-full px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                                                            data-id="{{ $workspace->id }}"
-                                                            data-title="{{ $workspace->title }}"
-                                                            data-route="{{ route('workspace.delete', ['id' => $workspace->id]) }}">
-                                                            <i class="fas fa-trash mr-2 text-xs"></i> Delete
-                                                        </button>
-                                                    </li>
-                                                </ul>
-                                            </div>
+                                            @include('components.dropdown.dropdown-options-workspace', ['workspace' => $workspace])
                                         </div>
                                     </div>
                                 </div>

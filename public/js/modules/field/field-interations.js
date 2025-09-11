@@ -1,5 +1,10 @@
 let hasUnsavedChanges = false;
 
+// Função para verificar se o plano é ilimitado
+export function isUnlimitedPlan() {
+    return typeof window.fieldsLimit !== 'undefined' && window.fieldsLimit === 0;
+}
+
 // Função para atualizar o indicador de autosave
 export function updateSaveIndicator(saving, saved) {
     const savingIcon = $('#savingIcon');
@@ -24,8 +29,14 @@ export function updateSaveIndicator(saving, saved) {
     }
 }
 
-// Função para verificar se pode adicionar mais campos
+// Função para verificar se pode adicionar mais campos (ATUALIZADA)
 export function canAddMoreFields() {
+    // Se for plano ilimitado, sempre pode adicionar
+    if (isUnlimitedPlan()) {
+        return true;
+    }
+    
+    // Para planos limitados, verificar o contador
     return typeof window.canAddMoreFields !== 'undefined' ? window.canAddMoreFields : true;
 }
 
@@ -34,7 +45,7 @@ export function showLimitAlert() {
     alert('Você atingiu o limite de campos do seu plano. Faça upgrade para adicionar mais campos.');
 }
 
-// Função para atualizar a UI dos botões de adicionar campo
+// Função para atualizar a UI dos botões de adicionar campo (ATUALIZADA)
 export function updateAddFieldButtons() {
     const topicContents = document.querySelectorAll('.topic-content');
     
@@ -55,13 +66,20 @@ export function updateAddFieldButtons() {
     });
 }
 
-// Função para atualizar contador de campos
+// Função para atualizar contador de campos (ATUALIZADA)
 export function updateFieldsCounter(change = 1) {
     if (typeof window.currentFieldsCount !== 'undefined' && 
         typeof window.fieldsLimit !== 'undefined') {
         
         window.currentFieldsCount += change;
-        window.canAddMoreFields = window.currentFieldsCount < window.fieldsLimit;
+        
+        // Para planos ilimitados, sempre pode adicionar mais campos
+        if (isUnlimitedPlan()) {
+            window.canAddMoreFields = true;
+        } else {
+            // Para planos limitados, verificar se ainda pode adicionar
+            window.canAddMoreFields = window.currentFieldsCount < window.fieldsLimit;
+        }
         
         // Atualizar a UI dos botões
         updateAddFieldButtons();
@@ -71,11 +89,17 @@ export function updateFieldsCounter(change = 1) {
     }
 }
 
-// Função para atualizar mensagens de limite
+// Função para atualizar mensagens de limite (ATUALIZADA)
 function updateLimitMessages() {
     const limitMessages = document.querySelectorAll('.fields-limit-message');
     
     limitMessages.forEach(message => {
+        // Esconder mensagem se for plano ilimitado
+        if (isUnlimitedPlan()) {
+            message.parentElement.style.display = 'none';
+            return;
+        }
+        
         if (!window.canAddMoreFields && window.fieldsLimit > 0) {
             message.innerHTML = `
                 ⚠️ Limite de campos atingido (${window.currentFieldsCount}/${window.fieldsLimit}). 
@@ -90,13 +114,12 @@ function updateLimitMessages() {
             `;
             message.parentElement.style.display = 'block';
         } else {
-            // Se for ilimitado, esconder a mensagem
             message.parentElement.style.display = 'none';
         }
     });
 }
 
-// Função para adicionar novo campo
+// Função para adicionar novo campo (JÁ CORRETA)
 export function addNewField(topicId) {
     if (!canAddMoreFields()) {
         showLimitAlert();
@@ -140,13 +163,20 @@ export function addNewField(topicId) {
     return trigger.prev();
 }
 
-// Função para remover campo (atualiza contador)
+// Função para remover campo (atualiza contador) - JÁ CORRETA
 export function removeFieldCounter() {
     if (typeof window.currentFieldsCount !== 'undefined' && 
         typeof window.fieldsLimit !== 'undefined') {
         
         window.currentFieldsCount = Math.max(0, window.currentFieldsCount - 1);
-        window.canAddMoreFields = window.currentFieldsCount < window.fieldsLimit;
+        
+        // Para planos ilimitados, sempre pode adicionar mais campos
+        if (isUnlimitedPlan()) {
+            window.canAddMoreFields = true;
+        } else {
+            // Para planos limitados, verificar se ainda pode adicionar
+            window.canAddMoreFields = window.currentFieldsCount < window.fieldsLimit;
+        }
         
         // Atualizar a UI dos botões
         updateAddFieldButtons();
@@ -160,7 +190,7 @@ export function removeFieldCounter() {
 export function showSaveFeedback(row) {
     row.addClass('bg-green-50 dark:bg-green-900/20');
     setTimeout(() => {
-        row.removeClass('bg-green-50 dark:bg-green-900/20');
+        row.removeClass('bg-green极速赛车开奖直播-50 dark:bg-green-900/20');
     }, 1000);
 }
 
@@ -176,6 +206,11 @@ $(document).ready(function() {
     if (typeof window.canAddMoreFields !== 'undefined' && 
         typeof window.fieldsLimit !== 'undefined' && 
         typeof window.currentFieldsCount !== 'undefined') {
+        
+        // Para planos ilimitados, forçar canAddMoreFields = true
+        if (window.fieldsLimit === 0) {
+            window.canAddMoreFields = true;
+        }
         
         updateAddFieldButtons();
         updateLimitMessages();

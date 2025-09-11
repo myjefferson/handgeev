@@ -24,7 +24,7 @@
                         <span class="account-badge px-3 py-1 rounded-full text-sm font-medium">
                             @if(auth()->user()->account_type == 'admin')
                                 <i class="fas fa-crown mr-1"></i> Administrador
-                            @elseif(auth()->user()->account_type == 'premium')
+                            @elseif(auth()->user()->account_type == 'pro')
                                 <i class="fas fa-star mr-1"></i> Pro
                             @else
                                 <i class="fas fa-user mr-1"></i> Gratuita

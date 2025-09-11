@@ -21,7 +21,7 @@ class PlanSeeder extends Seeder
                 'is_active' => true
             ],
             [
-                'name' => 'premium',
+                'name' => 'pro',
                 'price' => 29.00,
                 'max_workspaces' => 5,
                 'max_topics' => 0, // 0 = ilimitado

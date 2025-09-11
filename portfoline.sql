@@ -14,8 +14,8 @@ CREATE TABLE users (
     password TEXT NOT NULL,
     phone VARCHAR(20),
     primary_hash_api text,
-    secondary_hash_api text,
-    current_plan_id TINYINT UNSIGNED DEFAULT 1,
+    secondary_hash_api TEXT,
+--    current_plan_id TINYINT UNSIGNED DEFAULT 1,
     plan_expires_at TIMESTAMP NULL,
 	 status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -97,19 +97,61 @@ CREATE TABLE plans (
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+);
+ALTER TABLE plans CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- Inserir planos básicos
 INSERT INTO plans (name, price, max_workspaces, max_topics, max_fields, can_export, can_use_api) VALUES
 ('free', 0.00, 3, 3, 10, FALSE, FALSE),
-('premium', 29.00, 5, 0, 0, TRUE, TRUE),
+('pro', 29.00, 5, 0, 0, TRUE, TRUE),
 ('admin', 0.00, 0, 0, 0, TRUE, TRUE);
 
 SELECT * FROM plans;
+SELECT * FROM users;
+CREATE TABLE roles (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    guard_name VARCHAR(255) NOT NULL DEFAULT 'web',
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL
+);
+SELECT * FROM roles;
 
+
+CREATE TABLE model_has_roles (
+    role_id BIGINT UNSIGNED NOT NULL,
+    model_type VARCHAR(255) NOT NULL,
+    model_id BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (role_id, model_id, model_type),
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+);
+SELECT * FROM model_has_roles;
+
+SELECT * FROM model_has_permissions;
+SELECT * FROM role_has_permissions;
+SELECT * FROM permissions;
 
 -- DROPS
 DROP TABLE fields;
 DROP TABLE topics;
 DROP TABLE workspaces;
 DROP TABLE type_workspaces;
+
+
+-- Verificar usuários e seus perfis
+SELECT 
+	mhr.model_id,
+    u.id as user_id,
+    u.email,
+    u.name,
+    r.name as role_name
+FROM users u
+LEFT JOIN model_has_roles mhr ON mhr.model_id = u.id AND mhr.model_type = 'App\Models\User'
+LEFT JOIN roles r ON r.id = mhr.role_id;
+
+
+
+-- Verificar quais roles cada usuário tem
+
+
+SELECT * FROM roles WHERE name = 'admin';

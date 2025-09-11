@@ -31,8 +31,7 @@ Route::controller(UserController::class)->group(function(){
 });
 
 
-Route::middleware(['auth:sanctum'])->group(function(){
-
+Route::middleware(['auth:web'])->group(function(){
     Route::controller(WorkspaceController::class)->group(function(){
         Route::get('/workspace/{id}', 'index')->name('workspace.index');
         Route::post('/workspace/store', 'store')->name('workspace.store');
@@ -66,12 +65,17 @@ Route::middleware(['auth:sanctum'])->group(function(){
     });
 
     // Rotas de Administração
-    Route::middleware(['role:admin'])->name('admin.')->prefix('admin')->group(function () {
+    Route::middleware(['role:admin'])->group(function () {
         Route::controller(AdminController::class)->group(function () {
             Route::get('/administration/users', 'users')->name('admin.users');
             Route::get('/administration/plans', 'plans')->name('admin.plans');
         });
     });
+
+    // Rotas para usuários pro (se necessário)
+    // Route::middleware(['role:pro'])->group(function () {
+    //     // Rotas específicas para plano pro
+    // });
 });
 
 
@@ -80,15 +84,14 @@ Route::post('/api/auth/refresh', [ApiController::class, 'refresh'])
 ->withoutMiddleware(ValidateCsrfToken::class)
 ->middleware('jwt.refresh');
 
-Route::controller(ApiController::class)
-    ->withoutMiddleware(ValidateCsrfToken::class)
-    ->group(function(){
-        Route::post('/api/token/auth', 'getTokenByHashes')->name('api.token-auth');
-});
-Route::middleware(['authTokenApi'])->group(function(){
-    Route::controller(ApiController::class)
-        ->withoutMiddleware(ValidateCsrfToken::class)
-        ->group(function(){
-        Route::get('/api/{id}/workspace', 'getWorkspaceData')->name('api.workspace');
+
+Route::middleware(['auth:api'])->group(function(){
+    Route::controller(ApiController::class)->group(function(){
+            Route::post('/api/token/auth', 'getTokenByHashes')->name('api.token-auth');
+    });
+    Route::middleware(['authTokenApi'])->group(function(){
+        Route::controller(ApiController::class)->group(function(){
+            Route::get('/api/{id}/workspace', 'getWorkspaceData')->name('api.workspace');
+        });
     });
 });

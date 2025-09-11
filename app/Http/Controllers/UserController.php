@@ -14,10 +14,6 @@ class UserController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct()
-    {
-        $this->middleware('auth:sanctum')->except(['store']);
-    }
     /**
      * Display a listing of the resource.
      */
@@ -51,13 +47,6 @@ class UserController extends Controller
             // 'language' => 'nullable|string|max:10',
             // 'phone' => 'nullable|string|max:20',
         ]);
-
-        // Obter o plano free padrão
-        $freePlan = Plan::where('name', 'free')->first();
-        
-        if (!$freePlan) {
-            throw new \Exception('Plano free não configurado no sistema');
-        }
         
         // Criar o usuário com todos os campos necessários
         $user = User::create([
@@ -71,8 +60,6 @@ class UserController extends Controller
             'language' => $validated['language'] ?? 'pt_BR',
             // 'phone' => $validated['phone'] ?? null,
             'phone' => null,
-            'current_plan_id' => $freePlan->id,
-            'plan_expires_at' => null,
             'status' => 'active',
             'email_verified_at' => now(), // Ou null se precisar verificação por email
         ]);
@@ -83,7 +70,7 @@ class UserController extends Controller
         //     $user->assignRole($freeRole);
         // }
 
-        $user->assignRole('free');
+        $user->assignRole(User::ROLE_FREE);
 
         // Gerar hashes API se necessário
         $user->update([
@@ -146,8 +133,8 @@ class UserController extends Controller
             'active_users' => User::whereHas('status', function($query) {
                 $query->where('name', 'active');
             })->count(),
-            'premium_users' => User::whereHas('plan', function($query) {
-                $query->where('name', 'premium');
+            'pro_users' => User::whereHas('plan', function($query) {
+                $query->where('name', 'pro');
             })->count(),
             'admin_users' => User::whereHas('plan', function($query) {
                 $query->where('name', 'admin');
@@ -203,5 +190,27 @@ class UserController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    // UpgradeController.php
+    public function upgradeToPro(User $user)
+    {
+        // Apenas muda a role!
+        $user->syncRoles([User::ROLE_PRO]);
+        
+        // Envia email de confirmação, etc...
+    }
+
+    // AdminController.php  
+    public function changeUserPlan(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'plan' => 'required|in:free,pro'
+        ]);
+
+        // Apenas muda a role!
+        $user->syncRoles([$validated['plan']]);
+        
+        return back()->with('success', 'Plano atualizado!');
     }
 }

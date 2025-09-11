@@ -48,7 +48,7 @@ class RolePermissionSeeder extends Seeder
                     'workspace.edit',
                     'workspace.delete'
                 ],
-                'premium' => [
+                'pro' => [
                     'workspace.create',
                     'workspace.view',
                     'workspace.edit',

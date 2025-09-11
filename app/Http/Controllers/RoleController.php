@@ -52,7 +52,7 @@ class RoleController extends Controller
     public function destroy(Role $role)
     {
         // Não permitir deletar roles do sistema
-        if (in_array($role->name, ['admin', 'free', 'premium'])) {
+        if (in_array($role->name, ['admin', 'free', 'pro'])) {
             return redirect()->back()->with('error', 'Não é possível deletar roles do sistema!');
         }
 
