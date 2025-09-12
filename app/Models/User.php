@@ -129,28 +129,27 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasRole(self::ROLE_FREE);
     }
 
-    public function getAllUsers() : array {
+    public function getAllUsers() {
         try{
-            $allUsers = DB::table('users')
-            ->leftJoin('model_has_roles', function($join) {
-                $join->on(['model_has_roles.model_id' => 'users.id'])
-                    ->where('model_has_roles.model_type', 'App\Models\User');
-            })
-            ->leftJoin('roles', ['roles.id' => 'model_has_roles.role_id'])
-            ->leftJoin('plans', ['roles.name' => 'plans.name'])
-            ->select(
+            return User::select(
                 'users.id',
                 'users.email',
                 'users.name',
                 'users.surname',
+                'users.status',
                 'roles.name as plan_name',
                 'plans.max_workspaces',
                 'plans.max_topics',
                 'plans.max_fields',
                 'plans.can_export',
-                'plans.is_active',
-            )->get();
-            return $allUsers;
+                'plans.can_use_api',
+                'plans.is_active'
+            )
+            ->leftJoin('model_has_roles', ['model_has_roles.model_id' => 'users.id'])
+            ->leftJoin('roles', ['roles.id' => 'model_has_roles.role_id'])
+            ->leftJoin('plans', ['plans.name' => 'roles.name'])
+            ->where('model_has_roles.model_type', User::class)
+            ->get();
         }catch(\QueryException $e){
             dd($e->error());
         }

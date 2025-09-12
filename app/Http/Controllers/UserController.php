@@ -81,7 +81,7 @@ class UserController extends Controller
         // Logar o usuário
         Auth::login($user);
 
-        return redirect()->route('dashboard.personal-data.edit')
+        return redirect()->route('dashboard.home')
             ->with(['success' => 'Conta criada com sucesso!']);
         try {
 
