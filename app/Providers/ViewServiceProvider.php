@@ -16,7 +16,7 @@ class ViewServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // VIEW COMPOSERS
-        View::composer('template', function ($view) {
+        View::composer('dashboard', function ($view) {
             $data = [
                 'workspaces' => auth()->check() ? auth()->user()->workspaces : [],
                 'typeWorkspaces' => TypeWorkspace::all(),
