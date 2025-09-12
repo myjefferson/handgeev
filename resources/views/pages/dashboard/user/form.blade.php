@@ -1,4 +1,4 @@
-@extends('layout.template')
+@extends('template.dashboard')
 
 @php
     $marital_status = [

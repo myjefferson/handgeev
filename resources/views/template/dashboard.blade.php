@@ -14,7 +14,7 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
         @vite('resources/css/app.css')
-        @vite('resources/views/layout/css/template.css')
+        @vite('resources/views/template/css/dashboard.css')
         
         @vite('resources/js/app.js')
 
@@ -127,27 +127,35 @@
                     
                     <!-- Workspaces Section -->
                     <li class="pt-4">
+                        @admin
+                            <div class="border-t border-gray-700 pb-4">
+                                <div class="flex items-center mb-2 px-3 pt-4">
+                                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Administração</p>
+                                </div>
+                                <div class="items-center justify-between w-full text-gray-300 rounded-lg group">
+                                    <a href="{{ route('admin.users') }}" class="button-item flex w-full items-center p-3">
+                                        <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
+                                            <i class="fas fa-users"></i> 
+                                        </div>
+                                        <span class="text-sm font-medium truncate">Usuários</span>
+                                    </a>
+                                    <a href="{{ route('admin.plans') }}" class="button-item flex w-full items-center p-3">
+                                        <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
+                                            <i class="fas fa-crown"></i> 
+                                        </div>
+                                        <span class="text-sm font-medium truncate">Planos</span>
+                                    </a>
+                                </div>
+                            </div>
+                        @endadmin
+
                         <div class="flex items-center mb-2 px-3">
                             <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Meus Workspaces</span>
                             <span class="ml-2 text-xs bg-teal-400/20 text-teal-400 px-2 py-0.5 rounded-full">{{ count($workspaces ?? []) }}</span>
-                        </div>
-
-                        
-                        @admin
-                            <div class="border-t border-gray-700 mt-4 pt-4">
-                                <p class="px-4 text-xs text-gray-400 uppercase">Administração</p>
-                                <a href="{{ route('admin.users') }}" class="sidebar-item">
-                                    <i class="fas fa-users"></i> Usuários
-                                </a>
-                                <a href="{{ route('admin.plans') }}" class="sidebar-item">
-                                    <i class="fas fa-crown"></i> Planos
-                                </a>
-                            </div>
-                        @endadmin
-                        
+                        </div>                        
                         @isset($workspaces)
                             @foreach($workspaces as $workspace)
-                                <div class="workspace-item mb-1 animate-fade-in ">
+                                <div class="button-item mb-1 animate-fade-in ">
                                     <div class="flex items-center justify-between w-full text-gray-300 rounded-lg group">
                                         <a href="{{ route('workspace.index', ['id' => $workspace->id]) }}" class="flex w-full items-center p-3">       
                                             <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
@@ -155,7 +163,7 @@
                                             </div>
                                             <span class="text-sm font-medium truncate">{{ $workspace->title }}</span>
                                         </a>
-                                        <div class="">
+                                        <div>
                                             <button id="optionsButton" data-dropdown-toggle="dropdown-workspace-{{$workspace->id }}" class="text-gray-400 hover:text-teal-400 focus:ring-2 focus:ring-teal-400 rounded-full h-7 w-7 mr-3 transition-colors" type="button">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>

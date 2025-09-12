@@ -1,4 +1,4 @@
-@extends('layout.template')
+@extends('template.dashboard')
 
 @section('content_dashboard')
     <div>
@@ -6,7 +6,7 @@
             'title' => 'Informações pessoais',
             'options' => [[
                 'title' => 'Editar',
-                'route' => route('dashboard.personal-data.edit')
+                'route' => route('dashboard.home')
                 ]],
             'buttonViewJson' => [
                 'active' => true,
@@ -17,7 +17,7 @@
         <hr class="h-px my-6 bg-gray-600 border-0"/>
 
 
-        <session>
+        <div>
             <div class="text-xl font-medium">Pessoal</div>
             <div class="grid grid-cols-2 mt-4 space-y-4">
                 <div>
@@ -52,8 +52,8 @@
                 </div>
             </div>
             <hr class="h-px my-6 bg-gray-600 border-0"/>
-        </session>
-        <session>
+        </div>
+        <div>
             <div class="text-xl font-medium">Endereço</div>
             <div class="grid grid-cols-2 mt-4 space-y-4">
                 <div>
@@ -82,8 +82,8 @@
                 </div>
             </div>
             <hr class="h-px my-6 bg-gray-600 border-0"/>
-        </session>
-        <session>
+        </div>
+        <div>
             <div class="text-xl font-medium">Contato</div>
 
             <div class="grid grid-cols-2 mt-4 space-y-4">
@@ -100,6 +100,6 @@
                     <p class="font-medium">{{ $user->social ? $user->social : 'Não informado' }}</p>
                 </div>
             </div>
-        </session>
+        </div>
     </div>
 @endsection

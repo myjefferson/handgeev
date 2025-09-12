@@ -22,6 +22,8 @@ Route::controller(LoginController::class)->group(function(){
     Route::get('/login', 'index')->name('login.index');
     Route::post('/login/auth', 'auth')->name('login.auth');
     Route::get('/logout', 'logout')->name('logout');
+    Route::get('/account/inactive', function (){ return view('pages.auth.inactive-account'); })->name('account.inactive');
+    Route::get('/account/suspended', function (){ return view('pages.auth.suspended-account'); })->name('account.suspended');
 });
 
 Route::get('/register', function (){ return view('pages.auth.register'); } )->name('register.index');
@@ -67,8 +69,10 @@ Route::middleware(['auth:web'])->group(function(){
     // Rotas de Administração
     Route::middleware(['role:admin'])->group(function () {
         Route::controller(AdminController::class)->group(function () {
-            Route::get('/administration/users', 'users')->name('admin.users');
-            Route::get('/administration/plans', 'plans')->name('admin.plans');
+            Route::get('/admin/users', 'users')->name('admin.users');
+            Route::put('/admin/users/{id}/update', 'updateUser')->name('admin.users.update');
+            Route::post('/admin/users/{id}/delete', 'deleteUser')->name('admin.users.delete');
+            Route::put('/admin/plans', 'plans')->name('admin.plans');
         });
     });
 
@@ -85,13 +89,9 @@ Route::post('/api/auth/refresh', [ApiController::class, 'refresh'])
 ->middleware('jwt.refresh');
 
 
-Route::middleware(['auth:api'])->group(function(){
+Route::middleware(['authTokenApi'])->group(function(){
     Route::controller(ApiController::class)->group(function(){
             Route::post('/api/token/auth', 'getTokenByHashes')->name('api.token-auth');
-    });
-    Route::middleware(['authTokenApi'])->group(function(){
-        Route::controller(ApiController::class)->group(function(){
             Route::get('/api/{id}/workspace', 'getWorkspaceData')->name('api.workspace');
-        });
     });
 });

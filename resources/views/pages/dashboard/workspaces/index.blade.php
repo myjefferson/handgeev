@@ -1,4 +1,4 @@
-@extends('layout.template')
+@extends('template.dashboard')
 
 @section('content_dashboard')
     <div class="w-full p-4">

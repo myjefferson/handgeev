@@ -1,4 +1,4 @@
-@extends('layout.template')
+@extends('template.dashboard')
 
 @section('content_dashboard')
     <div class="max-w-4xl mx-auto">
@@ -49,7 +49,7 @@
                         Códigos API
                     </h2>
                     <span class="bg-teal-400/10 text-teal-400 text-xs px-3 py-1 rounded-full">
-                        {{ auth()->user()->plan->name }}
+                        {{ auth()->user()->getPlan()->name }}
                     </span>
                 </div>
                 
