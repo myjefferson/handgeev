@@ -28,10 +28,20 @@ class LoginController extends Controller
         if(!$user){
             return redirect()->route('login.index')->withErrors(['error' => 'Email ou senha inválidos']);
         }
-
+        //check password
         if(!Hash::check($request->password, $user->password)){
             return redirect()->route('login.index')->withErrors(['error' => 'Email ou senha inválidos']);
         }
+
+        //redirect account inactive
+        if($user->status === 'inactive'){
+            return redirect()->route('account.inactive');
+        }
+        //redirect account inactive
+        if($user->status === 'suspended'){
+            return redirect()->route('account.suspended');
+        }
+
         $user->primary_hash_api;
         $user->secondary_hash_api;
         Auth::login($user);
