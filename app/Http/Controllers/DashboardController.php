@@ -17,14 +17,6 @@ class DashboardController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function personalData()
-    {
-        return view('pages.user.personal.data');
-    }
-
-    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)

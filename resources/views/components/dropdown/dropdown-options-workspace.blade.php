@@ -7,7 +7,8 @@
                 data-title="{{ $workspace->title }}"
                 data-route="{{ route('workspace.update', ['id' => $workspace->id]) }}"
                 data-type-id="{{ $workspace->type_workspace_id }}"
-                data-is-published="{{ $workspace->is_published }}">
+                data-is-published="{{ $workspace->is_published }}"
+                >
                 <i class="fas fa-edit mr-2 text-xs"></i> Editar
             </button>
         </li>

@@ -63,9 +63,6 @@ class AdminController extends Controller
     public function deleteUser($id)
     {
         try {
-
-
-
             $user = User::findOrFail($id);
             
             // Não permitir que o usuário se delete

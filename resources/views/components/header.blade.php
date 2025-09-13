@@ -1,7 +1,7 @@
 
 
 <div class="flex justify-between items-center">
-    <h3 class="text-2xl font-medium">{{ $title }}</h3>
+    <h3 class="title-header text-2xl font-semibold">{{ $title }}</h3>
     <div class="flex gap-3 items-center">
         @if (isset($options))
             @foreach ($options as $option)

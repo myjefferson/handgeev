@@ -121,35 +121,42 @@ function updateLimitMessages() {
 
 // Função para adicionar novo campo (JÁ CORRETA)
 export function addNewField(topicId) {
+    const topic_id = $(this).data('topic-id') || window.currentTopicId;
+
     if (!canAddMoreFields()) {
         showLimitAlert();
         return null;
     }
     
+    if (!window.canAddMoreFields) {
+        alert('Limite de campos atingido. Faça upgrade para adicionar mais campos.');
+        return;
+    }
+    
     const newRow = `
-        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 new-field" data-id="" data-topic-id="${topicId}">
+        <tr class="border-b border-slate-700 hover:bg-slate-750 transition-colors duration-200" 
+            data-topic-id="${topicId}">
             <td class="px-6 py-4">
-                <div class="flex items-center">
-                    <input type="checkbox" checked class="visibility-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                <label class="inline-flex items-center cursor-pointer">
+                    <input type="checkbox" class="visibility-checkbox sr-only peer" checked>
+                    <div class="relative w-11 h-6 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-500"></div>                    
+                </label>
+            </td>
+            <td class="px-6 py-4">
+                <input type="text" name="key_name" class="key-input w-full px-2 py-1 text-gray-900 bg-white border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500" placeholder="Nome da chave">
+            </td>
+            <td class="px-6 py-4">
+                <input type="text" name="key_value" class="value-input w-full px-2 py-1 text-gray-900 bg-white border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500" placeholder="Valor">
+            </td>
+            <td class="px-6 py-4">
+                <div class="flex space-x-2">
+                    <button type="button" class="save-row p-2 text-teal-400 hover:text-teal-300 rounded-lg transition-colors duration-200" title="Salvar">
+                        <i class="fas fa-save"></i>
+                    </button>
+                    <button type="button" class="remove-row p-2 text-red-400 hover:text-red-300 rounded-lg transition-colors duration-200" title="Remover">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
-            </td>
-            <td class="px-6 py-4">
-                <input type="text" class="key-input w-full px-2 py-1 text-gray-900 bg-white border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500" placeholder="Nome da chave">
-            </td>
-            <td class="px-6 py-4">
-                <input type="text" class="value-input w-full px-2 py-1 text-gray-900 bg-white border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500" placeholder="Valor">
-            </td>
-            <td class="px-6 py-4 flex space-x-2">
-                <button type="button" class="save-row text-green-600 hover:text-green-800 dark:hover:text-green-400" title="Salvar">
-                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                </button>
-                <button type="button" class="remove-row text-red-600 hover:text-red-800 dark:hover:text-red-400" title="Remover">
-                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                    </svg>
-                </button>
             </td>
         </tr>
     `;

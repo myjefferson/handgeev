@@ -1,4 +1,4 @@
-@extends('template.dashboard')
+@extends('template.template-dashboard')
 
 @section('content_dashboard')
     <style>
@@ -45,6 +45,7 @@
                     </div>
                     <input type="text" id="searchInput" placeholder="Pesquisar usuários por nome, email..." 
                            class="pl-10 pr-4 py-3 w-full bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 search-box">
+                    
                 </div>
                 
                 <div class="flex gap-3">
@@ -138,8 +139,7 @@
                                         data-email="{{ $user->email }}"
                                         data-role="{{ $user->plan_name }}"
                                         data-status="{{ $user->is_active ? 'active' : 'inactive' }}"
-                                        type="button"
-                                        >
+                                        type="button">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <button class="text-red-400 hover:text-red-300 delete-user" data-id="{{ $user->id }}">
@@ -287,34 +287,28 @@
                         this.innerHTML = '<i class="fas fa-spinner animate-spin"></i>';
                         this.disabled = true;
 
-                        fetch(url.replace(':id', userId), {
-                            method: 'DELETE',
+                        $.ajax({
+                            url: url.replace(':id', userId),
+                            type: 'DELETE',
                             headers: {
                                 'X-CSRF-TOKEN': csrfToken,
                                 'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            success: function(data) {
+                                console.log('Exclusão bem-sucedida:', data);
+                                alert('Usuário excluído com sucesso!');
+                                // Remover a linha da tabela sem recarregar a página
+                                const row = this.closest('tr');
+                                row.remove();
+                            },
+                            error: function(xhr, status, error) {
+                                console.error('Erro na exclusão:', error);
+                                alert('Ocorreu um erro ao excluir o usuário.');
+                            },
+                            done: function() {
+                                this.innerHTML = '<i class="fas fa-trash"></i>';
+                                this.disabled = false;
                             }
-                        })
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Falha na requisição de exclusão.');
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            console.log('Exclusão bem-sucedida:', data);
-                            alert('Usuário excluído com sucesso!');
-                            // Remover a linha da tabela sem recarregar a página
-                            const row = this.closest('tr');
-                            row.remove();
-                        })
-                        .catch(error => {
-                            console.error('Erro na exclusão:', error);
-                            alert('Ocorreu um erro ao excluir o usuário.');
-                        })
-                        .finally(() => {
-                            // Restaurar o botão em caso de falha para que o usuário possa tentar novamente
-                            this.innerHTML = '<i class="fas fa-trash"></i>';
-                            this.disabled = false;
                         });
                     }
                 });

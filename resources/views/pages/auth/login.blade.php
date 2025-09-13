@@ -1,4 +1,4 @@
-@extends('template.site')
+@extends('template.template-site')
 
 @section('content_site')
     <style>

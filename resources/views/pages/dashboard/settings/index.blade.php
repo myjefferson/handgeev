@@ -1,4 +1,4 @@
-@extends('template.dashboard')
+@extends('template.template-dashboard')
 
 @section('content_dashboard')
     <div class="max-w-4xl mx-auto">
@@ -8,37 +8,6 @@
         ])
         
         <div class="mt-8 space-y-8">
-            <!-- Seção de Segurança -->
-            <section class="bg-slate-800 rounded-xl p-6 border border-slate-700">
-                <h2 class="text-xl font-semibold text-white mb-6 flex items-center">
-                    <svg class="w-5 h-5 mr-2 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                    </svg>
-                    Segurança
-                </h2>
-                
-                <div class="grid md:grid-cols-1 gap-6">
-                    <div class="bg-slate-900 rounded-lg p-4 border border-slate-700">
-                        <h3 class="font-medium text-white mb-2">Senha</h3>
-                        <p class="text-sm text-slate-400 mb-4">Atualize sua senha regularmente para manter a conta segura</p>
-                        <button class="bg-teal-500 hover:bg-teal-600 text-slate-900 font-medium py-2 px-4 rounded-lg transition-colors flex items-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 极速赛车开奖直播0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-                            </svg>
-                            Alterar senha
-                        </button>
-                    </div>
-                    
-                    {{-- <div class="bg-slate-900 rounded-lg p-4 border border-slate-700">
-                        <h3 class="font-medium text-white mb-2">Autenticação</h3>
-                        <p class="text-sm text-slate-400 mb-4">Proteja sua conta com autenticação de dois fatores</p>
-                        <button class="bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 px-4 rounded-lg transition-colors">
-                            Configurar 2FA
-                        </button>
-                    </div> --}}
-                </div>
-            </section>
-
             <!-- Seção de API -->
             <section class="bg-slate-800 rounded-xl p-6 border border-slate-700">
                 <div class="flex items-center justify-between mb-6">
@@ -94,7 +63,7 @@
                     <div class="bg-gradient-to-r from-teal-400/10 to-blue-400/10 rounded-lg p-5 border border-teal-400/20">
                         <h3 class="font-medium text-white mb-2">Gerar Novos Códigos</h3>
                         <p class="text-sm text-slate-400 mb-4">Ao gerar novos códigos, os antigos serão invalidados</p>
-                        <button id="generateCodeButton" class="bg-teal-500 hover:bg-teal-600 text-slate-900 font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center">
+                        <button id="generateCodeButton" class="bg-teal-400 hover:bg-teal-600 text-slate-900 font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center">
                             <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M4 20v-2h2.75l-.4-.35q-1.225-1.225-1.787-2.662T4 12.05q0-2.775 1.663-4.937T10 4.25v2.1Q8.2 7 7.1 8.563T6 12.05q0 1.125.425 2.188T7.75 16.2l.25.25V14h2v6zm10-.25v-2.1q1.8-.65 2.9-2.212T18 11.95q0-1.125-.425-2.187T16.25 7.8L16 7.55V10h-2V4h6v2h-2.75l.4.35q1.225 1.225 1.788 2.663T20 11.95q0 2.775-1.662 4.938T14 19.75"/>
                             </svg>

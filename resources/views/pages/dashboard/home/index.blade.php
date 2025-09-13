@@ -1,7 +1,7 @@
-@extends('template.dashboard')
+@extends('template.template-dashboard')
 
 @section('content_dashboard')
-    <div class="min-h-screen p-6">
+    <div class="max-w-7xl mx-auto min-h-screen p-6">
         <!-- Header com Saudação Personalizada -->
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-white mb-2">
@@ -14,9 +14,9 @@
         </div>
 
         <!-- Cards de Estatísticas -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <!-- Card Workspaces -->
-            <div class="bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-teal-400 hover:shadow-xl transition-shadow duration-300 teal-glow-hover">
+            <div class="bg-slate-800 rounded-2xl shadow-lg p-6 border-l border-teal-400 hover:border">
                 <div class="flex items-center justify-between mb-4">
                     <div class="p-3 bg-teal-400/10 rounded-full">
                         <i class="fas fa-layer-group text-teal-400 text-xl"></i>
@@ -28,7 +28,7 @@
             </div>
 
             <!-- Card Tópicos -->
-            <div class="bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-teal-400 hover:shadow-xl transition-shadow duration-300 teal-glow-hover">
+            <div class="bg-slate-800 rounded-2xl shadow-lg p-6 border-l border-teal-400 hover:border">
                 <div class="flex items-center justify-between mb-4">
                     <div class="p-3 bg-teal-400/10 rounded-full">
                         <i class="fas fa-folder text-teal-400 text-xl"></i>
@@ -40,7 +40,7 @@
     </div>
 
             <!-- Card Campos -->
-            <div class="bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-teal-400 hover:shadow-xl transition-shadow duration-300 teal-glow-hover">
+            <div class="bg-slate-800 rounded-2xl shadow-lg p-6 border-l border-teal-400 hover:border">
                 <div class="flex items-center justify-between mb-4">
                     <div class="p-3 bg-teal-400/10 rounded-full">
                         <i class="fas fa-table text-teal-400 text-xl"></i>
@@ -49,18 +49,6 @@
                 </div>
                 <h3 class="text-2xl font-bold text-white mb-2">156 Campos</h3>
                 <p class="text-sm text-gray-400">Dados cadastrados</p>
-            </div>
-
-            <!-- Card Plano -->
-            <div class="bg-slate-800 rounded-2xl shadow-lg p-6 border-l-4 border-teal-400 hover:shadow-xl transition-shadow duration-300 teal-glow-hover">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="p-3 bg-teal-400/10 rounded-full">
-                        <i class="fas fa-crown text-teal-400 text-xl"></i>
-                    </div>
-                    <span class="text-sm text-gray-400">Plano</span>
-                </div>
-                <h3 class="text-2xl font-bold text-white mb-2">PRO</h3>
-                <p class="text-sm text-gray-400">Ilimitado</p>
             </div>
         </div>
 

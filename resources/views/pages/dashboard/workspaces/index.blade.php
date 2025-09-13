@@ -1,28 +1,84 @@
-@extends('template.dashboard')
+@extends('template.template-dashboard')
 
 @section('content_dashboard')
-    <div class="w-full p-4">
-        <!-- Indicador de limite de campos -->
+<div class="flex min-h-screen bg-slate-900">
+    <!-- Sidebar de Tópicos -->
+    <div class="w-64 bg-slate-800 border-r border-slate-700 overflow-y-auto">
+        <div class="p-4">
+            <!-- Cabeçalho do Workspace -->
+            <div class="mb-6">
+                <h1 class="text-xl font-bold text-white truncate">{{ $workspace->title }}</h1>
+                <p class="text-sm text-gray-400 mt-1">{{ count($workspace->topics) }} tópicos</p>
+            </div>
+
+            <!-- Botão Adicionar Tópico -->
+            @if($workspace->type_workspace_id == 2)
+            <button id="addTopicBtn" class="w-full mb-6 px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-900 font-medium rounded-xl transition-colors duration-300 teal-glow-hover">
+                <i class="fas fa-plus mr-2"></i> Novo Tópico
+            </button>
+            @endif
+
+            <!-- Lista de Tópicos -->
+            <div class="space-y-1">
+                @foreach($workspace->topics as $index => $topic)
+                <div class="topic-item group relative" data-topic-id="{{ $topic->id }}">
+                    <button class="w-full text-left p-3 rounded-xl transition-colors duration-200 flex items-center justify-between
+                        {{ $index === 0 ? 'bg-teal-400/20 text-teal-400 border border-teal-400/30' : 'text-gray-400 hover:text-teal-300 hover:bg-slate-750' }}">
+                        <div class="flex items-center truncate">
+                            <i class="fas fa-folder mr-3 text-sm"></i>
+                            <span class="truncate topic-title">{{ $topic->title }}</span>
+                        </div>
+                        <span class="text-xs bg-slate-700 px-2 py-1 rounded-full group-hover:bg-slate-600 text-teal-300">
+                            {{ count($topic->fields) }}
+                        </span>
+                    </button>
+                    
+                    <!-- Botão Excluir Tópico -->
+                    @if(count($workspace->topics) > 1)
+                    <button class="delete-topic-btn absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-400 hover:text-red-300"
+                            data-topic-id="{{ $topic->id }}" title="Excluir tópico">
+                        <i class="fas fa-trash text-xs"></i>
+                    </button>
+                    @endif
+                </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+
+    <!-- Área Principal de Conteúdo -->
+    <div class="flex-1 overflow-y-auto p-6">
+        <!-- Indicadores de Limite -->
         @if(!$canAddMoreFields && $fieldsLimit > 0)
-            <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg dark:bg-yellow-900/20 dark:border-yellow-700">
-                <p class="text-sm text-yellow-800 dark:text-yellow-300">
-                    ⚠️ Limite de campos atingido ({{ $currentFieldsCount }}/{{ $fieldsLimit }}). 
-                    <a href="{{ route('landing.plans') }}" class="underline font-medium">Faça upgrade</a> 
-                    para adicionar mais campos.
-                </p>
+            <div class="mb-6 p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle text-orange-400 mr-3"></i>
+                    <div>
+                        <p class="text-orange-300 text-sm">
+                            ⚠️ Limite de campos atingido ({{ $currentFieldsCount }}/{{ $fieldsLimit }}). 
+                            <a href="{{ route('landing.plans') }}" class="underline font-medium text-white">Faça upgrade</a> 
+                            para adicionar mais campos.
+                        </p>
+                    </div>
+                </div>
             </div>
             @elseif($fieldsLimit > 0)
-            <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg dark:bg-blue-900/20 dark:border-blue-700">
-                <p class="text-sm text-blue-800 dark:text-blue-300">
-                    📊 Campos utilizados: {{ $currentFieldsCount }}/{{ $fieldsLimit }} 
-                    ({{ $remainingFields }} restantes)
-                </p>
+            <div class="mb-6 p-4 bg-teal-400/10 border border-teal-400/20 rounded-xl">
+                <div class="flex items-center">
+                    <i class="fas fa-chart-pie text-teal-400 mr-3"></i>
+                    <div>
+                        <p class="text-teal-300 text-sm">
+                            📊 Campos utilizados: {{ $currentFieldsCount }}/{{ $fieldsLimit }} 
+                            ({{ $remainingFields }} restantes)
+                        </p>
+                    </div>
+                </div>
             </div>
         @endif
 
         <div class="block mb-8">
             @include('components.header' ,[
-                'title' => $workspace->title,
+                'title' => 'Workspace',
                 'options' => null,
                 'buttonViewJson' => [
                     'active' => true,
@@ -30,130 +86,91 @@
                 ]
             ])
             
-            <!-- Indicador de AutoSave -->
-            <div id="autoSaveIndicator" class="flex items-center mt-4 text-sm text-gray-500 dark:text-gray-400">
-                <svg id="savingIcon" class="w-4 h-4 mr-2 hidden animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 极速赛车开奖直播12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <svg id="savedIcon" class="w-4 h-4 mr-2 text-green-500 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <span id="saveStatusText">Todas as alterações salvas</span>
-            </div>
+            
         </div>
 
-        <!-- Botão para adicionar tópico (apenas se for workspace de múltiplos tópicos) -->
-        @if($workspace->type_workspace_id == 2)
-        <div class="mb-4">
-            <button id="addTopicBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                + Adicionar Tópico
-            </button>
-        </div>
-        @endif
-
-        <!-- Tabs de navegação entre tópicos (apenas se houver mais de um tópico) -->
-        @if (count($workspace->topics) > 1)
-            <div class="mb-4 border-b border-gray-200 dark:border-gray-700">
-                <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="topicTabs">
-                    @foreach($workspace->topics as $index => $topic)
-                    <li class="me-2">
-                        <button class="topic-tab inline-block p-4 border-b-2 rounded-t-lg {{ $index === 0 ? 'border-blue-600 text-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300' }}"
-                                data-topic-id="{{ $topic->id }}">
-                            {{ $topic->title }}
-                        </button>
-                    </li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-        
         <!-- Conteúdo dos tópicos -->
         @foreach($workspace->topics as $index => $topic)
         <div class="topic-content mb-6 {{ $index === 0 ? '' : 'hidden' }}" data-topic-id="{{ $topic->id }}">
             <!-- Cabeçalho do tópico -->
             @if (count($workspace->topics) > 1)
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ $topic->title }}</h3>
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-semibold text-white">{{ $topic->title }}</h3>
                     @if(count($workspace->topics) > 1)
-                    <button class="delete-topic-btn text-red-600 hover:text-red-800" data-topic-id="{{ $topic->id }}">
-                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                        </svg>
+                    <button class="delete-topic-btn p-2 text-red-400 hover:text-red-300 rounded-lg transition-colors duration-200" data-topic-id="{{ $topic->id }}">
+                        <i class="fas fa-trash"></i>
                     </button>
                     @endif
                 </div>
             @endif
 
             <!-- Tabela de fields do tópico -->
-            <div class="relative overflow-x-auto">
-                <table class="key-value-table w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            <div class="relative overflow-x-auto bg-slate-800 rounded-2xl border border-slate-700">
+                <table class="key-value-table w-full text-sm text-left text-gray-400">
+                    <thead class="text-xs uppercase bg-slate-700/50">
                         <tr>
-                            <th scope="col" class="px-6 py-3">Visibility</th>
-                            <th scope="col" class="px-6 py-3">Key</th>
-                            <th scope="col" class="px-6 py-3">Value</th>
-                            <th scope="col" class="px-6 py-3">Actions</th>
+                            <th scope="col" class="px-6 py-4 font-medium">Visibilidade</th>
+                            <th scope="col" class="px-6 py-4 font-medium">Chave</th>
+                            <th scope="col" class="px-6 py-4 font-medium">Valor</th>
+                            <th scope="col" class="px-6 py-4 font-medium">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($topic->fields as $field)
-                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200" 
+                            <tr class="border-b border-slate-700 hover:bg-slate-750 transition-colors duration-200" 
                                 data-id="{{ $field->id }}" data-topic-id="{{ $topic->id }}">
                                 <td class="px-6 py-4">
-                                    <div class="flex items-center">
-                                        <input type="checkbox" class="visibility-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" 
+                                    <label class="inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" class="visibility-checkbox sr-only peer" 
                                             {{ $field->is_visible ? 'checked' : '' }}>
+                                        <div class="relative w-11 h-6 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-500"></div>
+                                    </label>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <input type="text" name="key_name" value="{{ $field->key_name }}" 
+                                        class="key-input w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-colors" placeholder="Nome da chave">
+                                </td>
+                                <td class="px-6 py-4">
+                                    <input type="text" name="key_value" value="{{ $field->value }}" 
+                                        class="value-input w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-colors" placeholder="Valor">
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex space-x-2">
+                                        <button type="button" class="save-row p-2 text-teal-400 hover:text-teal-300 rounded-lg transition-colors duration-200" title="Salvar">
+                                            <i class="fas fa-save"></i>
+                                        </button>
+                                        <button type="button" class="remove-row p-2 text-red-400 hover:text-red-300 rounded-lg transition-colors duration-200" title="Remover">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                     </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <input type="text" name="key_name" value="{{ $field->key_name }}" class="key-input w-full px-2 py-1 text-gray-900 bg-white border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
-                                </td>
-                                <td class="px-6 py-4">
-                                    <input type="text" name="key_value" value="{{ $field->value }}" class="value-input w-full px-2 py-1 text-gray-900 bg-white border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500">
-                                </td>
-                                <td class="px-6 py-4 flex space-x-2">
-                                    <button type="button" class="save-row text-green-600 hover:text-green-800 dark:hover:text-green-400" title="Salvar">
-                                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                        </svg>
-                                    </button>
-                                    <button type="button" class="remove-row text-red-600 hover:text-red-800 dark:hover:text-red-400" title="Remover">
-                                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                        </svg>
-                                    </button>
                                 </td>
                             </tr>
                         @empty
-                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200">
-                                <td colspan="4" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                                    Nenhum campo cadastrado neste tópico
+                            <tr>
+                                <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+                                    <i class="fas fa-inbox text-2xl mb-2"></i>
+                                    <p>Nenhum campo cadastrado neste tópico</p>
                                 </td>
                             </tr>
                         @endforelse
 
                         <!-- Linha para adicionar novo campo -->
                         @if($canAddMoreFields)
-                            <tr class="add-field-trigger bg-gray-100 dark:bg-gray-900 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-800" data-topic-id="{{ $topic->id }}">
-                                <td colspan="4" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                            <tr class="add-field-trigger bg-slate-750 cursor-pointer hover:bg-slate-700 transition-colors duration-200" data-topic-id="{{ $topic->id }}">
+                                <td colspan="4" class="px-6 py-4 text-center text-teal-400">
                                     <div class="flex items-center justify-center">
-                                        <svg class="w-4 h-4 mr-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                        </svg>
+                                        <i class="fas fa-plus-circle mr-2"></i>
                                         Clique para adicionar novo campo
                                     </div>
                                 </td>
                             </tr>
                             @else
-                            <tr class="limit-reached-row bg-gray-100 dark:bg-gray-900">
-                                <td colspan="4" class="px-6 py-4 text-center text-yellow-600 dark:text-yellow-400">
+                            <tr class="limit-reached-row bg-slate-750">
+                                <td colspan="4" class="px-6 py-4 text-center text-orange-400">
                                     <div class="flex items-center justify-center">
-                                        <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                                        </svg>
+                                        <i class="fas fa-exclamation-circle mr-2"></i>
                                         Limite de campos atingido. 
-                                        <a href="{{ route('landing.plans') }}" class="underline ml-1">Faça upgrade</a>
+                                        <a href="{{ route('landing.plans') }}" class="underline ml-1 text-white">Faça upgrade</a>
                                     </div>
                                 </td>
                             </tr>
@@ -164,6 +181,13 @@
         </div>
         @endforeach
     </div>
+</div>
+
+<style>
+    .teal-glow-hover:hover {
+        box-shadow: 0 0 20px rgba(0, 230, 216, 0.3);
+    }
+</style>
 @endsection
 
 @push('scripts')
@@ -251,16 +275,14 @@
             );
         });
 
-        
         // Deletar tópico
-        $('.delete-topic-btn').on('click', function() {
+        $(document).on('click', '.delete-topic-btn', function() {
             const topic_id = $(this).data('topic-id');
-            const topicTitle = $(this).closest('.topic-content').find('h3').text();
+            const topicTitle = $(this).closest('.topic-item').find('span').text() || $(this).closest('.topic-content').find('h3').text();
             
             if (confirm(`Tem certeza que deseja excluir o tópico "${topicTitle}"? Todos os campos serão removidos.`)) {
                 deleteTopic(routes.delete_topic.replace(':id', topic_id));
             }
         });
-
     </script>
 @endpush

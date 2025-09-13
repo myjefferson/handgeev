@@ -56,8 +56,13 @@ Route::middleware(['auth:web'])->group(function(){
 
     Route::controller(DashboardController::class)->group(function(){
         Route::get('/dashboard/home', 'index')->name('dashboard.home');
-        Route::get('/dashboard/profile', '')->name('dashboard');
         Route::get('/dashboard/about', 'about')->name('dashboard.about');
+    });
+
+    Route::controller(UserController::class)->group(function(){
+        Route::get('/dashboard/profile', 'index')->name('user.profile');
+        Route::get('/dashboard/profile/edit', 'edit')->name('user.profile.edit');
+        Route::put('/dashboard/profile/update', 'update')->name('user.profile.update');
     });
 
     Route::controller(SettingController::class)->group(function(){
@@ -71,7 +76,7 @@ Route::middleware(['auth:web'])->group(function(){
         Route::controller(AdminController::class)->group(function () {
             Route::get('/admin/users', 'users')->name('admin.users');
             Route::put('/admin/users/{id}/update', 'updateUser')->name('admin.users.update');
-            Route::post('/admin/users/{id}/delete', 'deleteUser')->name('admin.users.delete');
+            Route::delete('/admin/users/{id}/delete', 'deleteUser')->name('admin.users.delete');
             Route::put('/admin/plans', 'plans')->name('admin.plans');
         });
     });

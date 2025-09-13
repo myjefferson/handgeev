@@ -45,8 +45,10 @@
                     <!-- Dropdown menu -->
                     <div id="userDropdown" class="z-40 hidden bg-slate-800 divide-y divide-slate-700 rounded-lg shadow w-44 border border-slate-700">
                         <div class="px-4 py-3 text-sm text-gray-300">
-                            <div class="font-medium">{{ Auth::user()->name ?? 'Usuário' }}</div>
-                            <div class="truncate text-gray-400">{{ Auth::user()->email ?? 'email@exemplo.com' }}</div>
+                            <a href="{{route('user.profile')}}" class="user-dropdown-option">
+                                <div class="font-medium hover:text-teal-500">{{ Auth::user()->name ?? 'Usuário' }}</div>
+                                <div class="truncate text-gray-400">{{ Auth::user()->email ?? 'email@exemplo.com' }}</div>
+                            </a>
                             @auth
                                 @free
                                     <p class="bg-primary-600 w-max text-black text-sm rounded-md px-2 py-1 mt-2">
@@ -103,7 +105,7 @@
                 <ul class="space-y-1 font-medium">
                     <li>
                         @if(auth()->user()->canCreateWorkspace())
-                            <button data-modal-target="modal-add-workspace" data-modal-toggle="modal-add-workspace" class="flex items-center w-full p-3 text-white rounded-lg teal-glow bg-teal-400/10 hover:bg-teal-400/20 transition-colors group mb-4">
+                            <button data-modal-target="modal-add-workspace" data-modal-toggle="modal-add-workspace" class="flex items-center w-full p-3 text-white rounded-lg border border-teal-500 teal-glow bg-teal-400/10 hover:bg-teal-400/20 transition-colors group mb-4">
                                 <div class="w-8 h-8 rounded-full bg-teal-400 flex items-center justify-center mr-3">
                                     <i class="fas fa-plus text-slate-900"></i>
                                 </div>
@@ -219,7 +221,8 @@
 
         <!-- Main content -->
         <div class="main-content min-h-screen p-5">
-            <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 animate-fade-in mt-5">
+            <div class=" backdrop-blur-sm rounded-2xl p-8 animate-fade-in mt-5">
+            {{-- <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 animate-fade-in mt-5"> --}}
                 @if (Auth::check())
                     @yield('content_dashboard')
                 @else

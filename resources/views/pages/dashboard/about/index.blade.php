@@ -1,4 +1,4 @@
-@extends('template.dashboard')
+@extends('template.template-dashboard')
 
 @section('content_dashboard')
     <div class="max-w-4xl mx-auto px-4 py-8 pt-24">
