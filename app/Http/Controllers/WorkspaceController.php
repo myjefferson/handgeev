@@ -16,6 +16,32 @@ class WorkspaceController extends Controller
     /**
      * Exibe a lista de todos os workspaces do usuário autenticado.
      */
+    public function listWorkspaces()
+    {
+        // $workspaces = Workspace::where('user_id', Auth::id())->get();
+        // if (!$workspaces) {
+        //     abort(404, 'Workspace não encontrado ou você não tem permissão para acessá-lo');
+        // }
+
+        $user = auth()->user();
+    
+        $myWorkspaces = $user->workspaces()
+            ->withCount('topics')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Agora usando o relacionamento correto
+        $collaborations = $user->collaborations()
+            ->with(['workspace' => function($query) {
+                $query->withCount('topics');
+            }])
+            ->orderBy('joined_at', 'desc')
+            ->get();
+        return view('pages.dashboard.workspaces.my-workspaces', compact('myWorkspaces', 'collaborations'));
+    }
+    /**
+     * Exibe a lista de todos os workspaces do usuário autenticado.
+     */
     public function index($id)
     {
         // Carrega o workspace com os tópicos e fields aninhados
@@ -39,8 +65,8 @@ class WorkspaceController extends Controller
         $fieldsLimit = $user->getFieldsLimit();
         $currentFieldsCount = $user->getCurrentFieldsCount($workspace->id);
         $remainingFields = $user->getRemainingFieldsCount($workspace->id);
-
-        return view('pages.dashboard.workspaces.index', compact(
+        
+        return view('pages.dashboard.workspaces.workspace', compact(
             'workspace',
             'canAddMoreFields',
             'fieldsLimit',
@@ -66,7 +92,7 @@ class WorkspaceController extends Controller
                 'order' => 1,
                 'title' => 'First Topic',
             ]);
-            return redirect()->route('workspace.index', ['id' => $workspace->id])->with('success', 'Workspace criado com sucesso!');
+            return redirect()->route('workspace.show', ['id' => $workspace->id])->with('success', 'Workspace criado com sucesso!');
         } catch (ValidationException $e) {
             // return redirect()->back()->withErrors($e->errors())->withInput();
             return $e->errors();
@@ -89,7 +115,7 @@ class WorkspaceController extends Controller
             $validatedData = Validator::make($request->all(), Workspace::$rules)->validate();
             $workspace = $workspace->update($validatedData);
 
-            return redirect()->route('workspace.index', ['id' => $id])->with('success', 'Workspace atualizado com sucesso!');
+            return redirect()->route('workspace.show', ['id' => $id])->with('success', 'Workspace atualizado com sucesso!');
         } catch (ValidationException $e) {
             // return $e->errors();
             return redirect()->back()->withErrors($e->errors())->withInput();

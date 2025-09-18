@@ -10,6 +10,9 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\FieldController;
 use App\Http\Controllers\TopicController;
+use App\Http\Controllers\WorkspaceSettingController;
+use App\Http\Controllers\WorkspaceCollaboratorController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
@@ -25,8 +28,8 @@ Route::controller(LoginController::class)->group(function(){
     Route::get('/account/inactive', function (){ return view('pages.auth.inactive-account'); })->name('account.inactive');
     Route::get('/account/suspended', function (){ return view('pages.auth.suspended-account'); })->name('account.suspended');
 });
-
 Route::get('/register', function (){ return view('pages.auth.register'); } )->name('register.index');
+
 Route::controller(UserController::class)->group(function(){
     // Route::get('/register', 'index')->name('register.index');
     Route::post('/register/store', 'store')->name('register.store');
@@ -35,11 +38,38 @@ Route::controller(UserController::class)->group(function(){
 
 Route::middleware(['auth:web'])->group(function(){
     Route::controller(WorkspaceController::class)->group(function(){
-        Route::get('/workspace/{id}', 'index')->name('workspace.index');
+        Route::get('/workspaces', 'listWorkspaces')->name('workspaces.myworkspaces');
+        Route::get('/workspace/{id}', 'index')->name('workspace.show');
         Route::post('/workspace/store', 'store')->name('workspace.store');
         Route::put('/workspace/{id}/update', 'update')->name('workspace.update');
         Route::delete('/workspace/{id}/delete', 'destroy')->name('workspace.delete');
     });
+    
+    Route::controller(WorkspaceSettingController::class)->group(function(){
+        Route::get('/workspace/setting/{id}', 'index')->name('workspace.setting');
+        Route::put('/workspace/setting/hash/{id}/update', 'generateNewHashApi')->name('workspace.update.generateNewHashApi');
+        // Route::post('/workspace/store', 'store')->name('workspace.store');
+        // Route::put('/workspace/{id}/update', 'update')->name('workspace.update');
+        // Route::delete('/workspace/{id}/delete', 'destroy')->name('workspace.delete');
+    });
+
+    Route::controller(WorkspaceCollaboratorController::class)->group(function () {
+        Route::get('/workspace/collaborators/{workspaceId}', 'listCollaborators')->name('workspace.collaborators');
+        Route::post('/workspace/collaborators/invite/{workspaceId}', 'inviteCollaborator')->name('workspace.collaborator.invite');
+        Route::delete('/workspace/collaborators/{workspaceId}/{collaboratorId}', 'removeCollaborator')->name('workspace.collaborator.delete');
+        Route::put('/workspace/collaborators/{collaborator}/role', 'updateCollaboratorRole')->name('workspace.collaborators.role.update');
+
+        // Route::get('/accept/{token}', 'acceptInvite')->name('workspace.collaboration.accept');
+        Route::post('/collaboration/accept/{token}', 'acceptInvite')->name('collaboration.invite.accept');
+        // Recusar convite
+        Route::post('/collaboration/reject/{token}', 'rejectInvite')->name('collaboration.invite.reject');
+        // Rotas por ID (para ações diretas das notificações)
+        Route::post('/{id}/accept', 'acceptInviteById')->name('workspace.invite.accept.id');
+        Route::post('/{id}/reject', 'rejectInviteById')->name('workspace.invite.reject.id');
+    });
+
+    // Rota pública para aceitar convite
+    // Route::get('/invite/accept/{token}', [WorkspaceAccessController::class, 'acceptInvite']);
 
     Route::controller(FieldController::class)->group(function(){
         Route::post('/field/store', 'store')->name('field.store');
@@ -67,8 +97,14 @@ Route::middleware(['auth:web'])->group(function(){
 
     Route::controller(SettingController::class)->group(function(){
         Route::get('/dashboard/settings', 'index')->name('dashboard.settings');
-        Route::post('/dashboard/settings/generate/newHashApi', 'generateNewHashApi')->name('dashboard.settings.generateNewHashApi');
+        Route::put('/dashboard/settings/update/hash', 'generateNewHashApi')->name('dashboard.settings.update.hash');
         // Route::get('/dashboard/experiences/create', 'create')->name('dashboard.experiences.create');
+    });
+
+    Route::controller(NotificationController::class)->group(function(){
+        Route::post('/{id}/read','markAsRead')->name('notifications.markAsRead');
+        Route::post('/read-all','markAllAsRead')->name('notifications.markAllAsRead');
+        Route::get('/count','count')->name('notifications.count');
     });
 
     // Rotas de Administração
@@ -86,6 +122,17 @@ Route::middleware(['auth:web'])->group(function(){
     //     // Rotas específicas para plano pro
     // });
 });
+
+Route::get('/guimode', function (){ return view('pages.dashboard.shared-api.visual-mode'); } )->name('landing.offers');
+Route::get('/user/notifications', function (Request $request) {
+    return response()->json([
+        'notifications' => $request->user()->notifications()->limit(10)->get(),
+        'unread_count' => $request->user()->unreadNotifications()->count()
+    ]);
+});
+
+
+//Modo GUI
 
 
 //API

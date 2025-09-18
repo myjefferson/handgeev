@@ -58,7 +58,7 @@
             <div class="bg-slate-800 rounded-2xl shadow-lg p-6">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-xl font-semibold text-white">Workspaces Recentes</h2>
-                    <a href="#" class="text-teal-400 hover:text-teal-300 text-sm font-medium">
+                    <a href="{{route('workspaces.myworkspaces')}}" class="text-teal-400 hover:text-teal-300 text-sm font-medium">
                         Ver todos →
                     </a>
                 </div>
@@ -118,7 +118,7 @@
         </div>
 
         <!-- Seção de Atividade Recente -->
-        <div class="mt-8 bg-slate-800 rounded-2xl shadow-lg p-6">
+        {{-- <div class="mt-8 bg-slate-800 rounded-2xl shadow-lg p-6">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-xl font-semibold text-white">Atividade Recente</h2>
                 <a href="#" class="text-teal-400 hover:text-teal-300 text-sm font-medium">
@@ -140,7 +140,7 @@
                 </div>
                 @endfor
             </div>
-        </div>
+        </div> --}}
 
         <!-- Footer com Status do Sistema -->
         <div class="mt-8 text-center">

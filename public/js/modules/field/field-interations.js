@@ -102,8 +102,8 @@ function updateLimitMessages() {
         
         if (!window.canAddMoreFields && window.fieldsLimit > 0) {
             message.innerHTML = `
-                ⚠️ Limite de campos atingido (${window.currentFieldsCount}/${window.fieldsLimit}). 
-                <a href="{{ route('landing.plans') }}" class="underline font-medium">Faça upgrade</a> 
+                Limite de campos atingido (${window.currentFieldsCount}/${window.fieldsLimit}). 
+                <a href="{{ route('landing.offers') }}" class="underline font-medium">Faça upgrade</a> 
                 para adicionar mais campos.
             `;
             message.parentElement.style.display = 'block';
@@ -143,10 +143,10 @@ export function addNewField(topicId) {
                 </label>
             </td>
             <td class="px-6 py-4">
-                <input type="text" name="key_name" class="key-input w-full px-2 py-1 text-gray-900 bg-white border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500" placeholder="Nome da chave">
+                <input type="text" name="key_name" class="key-input w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-colors" placeholder="Nome da chave">
             </td>
             <td class="px-6 py-4">
-                <input type="text" name="key_value" class="value-input w-full px-2 py-1 text-gray-900 bg-white border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-blue-500 focus:border-blue-500" placeholder="Valor">
+                <input type="text" name="key_value" class="value-input w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-colors" placeholder="Valor">
             </td>
             <td class="px-6 py-4">
                 <div class="flex space-x-2">

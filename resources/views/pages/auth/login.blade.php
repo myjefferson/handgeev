@@ -13,8 +13,6 @@
         .login-container {
             background: rgba(15, 23, 42, 0.9);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(8, 255, 240, 0.15);
-            box-shadow: 0 15px 35px rgba(8, 255, 240, 0.15);
             border-radius: 16px;
             overflow: hidden;
         }
@@ -62,7 +60,7 @@
 </head>
 <body class="flex flex-col min-h-screen">
     <div class="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div class="login-container w-full max-w-md p-8 border border-cyan-400">
+        <div class="login-container w-full max-w-md p-8 border border-teal-500">
             <div class="text-center mb-8">
                 <div class="flex justify-center mb-4">
                     <img class="w-52" src="assets/images/logo.png" alt="Handgeev Logo">

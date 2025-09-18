@@ -74,8 +74,7 @@ class UserController extends Controller
 
         // Gerar hashes API se necessário
         $user->update([
-            'primary_hash_api' =>  HashService::generateUniqueHash(),
-            'secondary_hash_api' => HashService::generateUniqueHash()
+            'global_hash_api' =>  HashService::generateUniqueHash()
         ]);
 
         // Logar o usuário
@@ -119,7 +118,7 @@ class UserController extends Controller
         ]);
 
         $user->update([
-            'current_plan_id' => $request->plan_id,
+            // 'current_plan_id' => $request->plan_id,
             'plan_expires_at' => $request->expires_at
         ]);
 

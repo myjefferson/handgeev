@@ -37,14 +37,14 @@
                         <h3 class="text-sm font-medium text-gray-400 mb-2">Plano Atual</h3>
                         <div class="flex items-center">
                             @if(Auth::user()->isPro())
-                            <i class="fas fa-crown text-purple-400 mr-2"></i>
-                            <span class="text-white font-medium">Pro</span>
+                                <i class="fas fa-crown text-purple-400 mr-2"></i>
+                                <span class="text-white font-medium">Pro</span>
                             @elseif(Auth::user()->isAdmin())
-                            <i class="fas fa-shield-alt text-blue-400 mr-2"></i>
-                            <span class="text-white font-medium">Admin</span>
+                                <i class="fas fa-shield-alt text-blue-400 mr-2"></i>
+                                <span class="text-white font-medium">Admin</span>
                             @else
-                            <i class="fas fa-user text-teal-400 mr-2"></i>
-                            <span class="text-white font-medium">Free</span>
+                                <i class="fas fa-user text-teal-400 mr-2"></i>
+                                <span class="text-white font-medium">Free</span>
                             @endif
                         </div>
                     </div>
@@ -54,15 +54,15 @@
                         <h3 class="text-sm font-medium text-gray-400 mb-2">Estatísticas</h3>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-400">Workspaces</span>
-                            <span class="text-white font-medium">5</span>
+                            <span class="text-white font-medium">{{ count($workspaces ?? []) }}</span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-400">Tópicos</span>
-                            <span class="text-white font-medium">23</span>
+                            <span class="text-white font-medium">{{ count(auth()->user()->topics ?? []) }}</span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-400">Campos</span>
-                            <span class="text-white font-medium">156</span>
+                            {{-- <span class="text-white font-medium">{{ 3 ?? []) }}</span> --}}
                         </div>
                     </div>
                 </div>

@@ -42,8 +42,7 @@ class ApiController extends Controller
     public function getTokenByHashes(Request $request){
         $auth = auth('api');
 
-        $primaryHash = $request->input('primary_hash_api');
-        $secondaryHash = $request->input('secondary_hash_api');
+        $globalHash = $request->input('global_hash_api');
 
         if (!$primaryHash || !$secondaryHash) {
             return response()->json(['error' => 'Hashes not provided.'], 400);
@@ -51,8 +50,7 @@ class ApiController extends Controller
 
         //consulta do usuario no banco
         $user = User::where([
-            'primary_hash_api' => $primaryHash,
-            'secondary_hash_api' => $secondaryHash,
+            'global_hash_api' => $globalHash
         ])->first();
 
         //Se o usuário não for encontrado

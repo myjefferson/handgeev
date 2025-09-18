@@ -35,54 +35,61 @@
             <div class="flex items-center space-x-4">
                 <!-- User profile dropdown -->
                 <div class="relative">
-                    <button id="userDropdownButton" data-dropdown-toggle="userDropdown" class="flex items-center space-x-2 pl-4 text-sm rounded-full focus:ring-2 focus:ring-teal-400">
-                        <span class="hidden md:block text-gray-300">{{ Auth::user()->name ?? 'Usuário' }}</span>
-                        <div class="user-avatar w-10 h-10 rounded-full bg-teal-400/10 flex items-center justify-center border border-teal-400/20">
-                            <i class="fas fa-user text-teal-400"></i>
-                        </div>
-                    </button>
+                    <div class="flex space-x-3">
+                        @include('components.dropdown.notifications-dropdown', [
+                            'notifications' => auth()->user()->notifications()->limit(5)->get(),
+                            'unreadCount' => auth()->user()->unreadNotifications()->count()
+                        ])
+                        <button id="userDropdownButton" data-dropdown-toggle="userDropdown" class="flex items-center space-x-2 pl-4 text-sm rounded-full focus:ring-2 bg-slate-700 focus:ring-teal-400">
+                            <span class="md:block text-gray-300">{{ Auth::user()->name ?? 'Usuário' }}</span>
+                            <div class="user-avatar w-10 h-10 rounded-full bg-teal-400/10 flex items-center justify-center border border-teal-400/20">
+                                <i class="fas fa-user text-teal-400"></i>
+                            </div>
+                        </button>
+                    </div>
                     
                     <!-- Dropdown menu -->
-                    <div id="userDropdown" class="z-40 hidden bg-slate-800 divide-y divide-slate-700 rounded-lg shadow w-44 border border-slate-700">
-                        <div class="px-4 py-3 text-sm text-gray-300">
-                            <a href="{{route('user.profile')}}" class="user-dropdown-option">
-                                <div class="font-medium hover:text-teal-500">{{ Auth::user()->name ?? 'Usuário' }}</div>
-                                <div class="truncate text-gray-400">{{ Auth::user()->email ?? 'email@exemplo.com' }}</div>
-                            </a>
-                            @auth
-                                @free
-                                    <p class="bg-primary-600 w-max text-black text-sm rounded-md px-2 py-1 mt-2">
-                                        Conta Free
-                                    </p>
-                                @endfree
+                        <div id="userDropdown" class="z-40 hidden bg-slate-700 divide-y divide-slate-700 rounded-lg shadow w-44 border border-slate-700">
+                            <div class="px-4 py-3 text-sm text-gray-300">
+                                <a href="{{route('user.profile')}}" class="user-dropdown-option">
+                                    <div class="font-medium text-teal-400 hover:text-teal-500">{{ Auth::user()->name ?? 'Usuário' }}</div>
+                                    <div class="truncate text-gray-400">{{ Auth::user()->email ?? 'email@exemplo.com' }}</div>
+                                </a>
+                                @auth
+                                    @free
+                                        <p class="bg-primary-600 w-max text-black text-sm rounded-md px-2 py-1 mt-2">
+                                            Conta Free
+                                        </p>
+                                    @endfree
 
-                                @pro
-                                    <div class="flex items-center bg-purple-600 w-max text-white text-sm rounded-md px-2 py-1 mt-2">                                    
-                                        <i class="fas fa-crown text-white w-3 h-3 mr-2 p-0"></i>
-                                        <p>Conta Pro</p>
-                                    </div>
-                                @endpro
-                                
-                                @admin
-                                    <div class="flex items-center bg-slate-900 w-max text-white text-sm rounded-md px-2 py-1 mt-2">                                    
-                                        <p>Admin</p>
-                                    </div>
-                                @endadmin
-                            @endauth
+                                    @pro
+                                        <div class="flex items-center bg-purple-600 w-max text-white text-sm rounded-md px-2 py-1 mt-2">                                    
+                                            <i class="fas fa-crown text-white w-3 h-3 mr-2 p-0"></i>
+                                            <p>Conta Pro</p>
+                                        </div>
+                                    @endpro
+                                    
+                                    @admin
+                                        <div class="flex items-center bg-slate-900 w-max text-white text-sm rounded-md px-2 py-1 mt-2">                                    
+                                            <p>Admin</p>
+                                        </div>
+                                    @endadmin
+                                @endauth
+                            </div>
+                            <ul class="py-2 text-sm text-gray-300">
+                                <li>
+                                    <a href="{{ route('dashboard.settings') }}" class="user-dropdown-option block px-4 py-2">
+                                        <i class="fas fa-cog mr-2"></i> Settings
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{{ route('logout') }}" class="user-dropdown-option block px-4 py-2">
+                                        <i class="fas fa-sign-out-alt mr-2"></i> Exit
+                                    </a>
+                                </li>
+                            </ul>
                         </div>
-                        <ul class="py-2 text-sm text-gray-300">
-                            <li>
-                                <a href="{{ route('dashboard.settings') }}" class="user-dropdown-option block px-4 py-2">
-                                    <i class="fas fa-cog mr-2"></i> Settings
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ route('logout') }}" class="user-dropdown-option block px-4 py-2">
-                                    <i class="fas fa-sign-out-alt mr-2"></i> Exit
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
+                    
                 </div>
             </div>
         </div>
@@ -94,33 +101,39 @@
         </button>
 
         <!-- Sidebar -->
-        <aside id="cta-button-sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0 sidebar-gradient" aria-label="Sidebar">
-            <div class="h-full px-5 py-6 overflow-y-auto">
+        <aside id="cta-button-sidebar" class="fixed top-0 left-0 z-40 h-screen transition-transform -translate-x-full sm:translate-x-0 sidebar-gradient" aria-label="Sidebar">
+            <div class="h-full px-4 py-6 overflow-y-auto">
                 <!-- Logo -->
                 <div class="flex justify-center mb-8">
-                    <img class="w-40" src="{{ asset('assets/images/logo.png') }}" alt="Handgeev">
+                    @free
+                        <img class="w-48" src="{{ asset('assets/images/logo.png') }}" alt="Handgeev FREE">
+                    @endfree
+
+                    @pro
+                        <img class="w-52" src="{{ asset('assets/images/logo-pro.png') }}" alt="Handgeev PRO">
+                    @endpro
+
+                    @admin
+                        <img class="w-48" src="{{ asset('assets/images/logo.png') }}" alt="Handgeev ADMIN">
+                    @endadmin
                 </div>
                 
                 <!-- Navigation -->
                 <ul class="space-y-1 font-medium">
                     <li>
-                        @if(auth()->user()->canCreateWorkspace())
-                            <button data-modal-target="modal-add-workspace" data-modal-toggle="modal-add-workspace" class="flex items-center w-full p-3 text-white rounded-lg border border-teal-500 teal-glow bg-teal-400/10 hover:bg-teal-400/20 transition-colors group mb-4">
-                                <div class="w-8 h-8 rounded-full bg-teal-400 flex items-center justify-center mr-3">
-                                    <i class="fas fa-plus text-slate-900"></i>
-                                </div>
-                                <span class="font-semibold">Add Workspace</span>
-                            </button>
-                        @else
-                            @include('components.buttons.button-upgrade-pro', ['subtitle' => 'Unlock unlimited workspaces'])
-                        @endif
-                    </li>
-                    <li>
-                        <a href="{{route('dashboard.home')}}" class="nav-item flex items-center p-3 text-gray-300 rounded-lg group {{ request()->routeIs('dashboard.home') ? 'active' : '' }}">
+                        <a href="{{route('dashboard.home')}}" class="nav-item button-item flex items-center p-3 text-gray-300 rounded-lg group {{ request()->routeIs('dashboard.home') ? 'active' : '' }}">
                             <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
                                 <i class="fas fa-home text-teal-400"></i>
                             </div>
                             <span class="font-medium">Início</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{route('workspaces.myworkspaces')}}" class="nav-item button-item flex items-center p-3 text-gray-300 rounded-lg group {{ request()->routeIs('dashboard.home') ? 'active' : '' }}">
+                            <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
+                                <i class="fas fa-folder text-teal-400"></i>
+                            </div>
+                            <span class="font-medium">My Workspaces</span>
                         </a>
                     </li>
 
@@ -151,30 +164,7 @@
                             </div>
                         @endadmin
 
-                        <div class="flex items-center mb-2 px-3">
-                            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Meus Workspaces</span>
-                            <span class="ml-2 text-xs bg-teal-400/20 text-teal-400 px-2 py-0.5 rounded-full">{{ count($workspaces ?? []) }}</span>
-                        </div>                        
-                        @isset($workspaces)
-                            @foreach($workspaces as $workspace)
-                                <div class="button-item mb-1 animate-fade-in ">
-                                    <div class="flex items-center justify-between w-full text-gray-300 rounded-lg group">
-                                        <a href="{{ route('workspace.index', ['id' => $workspace->id]) }}" class="flex w-full items-center p-3">       
-                                            <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
-                                                <i class="fas fa-folder text-teal-400"></i>
-                                            </div>
-                                            <span class="text-sm font-medium truncate">{{ $workspace->title }}</span>
-                                        </a>
-                                        <div>
-                                            <button id="optionsButton" data-dropdown-toggle="dropdown-workspace-{{$workspace->id }}" class="text-gray-400 hover:text-teal-400 focus:ring-2 focus:ring-teal-400 rounded-full h-7 w-7 mr-3 transition-colors" type="button">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            @include('components.dropdown.dropdown-options-workspace', ['workspace' => $workspace])
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        @endisset
+                        
                     </li>
                 </ul>
                 
@@ -221,7 +211,7 @@
 
         <!-- Main content -->
         <div class="main-content min-h-screen p-5">
-            <div class=" backdrop-blur-sm rounded-2xl p-8 animate-fade-in mt-5">
+            <div class=" backdrop-blur-sm rounded-2xl p-2 sm:p-3 md:p-5 lg:p-8 xl:p-8 animate-fade-in mt-5">
             {{-- <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 animate-fade-in mt-5"> --}}
                 @if (Auth::check())
                     @yield('content_dashboard')
@@ -239,7 +229,6 @@
 
         @stack('scripts')
 
-        @include('components.modals.modal-add-workspace')
         @include('components.modals.modal-input-text')
         @include('components.modals.modal-confirm')
         {{-- @include('components.modals.modal-edit-workspace') --}}

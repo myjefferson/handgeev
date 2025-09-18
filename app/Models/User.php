@@ -9,6 +9,8 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\QueryException;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use Spatie\Permission\Traits\HasRoles;
+use App\Models\Field;
+use App\Models\Topic;
 use DB;
 
 class User extends Authenticatable implements JWTSubject
@@ -36,8 +38,7 @@ class User extends Authenticatable implements JWTSubject
         'language',
         'phone',
         'status',
-        'primary_hash_api',
-        'secondary_hash_api'
+        'global_hash_api',
     ];
 
     /**
@@ -70,6 +71,19 @@ class User extends Authenticatable implements JWTSubject
     public function getJWTCustomClaims() {
         return [];
     }
+
+    public function collaborations()
+    {
+        return $this->hasMany(WorkspaceCollaborator::class, 'user_id')
+                    // ->where('status', 'accepted')
+                    ->with('workspace');
+    }
+
+    public function pendingCollaborations()
+    {
+        return $this->hasMany(WorkspaceCollaborator::class, 'user_id')
+                    ->where('status', 'pending');
+    }
     
     public function workspaces(){
         return $this->hasMany(Workspace::class);
@@ -77,7 +91,12 @@ class User extends Authenticatable implements JWTSubject
 
     public function fields()
     {
-        return $this->hasManyThrough(Field::class, Workspace::class);
+        return $this->hasManyThrough(Field::class, Topic::class);
+    }
+    
+    public function topics()
+    {
+        return $this->hasManyThrough(Topic::class, Workspace::class);
     }
 
     // Método seguro para obter o plano

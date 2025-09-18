@@ -16,7 +16,7 @@ class SettingController extends Controller
      */
     public function index()
     {
-        $settings = User::select('primary_hash_api', 'secondary_hash_api')->where(['id' => Auth::user()->id])->first();
+        $settings = User::select('global_hash_api')->where(['id' => Auth::user()->id])->first();
         return view('pages.dashboard.settings.index', compact('settings'));
     }
 
@@ -57,32 +57,34 @@ class SettingController extends Controller
      */
     public function generateNewHashApi()
     {
-        try {
-            // Gera os novos hashes
-            $primaryHash = HashService::generateUniqueHash();
-            $secondaryHash = HashService::generateUniqueHash();
+        try {           
+            if (!Auth::check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Usuário não autenticado'
+                ], 401);
+            }
 
+            $globalHash = HashService::generateUniqueHash();
             // Atualiza o usuário autenticado
-            $user = User::findOrFail(Auth::user()->id);
+            $user = User::find(auth()->user()->id);
             $user->update([
-                'primary_hash_api' => $primaryHash,
-                'secondary_hash_api' => $secondaryHash,
+                'global_hash_api' => $globalHash
             ]);
-
+            
             // Retorna os hashes atualizados no JSON
             return response()->json([
                 'success' => true,
-                'message' => 'Códigos gerados com sucesso!',
+                'message' => 'Código global API gerado com sucesso!',
                 'data' => [
-                    'primary_hash_api' => $primaryHash,
-                    'secondary_hash_api' => $secondaryHash,
+                    'global_hash_api' => $globalHash
                 ],
             ]);
         } catch (\Exception $e) {
             // Trata erros e retorna a mensagem de erro
             return response()->json([
                 'success' => false,
-                'message' => 'Ocorreu um erro ao gerar os códigos API.',
+                'message' => 'Ocorreu um erro ao gerar o código Global API.',
                 'error' => $e->getMessage(),
             ]);
         }

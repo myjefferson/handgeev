@@ -46,12 +46,6 @@ class Plan extends Model
         return $query->where('price', 0);
     }
 
-    // Relacionamentos
-    public function users()
-    {
-        return $this->hasMany(User::class, 'current_plan_id');
-    }
-
     // Métodos helper
     public function isFree(): bool
     {

@@ -30,23 +30,16 @@
             border-color: rgba(8, 255, 240, 0.3);
         }
         
-        .plan-highlight {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, rgba(8, 255, 240, 0.1) 100%);
-            border: 2px solid var(--teal-primary);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .plan-highlight::before {
+        .plan-pro::before {
             content: 'RECOMENDADO';
             position: absolute;
-            top: 15px;
-            right: -30px;
-            background: var(--teal-primary);
-            color: #0f172a;
-            font-size: 10px;
-            font-weight: bold;
-            padding: 5px 30px;
+            top: 35px;
+            right: -35px;
+            background: #6b21a8;
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 5px 40px;
             transform: rotate(45deg);
         }
         
@@ -55,7 +48,6 @@
         }
         
         .feature-list li:hover {
-            color: var(--teal-primary);
             transform: translateX(5px);
         }
         
@@ -137,19 +129,19 @@
                 </div>
                 
                 <ul class="feature-list space-y-3 mb-8 flex-grow">
-                    <li class="flex items-center">
+                    <li class="flex items-center hover:text-teal-400">
                         <i class="fas fa-check-circle text-teal-400 mr-2"></i>
                         <span>3 Workspace</span>
                     </li>
-                    <li class="flex items-center">
+                    <li class="flex items-center hover:text-teal-400">
                         <i class="fas fa-check-circle text-teal-400 mr-2"></i>
                         <span>Até 3 tópicos</span>
                     </li>
-                    <li class="flex items-center">
+                    <li class="flex items-center hover:text-teal-400">
                         <i class="fas fa-check-circle text-teal-400 mr-2"></i>
                         <span>Máximo de 10 campos</span>
                     </li>
-                    <li class="flex items-center">
+                    <li class="flex items-center hover:text-teal-400">
                         <i class="fas fa-check-circle text-teal-400 mr-2"></i>
                         <span>Acesso básico</span>
                     </li>
@@ -169,9 +161,9 @@
             </div>
             
             <!-- Plano Pro -->
-            <div class="plan-card plan-highlight rounded-2xl p-6 flex flex-col">
-                <div class="mb-6">
-                    <span class="teal-badge text-xs font-semibold px-3 py-1 rounded-full">PRO</span>
+            <div class="plan-card relative overflow-hidden border-purple-800 hover:border-purple-500 rounded-2xl p-6 flex flex-col">
+                <div class="mb-6 plan-pro">
+                    <span class="purple-badge text-xs font-semibold px-3 py-1 rounded-full bg-purple-600">PRO</span>
                     <h3 class="text-2xl font-bold mt-4">Plano Pro</h3>
                     <div class="mt-2">
                         <span class="text-3xl font-bold">R$ 29</span>
@@ -181,37 +173,37 @@
                 </div>
                 
                 <ul class="feature-list space-y-3 mb-8 flex-grow">
-                    <li class="flex items-center">
-                        <i class="fas fa-check-circle text-teal-400 mr-2"></i>
+                    <li class="flex items-center hover:text-purple-400">
+                        <i class="fas fa-check-circle text-purple-400 mr-2"></i>
                         <span>5 Workspaces</span>
                     </li>
-                    <li class="flex items-center">
-                        <i class="fas fa-check-circle text-teal-400 mr-2"></i>
+                    <li class="flex items-center hover:text-purple-400">
+                        <i class="fas fa-check-circle text-purple-400 mr-2"></i>
                         <span>Tópicos ilimitados</span>
                     </li>
-                    <li class="flex items-center">
-                        <i class="fas fa-check-circle text-teal-400 mr-2"></i>
+                    <li class="flex items-center hover:text-purple-400">
+                        <i class="fas fa-check-circle text-purple-400 mr-2"></i>
                         <span>Campos ilimitados</span>
                     </li>
-                    <li class="flex items-center">
-                        <i class="fas fa-check-circle text-teal-400 mr-2"></i>
+                    <li class="flex items-center hover:text-purple-400">
+                        <i class="fas fa-check-circle text-purple-400 mr-2"></i>
                         <span>Acesso prioritário</span>
                     </li>
-                    <li class="flex items-center">
-                        <i class="fas fa-check-circle text-teal-400 mr-2"></i>
+                    <li class="flex items-center hover:text-purple-400">
+                        <i class="fas fa-check-circle text-purple-400 mr-2"></i>
                         <span>Domínio personalizado</span>
                     </li>
-                    <li class="flex items-center">
-                        <i class="fas fa-check-circle text-teal-400 mr-2"></i>
+                    <li class="flex items-center hover:text-purple-400">
+                        <i class="fas fa-check-circle text-purple-400 mr-2"></i>
                         <span>Exportação de dados</span>
                     </li>
-                    <li class="flex items-center">
-                        <i class="fas fa-check-circle text-teal-400 mr-2"></i>
+                    <li class="flex items-center hover:text-purple-400">
+                        <i class="fas fa-check-circle text-purple-400 mr-2"></i>
                         <span>Suporte pro</span>
                     </li>
                 </ul>
                 
-                <button class="teal-button w-full py-3 rounded-lg font-semibold pulse">
+                <button class="bg-purple-600 w-full py-3 rounded-lg font-semibold pulse">
                     Assinar Agora
                 </button>
             </div>
@@ -227,36 +219,36 @@
                     <p class="text-gray-400 text-sm mt-2">Para empresas e equipes</p>
                 </div>
                 
-                <ul class="feature-list space-y-3 mb-8 flex-grow">
-                    <li class="flex items-center">
+                <ul class="feature-list space-y-3 mb-8 flex-grow ">
+                    <li class="flex items-center hover:text-teal-400">
                         <i class="fas fa-check-circle text-teal-400 mr-2"></i>
                         <span>Workspaces ilimitados</span>
                     </li>
-                    <li class="flex items-center">
+                    <li class="flex items-center hover:text-teal-400">
                         <i class="fas fa-check-circle text-teal-400 mr-2"></i>
                         <span>Tópicos ilimitados</span>
                     </li>
-                    <li class="flex items-center">
+                    <li class="flex items-center hover:text-teal-400">
                         <i class="fas fa-check-circle text-teal-400 mr-2"></i>
                         <span>Campos ilimitados</span>
                     </li>
-                    <li class="flex items-center">
+                    <li class="flex items-center hover:text-teal-400">
                         <i class="fas fa-check-circle text-teal-400 mr-2"></i>
                         <span>Gerenciamento de usuários</span>
                     </li>
-                    <li class="flex items-center">
+                    <li class="flex items-center hover:text-teal-400">
                         <i class="fas fa-check-circle text-teal-400 mr-2"></i>
                         <span>Domínios personalizados</span>
                     </li>
-                    <li class="flex items-center">
+                    <li class="flex items-center hover:text-teal-400">
                         <i class="fas fa-check-circle text-teal-400 mr-2"></i>
                         <span>API completa</span>
                     </li>
-                    <li class="flex items-center">
+                    <li class="flex items-center hover:text-teal-400">
                         <i class="fas fa-check-circle text-teal-400 mr-2"></i>
                         <span>Suporte 24/7</span>
                     </li>
-                    <li class="flex items-center">
+                    <li class="flex items-center hover:text-teal-400">
                         <i class="fas fa-check-circle text-teal-400 mr-2"></i>
                         <span>Relatórios avançados</span>
                     </li>
