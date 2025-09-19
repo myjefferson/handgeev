@@ -21,6 +21,7 @@ class Workspace extends Model
         'type_workspace_id',
         'title',
         'is_published',
+        'password',
     ];
 
 

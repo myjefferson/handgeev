@@ -10,9 +10,61 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\WorkspaceInvitation;
 use App\Notifications\WorkspaceInviteNotification;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class WorkspaceCollaboratorController extends Controller
 {
+    /**
+     * Workspace colaborador
+     */
+    public function index($id)
+    {
+        $user = Auth::user();
+        
+        // Primeiro verifica se o usuário é o dono do workspace
+        $isOwner = Workspace::where('id', $id)
+            ->where('user_id', $user->id)
+            ->exists();
+
+        // Se não é dono, verifica se é colaborador ACEITO através da tabela workspace_collaborators
+        $collaborator = WorkspaceCollaborator::where('workspace_id', $id)
+            ->where('user_id', $user->id)
+            ->where('status', 'accepted')
+            ->first();
+
+        if (!$collaborator) {
+            abort(404, 'Workspace não encontrado ou você não tem permissão para acessá-lo');
+        }
+
+        // Carrega o workspace usando o ID da colaboração (mais seguro)
+        $workspace = Workspace::with(['topics' => function($query) {
+                $query->orderBy('order')->with(['fields' => function($query) {
+                    $query->orderBy('order');
+                }]);
+            }])
+            ->where('id', $collaborator->workspace_id) // ← AQUI É A CHAVE: usa o ID da colaboração
+            ->firstOrFail();
+        
+        // Obter informações de limite de campos (apenas para dono)
+        $canAddMoreFields = $isOwner ? $user->canAddMoreFields($workspace->id) : false;
+        $fieldsLimit = $isOwner ? $user->getFieldsLimit() : null;
+        $currentFieldsCount = $isOwner ? $user->getCurrentFieldsCount($workspace->id) : null;
+        $remainingFields = $isOwner ? $user->getRemainingFieldsCount($workspace->id) : null;
+        
+        // Obter role do usuário
+        $userRole = $isOwner ? 'owner' : ($collaborator->role ?? 'viewer');
+        
+        return view('pages.dashboard.workspaces.workspace', compact(
+            'workspace',
+            'canAddMoreFields',
+            'fieldsLimit',
+            'currentFieldsCount',
+            'remainingFields',
+            'isOwner',
+            'userRole'
+        ));
+    }
+
     /**
      * Convidar colaborador
      */

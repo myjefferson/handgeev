@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Auth;
 use App\Services\HashService;
 use Illuminate\Http\Request;
 use App\Models\Workspace;
@@ -35,7 +37,16 @@ class WorkspaceSettingController extends Controller
         // $currentFieldsCount = $user->getCurrentFieldsCount($workspace->id);
         // $remainingFields = $user->getRemainingFieldsCount($workspace->id);
         $workspace = Workspace::find($id);
-        return view('pages.dashboard.workspaces.workspace-settings', compact('workspace'));
+        $hasPasswordWorkspace = !is_null($workspace->password);
+        if ($workspace->password) {
+            try {
+                $workspace->plain_password = Crypt::decryptString($workspace->password);
+            } catch (\Exception $e) {
+                $workspace->plain_password = null;
+            }
+        }
+        
+        return view('pages.dashboard.workspaces.workspace-settings', compact('workspace', 'hasPasswordWorkspace'));
     }
 
     public function generateNewHashApi($id)
@@ -65,6 +76,45 @@ class WorkspaceSettingController extends Controller
                 'message' => 'Ocorreu um erro ao gerar os códigos API.',
                 'error' => $e->getMessage(),
             ]);
+        }
+    }
+
+    public function passwordWorkspace(Request $request, $id)
+    {
+        try {
+            $workspace = Workspace::where('id', $id)
+                ->where('user_id', Auth::id())
+                ->firstOrFail();
+
+            $checkbox = filter_var($request->checkbox, FILTER_VALIDATE_BOOLEAN);
+            if (!$checkbox) {
+                $workspace->update([
+                    'password' => null,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Senha removida do workspace!',
+                    'password' => ''
+                ], 200);
+            }
+
+            $workspace->update([
+                'password' => Crypt::encryptString($request->password),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Senha para o workspace aplicada!',
+                'password' => $request->password
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ocorreu um erro ao criar a senha para o Workspace.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 }

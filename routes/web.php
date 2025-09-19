@@ -48,16 +48,18 @@ Route::middleware(['auth:web'])->group(function(){
     Route::controller(WorkspaceSettingController::class)->group(function(){
         Route::get('/workspace/setting/{id}', 'index')->name('workspace.setting');
         Route::put('/workspace/setting/hash/{id}/update', 'generateNewHashApi')->name('workspace.update.generateNewHashApi');
+        Route::put('/workspace/setting/password/{id}/update', 'passwordWorkspace')->name('workspace.update.passwordWorkspace');
         // Route::post('/workspace/store', 'store')->name('workspace.store');
         // Route::put('/workspace/{id}/update', 'update')->name('workspace.update');
         // Route::delete('/workspace/{id}/delete', 'destroy')->name('workspace.delete');
     });
 
     Route::controller(WorkspaceCollaboratorController::class)->group(function () {
-        Route::get('/workspace/collaborators/{workspaceId}', 'listCollaborators')->name('workspace.collaborators');
+        Route::get('/collaborator/workspace/{workspaceId}', 'index')->name('workspace.collaborator.index');
+        Route::get('/workspace/collaborators/{workspaceId}', 'listCollaborators')->name('workspace.collaborators.list');
         Route::post('/workspace/collaborators/invite/{workspaceId}', 'inviteCollaborator')->name('workspace.collaborator.invite');
         Route::delete('/workspace/collaborators/{workspaceId}/{collaboratorId}', 'removeCollaborator')->name('workspace.collaborator.delete');
-        Route::put('/workspace/collaborators/{collaborator}/role', 'updateCollaboratorRole')->name('workspace.collaborators.role.update');
+        Route::put('/workspace/collaborators/{collaborator}/role', 'updateCollaboratorRole')->name('workspace.collaborators.list.role.update');
 
         // Route::get('/accept/{token}', 'acceptInvite')->name('workspace.collaboration.accept');
         Route::post('/collaboration/accept/{token}', 'acceptInvite')->name('collaboration.invite.accept');
@@ -123,7 +125,7 @@ Route::middleware(['auth:web'])->group(function(){
     // });
 });
 
-Route::get('/guimode', function (){ return view('pages.dashboard.shared-api.visual-mode'); } )->name('landing.offers');
+Route::get('/guimode', function (){ return view('pages.dashboard.shared-api.visual-mode'); } )->name('guimode');
 Route::get('/user/notifications', function (Request $request) {
     return response()->json([
         'notifications' => $request->user()->notifications()->limit(10)->get(),

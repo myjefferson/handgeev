@@ -49,7 +49,7 @@
         </div>
 
         <!-- Área Principal de Conteúdo -->
-        <div class="flex-1 overflow-y-auto p-6">
+        <div class="flex-1 overflow-y-auto p-6 bg-slate-800/40 rounded-r-lg">
             <!-- Indicadores de Limite -->
             @if(!$canAddMoreFields && $fieldsLimit > 0)
                 <div class="mb-6 p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl">

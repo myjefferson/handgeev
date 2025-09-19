@@ -6,6 +6,7 @@ use View;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use App\Policies\WorkspacePolicy;
 use App\Models\TypeWorkspace;
 use App\Models\Workspace;
 use App\Models\Role;

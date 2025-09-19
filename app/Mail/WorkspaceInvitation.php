@@ -42,14 +42,14 @@ class WorkspaceInvitation extends Mailable implements ShouldQueue
         $subject = $this->getSubject();
         
         return $this->subject($subject)
-                    ->view('email.workspace-invitation') // Certifique-se do caminho correto
+                    ->view('email.workspace-invitation')
                     ->with([
                         'workspace' => $this->workspace,
                         'collaborator' => $this->collaborator,
                         'inviter' => $this->inviter,
                         'acceptUrl' => $this->acceptUrl,
                         'isExistingUser' => $this->isExistingUser,
-                    ])->dd();
+                    ]);
     }
 
     /**

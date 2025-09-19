@@ -49,34 +49,34 @@
                     </div>
                     
                     <!-- Dropdown menu -->
-                        <div id="userDropdown" class="z-40 hidden bg-slate-700 divide-y divide-slate-700 rounded-lg shadow w-44 border border-slate-700">
-                            <div class="px-4 py-3 text-sm text-gray-300">
-                                <a href="{{route('user.profile')}}" class="user-dropdown-option">
-                                    <div class="font-medium text-teal-400 hover:text-teal-500">{{ Auth::user()->name ?? 'Usuário' }}</div>
+                        <div id="userDropdown" class="z-40 text-sm hidden bg-slate-700 divide-y divide-slate-700 rounded-lg shadow w-44 border border-slate-700">
+                                <a href="{{route('user.profile')}}" class="block user-dropdown-option rounded-t-md hover:text-teal-400 py-3 px-4">
+                                    <div class="font-medium">{{ Auth::user()->name ?? 'Usuário' }}</div>
                                     <div class="truncate text-gray-400">{{ Auth::user()->email ?? 'email@exemplo.com' }}</div>
                                 </a>
+                            <div class="px-4 pb-3 text-gray-300">
                                 @auth
                                     @free
-                                        <p class="bg-primary-600 w-max text-black text-sm rounded-md px-2 py-1 mt-2">
+                                        <p class="bg-primary-600 w-max text-black rounded-md px-2 py-1 mt-2">
                                             Conta Free
                                         </p>
                                     @endfree
 
                                     @pro
-                                        <div class="flex items-center bg-purple-600 w-max text-white text-sm rounded-md px-2 py-1 mt-2">                                    
+                                        <div class="flex items-center bg-purple-600 w-max text-white  rounded-md px-2 py-1 mt-2">                                    
                                             <i class="fas fa-crown text-white w-3 h-3 mr-2 p-0"></i>
                                             <p>Conta Pro</p>
                                         </div>
                                     @endpro
                                     
                                     @admin
-                                        <div class="flex items-center bg-slate-900 w-max text-white text-sm rounded-md px-2 py-1 mt-2">                                    
+                                        <div class="flex items-center bg-slate-900 w-max text-white rounded-md px-2 py-1 mt-2">                                    
                                             <p>Admin</p>
                                         </div>
                                     @endadmin
                                 @endauth
                             </div>
-                            <ul class="py-2 text-sm text-gray-300">
+                            <ul class="py-2 text-gray-300">
                                 <li>
                                     <a href="{{ route('dashboard.settings') }}" class="user-dropdown-option block px-4 py-2">
                                         <i class="fas fa-cog mr-2"></i> Settings
@@ -129,7 +129,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{route('workspaces.myworkspaces')}}" class="nav-item button-item flex items-center p-3 text-gray-300 rounded-lg group {{ request()->routeIs('dashboard.home') ? 'active' : '' }}">
+                        <a href="{{route('workspaces.myworkspaces')}}" class="nav-item button-item flex items-center p-3 text-gray-300 rounded-lg group {{ request()->routeIs('workspaces.myworkspaces') ? 'active' : '' }}">
                             <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
                                 <i class="fas fa-folder text-teal-400"></i>
                             </div>
@@ -148,13 +148,13 @@
                                     <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Administração</p>
                                 </div>
                                 <div class="items-center justify-between w-full text-gray-300 rounded-lg group">
-                                    <a href="{{ route('admin.users') }}" class="button-item flex w-full items-center p-3">
+                                    <a href="{{ route('admin.users') }}" class="nav-item mb-1 button-item flex w-full items-center p-3 {{ request()->routeIs('admin.users') ? 'active' : '' }}">
                                         <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
                                             <i class="fas fa-users"></i> 
                                         </div>
                                         <span class="text-sm font-medium truncate">Usuários</span>
                                     </a>
-                                    <a href="{{ route('admin.plans') }}" class="button-item flex w-full items-center p-3">
+                                    <a href="{{ route('admin.plans') }}" class="nav-item button-item flex w-full items-center p-3 {{ request()->routeIs('admin.plans') ? 'active' : '' }}">
                                         <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
                                             <i class="fas fa-crown"></i> 
                                         </div>
@@ -210,8 +210,8 @@
 
 
         <!-- Main content -->
-        <div class="main-content min-h-screen p-5">
-            <div class=" backdrop-blur-sm rounded-2xl p-2 sm:p-3 md:p-5 lg:p-8 xl:p-8 animate-fade-in mt-5">
+        <div class="main-content bg-gray-900 min-h-screen p-5">
+            <div class="backdrop-blur-sm rounded-2xl p-2 sm:p-3 md:p-5 lg:p-8 xl:p-8 animate-fade-in mt-5">
             {{-- <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 animate-fade-in mt-5"> --}}
                 @if (Auth::check())
                     @yield('content_dashboard')
@@ -234,16 +234,7 @@
         {{-- @include('components.modals.modal-edit-workspace') --}}
 
         <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                // Adicionar classe active baseado na URL atual
-                const currentPath = window.location.pathname;
-                document.querySelectorAll('.nav-item').forEach(item => {
-                    const link = item.querySelector('a');
-                    if (link && link.getAttribute('href') === currentPath) {
-                        item.classList.add('active');
-                    }
-                });
-                
+            document.addEventListener('DOMContentLoaded', function() {                
                 // Melhorar a experiência mobile
                 const sidebar = document.getElementById('cta-button-sidebar');
                 const sidebarToggle = document.querySelector('[data-drawer-toggle="cta-button-sidebar"]');

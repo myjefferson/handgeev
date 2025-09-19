@@ -202,7 +202,7 @@
                             <div class="grid grid-cols-2 gap-3">
                                 <!-- Opção: Somente convidados -->
                                 <div>
-                                    <input type="radio" id="access-private" name="access_type" value="private" class="hidden peer" checked>
+                                    <input type="radio" id="access-private" name="access_type" value="private" class="hidden peer"  @if(!$workspace->is_published) checked @endif>
                                     <label for="access-private" class="flex flex-col p-3 text-gray-500 bg-white border border-gray-200 rounded-lg cursor-pointer peer-checked:border-teal-500 peer-checked:bg-teal-50 peer-checked:text-teal-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400 dark:peer-checked:bg-teal-900/20 dark:peer-checked:border-teal-500 dark:peer-checked:text-teal-300">
                                         <span class="font-medium">Privado</span>
                                         <span class="text-xs mt-1">Apenas colaboradores</span>
@@ -211,7 +211,7 @@
                                 
                                 <!-- Opção: Público -->
                                 <div>
-                                    <input type="radio" id="access-public" name="access_type" value="public" class="hidden peer">
+                                    <input type="radio" id="access-public" name="access_type" value="public" class="hidden peer" @if($workspace->is_published) checked @endif>
                                     <label for="access-public" class="flex flex-col p-3 text-gray-500 bg-white border border-gray-200 rounded-lg cursor-pointer peer-checked:border-teal-500 peer-checked:bg-teal-50 peer-checked:text-teal-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400 dark:peer-checked:bg-teal-900/20 dark:peer-checked:border-teal-500 dark:peer-checked:text-teal-300">
                                         <span class="font-medium">Público</span>
                                         <span class="text-xs mt-1">Qualquer pessoa pode acessar</span>
@@ -230,13 +230,13 @@
                                     </p>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="password-protection" class="sr-only peer">
+                                    <input type="checkbox" id="checkbox-password-protection" class="sr-only peer" @if($hasPasswordWorkspace) checked @endif>
                                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-teal-300 dark:peer-focus:ring-teal-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-500 peer-checked:bg-teal-600"></div>
                                 </label>
                             </div>
                             
                             <!-- Campo de senha (mostrar apenas quando o checkbox estiver ativado) -->
-                            <div id="password-field" class="hidden mt-4">
+                            <div id="password-field" class="@if($hasPasswordWorkspace) hidden @endif mt-4">
                                 <div class="flex gap-3">
                                     <div class="flex-1">
                                         <label for="workspace-password" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
@@ -244,9 +244,10 @@
                                         </label>
                                         <input 
                                             type="password" 
-                                            id="workspace-password" 
+                                            id="workspace-password-input" 
                                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-teal-500 focus:border-teal-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" 
-                                            placeholder="Digite uma senha segura" 
+                                            placeholder="Digite uma senha segura"
+                                            value="{{ $workspace->plain_password }}"
                                         />
                                     </div>
                                     <div class="flex items-end">
@@ -333,47 +334,64 @@
         </div>
     </main>
 
-    <script>
-// Versão simplificada - coloque no final do arquivo
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Script carregado!');
-    
-    const accessPrivate = document.getElementById('access-private');
-    const accessPublic = document.getElementById('access-public');
-    const passwordSection = document.getElementById('password-protection-section');
-    
-    if (!accessPrivate || !accessPublic || !passwordSection) {
-        console.error('Elementos não encontrados!');
-        return;
-    }
-    
-    // Função simples para mostrar/ocultar
-    function togglePasswordSection(show) {
-        if (show) {
-            passwordSection.classList.remove('hidden');
-        } else {
-            passwordSection.classList.add('hidden');
-        }
-    }
-    
-    // Event listeners
-    accessPrivate.addEventListener('change', function() {
-        console.log('Privado selecionado');
-        togglePasswordSection(false);
-    });
-    
-    accessPublic.addEventListener('change', function() {
-        console.log('Público selecionado');
-        togglePasswordSection(true);
-    });
-    
-    // Inicializar estado
-    togglePasswordSection(accessPublic.checked);
-});
-</script>
+    <script type="module">
+        import '/js/modules/workspace/settings-interations.js';
+    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+
+            const savePassword = $('#save-password-btn');
+            const workspacePasswordInput = $('#workspace-password-input');
+            const checkboxWorkspacePassword = $('#checkbox-password-protection');
+            const originalTextPassword = savePassword.html();
+
+            savePassword.on('click', function() {
+                updateSavePassword();
+            });
+
+        checkboxWorkspacePassword.on('change', function() {
+            if (workspacePasswordInput.val().trim()) {
+                workspacePasswordInput.val('');
+                updateSavePassword();
+            }
+        });
+
+        function updateSavePassword() {
+            // Salva o texto original antes de desabilitar
+            var originalHtml = savePassword.html();
+            // Desabilita o botão e mostra loading
+            savePassword.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Salvando...');
+            
+            $.ajax({
+                url: "{{ route('workspace.update.passwordWorkspace', ['id' => $workspace->id]) }}",
+                method: "PUT",
+                data: {
+                    checkbox: checkboxWorkspacePassword.prop('checked'),
+                    password: workspacePasswordInput.val(),
+                    _token: "{{ csrf_token() }}",
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Atualiza a interface
+                        savePassword.html('<i class="fas fa-check mr-1"></i> Senha Criada!');
+                        
+                        // Restaura após 2 segundos
+                        setTimeout(function() {
+                            savePassword.prop('disabled', false).html(originalHtml);
+                        }, 2000);
+                    } else {
+                        alert('Erro: ' + response.message);
+                        savePassword.prop('disabled', false).html(originalHtml);
+                    }
+                },
+                error: function(xhr) {
+                    alert('Ocorreu um erro: ' + xhr.responseJSON?.message || xhr.responseText);
+                    savePassword.prop('disabled', false).html(originalHtml);
+                }
+            });    
+        }
+
             // Funcionalidade das abas
             const tabButtons = document.querySelectorAll('.tab-button');
             const tabContents = document.querySelectorAll('.tab-content');
@@ -433,7 +451,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     complete: function() {
                         // Restaura o botão
-                        button.prop('disabled', false).html(originalText);
+                        generateButton.prop('disabled', false).html(originalText);
                     }
                 });        
                 
@@ -441,72 +459,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     generateButton.innerHTML = originalText;
                 }, 2000);
             });
-            
-            // Adicionar colaborador
-            const addCollaboratorBtn = document.getElementById('add-collaborator');
-            const collaboratorEmail = document.getElementById('collaborator-email');
-            const collaboratorsList = document.getElementById('collaborators-list');
-            
-            addCollaboratorBtn.addEventListener('click', function() {
-                if (collaboratorEmail.value && isValidEmail(collaboratorEmail.value)) {
-                    // Criar elemento de colaborador
-                    const initial = collaboratorEmail.value.charAt(0).toUpperCase();
-                    const randomColor = getRandomColor();
-                    
-                    const collaboratorItem = document.createElement('div');
-                    collaboratorItem.className = 'collaborator-item flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg';
-                    collaboratorItem.innerHTML = `
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 rounded-full ${randomColor} flex items-center justify-center text-white text-sm font-bold mr-2">${initial}</div>
-                            <div>
-                                <p class="text-sm font-medium text-gray-900 dark:text-white">${collaboratorEmail.value}</p>
-                                <div class="flex space-x-1 mt-1">
-                                    <span class="permission-badge bg-blue-100 text-blue-800 rounded-full dark:bg-blue-900 dark:text-blue-200">Visualização</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex space-x-2">
-                            <button type="button" class="edit-permissions text-teal-600 hover:text-teal-800 dark:text-teal-400">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button type="button" class="remove-collaborator text-red-600 hover:text-red-800 dark:text-red-400">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    `;
-                    
-                    // Adicionar à lista
-                    collaboratorsList.appendChild(collaboratorItem);
-                    
-                    // Limpar campo de email
-                    collaboratorEmail.value = '';
-                    
-                    // Adicionar eventos aos botões
-                    const removeBtn = collaboratorItem.querySelector('.remove-collaborator');
-                    removeBtn.addEventListener('click', function() {
-                        collaboratorsList.removeChild(collaboratorItem);
-                    });
-                    
-                    const editBtn = collaboratorItem.querySelector('.edit-permissions');
-                    editBtn.addEventListener('click', function() {
-                        // Alternar entre permissões de visualização e edição
-                        const permissionsDiv = collaboratorItem.querySelector('.flex.space-x-1');
-                        const hasEditPermission = permissionsDiv.querySelector('.bg-green-100');
                         
-                        if (hasEditPermission) {
-                            permissionsDiv.innerHTML = '<span class="permission-badge bg-blue-100 text-blue-800 rounded-full dark:bg-blue-900 dark:text-blue-200">Visualização</span>';
-                        } else {
-                            permissionsDiv.innerHTML = `
-                                <span class="permission-badge bg-blue-100 text-blue-800 rounded-full dark:bg-blue-900 dark:text-blue-200">Visualização</span>
-                                <span class="permission-badge bg-green-100 text-green-800 rounded-full dark:bg-green-900 dark:text-green-200">Edição</span>
-                            `;
-                        }
-                    });
-                } else {
-                    alert('Por favor, insira um e-mail válido.');
-                }
-            });
-            
             // Validar email
             function isValidEmail(email) {
                 const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -522,9 +475,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 ];
                 return colors[Math.floor(Math.random() * colors.length)];
             }
-
-
-
 
             //COLLABORATORS
             @if(auth()->user()->isPro() || auth()->user()->isAdmin())
@@ -578,7 +528,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             async function loadCollaborators() {
                 $.ajax({
-                    url: `{{ route('workspace.collaborators', ['workspaceId' => $workspace->id]) }}`,
+                    url: `{{ route('workspace.collaborators.list', ['workspaceId' => $workspace->id]) }}`,
                     method: 'GET',
                     headers: {
                         'X-CSRF-TOKEN': "{{ csrf_token() }}"
@@ -690,7 +640,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         },
                         complete: function() {
                             // Restaura o botão
-                            button.prop('disabled', false).html(originalText);
                             $('#add-collaborator').prop('disabled', false).html('<i class="fas fa-plus mr-1"></i> Convidar');
                         }
                     });
