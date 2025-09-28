@@ -1,7 +1,7 @@
-CREATE DATABASE portfoline;
-USE portfoline;
+CREATE DATABASE handgeev;
+USE handgeev;
 
--- NEW DATABASE PORTFOLINE
+-- NEW DATABASE HANDGEEV
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     name VARCHAR(30) NOT NULL,
@@ -14,8 +14,11 @@ CREATE TABLE users (
     password TEXT NOT NULL,
     phone VARCHAR(20),
     global_hash_api TEXT,
+    email_verification_code VARCHAR(255) NULL,
+    email_verification_sent_at TIMESTAMP NULL,
+    email_verified TINYINT(1) NOT NULL DEFAULT 0,
 --    current_plan_id TINYINT UNSIGNED DEFAULT 1,
-    plan_expires_at TIMESTAMP NULL,
+    plan_expires_at TIMESTAMP TINYINT(1) NOT NULL DEFAULT 0,
 	 status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -35,26 +38,84 @@ CREATE TABLE type_workspaces (
 	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-
-
 INSERT INTO type_workspaces (id, description) VALUES (1, 'Tópico Único');
 INSERT INTO type_workspaces (id, description) VALUES (2, 'Um ou Mais Tópicos');
+
+CREATE TABLE type_views_workspaces (
+	id SERIAL PRIMARY KEY,
+	description VARCHAR(50) NOT NULL,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO type_views_workspaces (id, description) VALUES (1, 'Interface da API');
+INSERT INTO type_views_workspaces (id, description) VALUES (2, 'API REST JSON');
+
 
 
 CREATE TABLE workspaces (
 	 id SERIAL PRIMARY KEY,
 	 user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
 	 type_workspace_id INTEGER REFERENCES type_workspaces(id),
+	 type_view_workspace_id INTEGER DEFAULT 1 REFERENCES type_views_workspaces(id),
 	 title VARCHAR(100) NOT NULL,
 	 is_published BOOLEAN DEFAULT FALSE,
+	 password TEXT DEFAULT NULL,
 	 workspace_hash_api TEXT,
+	 api_enabled TINYINT(1) NOT NULL DEFAULT 0,
 	 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
-
-DROP TABLE workspaces
-
+-- DROP TABLE workspaces
 SELECT * FROM workspaces;
+
+
+
+CREATE TABLE workspace_allowed_domains (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    workspace_id BIGINT UNSIGNED NOT NULL,
+    domain VARCHAR(255) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_workspace_domain (workspace_id, domain)
+);
+-- Índice para buscas por domínio
+CREATE INDEX idx_domain ON workspace_allowed_domains(domain);
+SELECT * FROM workspace_allowed_domains;
+
+
+
+-- Tabela workspace_collaborators
+CREATE TABLE `workspace_collaborators` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `workspace_id` bigint UNSIGNED NOT NULL,
+  `user_id` bigint UNSIGNED DEFAULT NULL,
+  `role` enum('owner','admin','editor','viewer') NOT NULL DEFAULT 'viewer',
+  `invitation_email` varchar(255) DEFAULT NULL,
+  `invitation_token` varchar(64) DEFAULT NULL,
+  `invited_by` bigint UNSIGNED NOT NULL,
+  `invited_at` timestamp NULL DEFAULT NULL,
+  `joined_at` timestamp NULL DEFAULT NULL,
+  `status` enum('pending','accepted','rejected') NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `workspace_collaborators_invitation_token_unique` (`invitation_token`),
+  KEY `workspace_collaborators_workspace_id_user_id_index` (`workspace_id`,`user_id`),
+  KEY `workspace_collaborators_invitation_token_index` (`invitation_token`),
+  KEY `workspace_collaborators_status_index` (`status`),
+  KEY `workspace_collaborators_user_id_foreign` (`user_id`),
+  KEY `workspace_collaborators_invited_by_foreign` (`invited_by`),
+  KEY `workspace_collaborators_invitation_email_index` (`invitation_email`),
+  CONSTRAINT `workspace_collaborators_invited_by_foreign` FOREIGN KEY (`invited_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `workspace_collaborators_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `workspace_collaborators_workspace_id_foreign` FOREIGN KEY (`workspace_id`) REFERENCES `workspaces` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 
 CREATE TABLE topics (
 	id SERIAL PRIMARY KEY,
@@ -128,32 +189,7 @@ CREATE TABLE model_has_roles (
 SELECT * FROM model_has_roles;
 
 
--- Tabela workspace_collaborators
-CREATE TABLE `workspace_collaborators` (
-  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `workspace_id` bigint UNSIGNED NOT NULL,
-  `user_id` bigint UNSIGNED DEFAULT NULL,
-  `role` enum('owner','admin','editor','viewer') NOT NULL DEFAULT 'viewer',
-  `invitation_email` varchar(255) DEFAULT NULL,
-  `invitation_token` varchar(64) DEFAULT NULL,
-  `invited_by` bigint UNSIGNED NOT NULL,
-  `invited_at` timestamp NULL DEFAULT NULL,
-  `joined_at` timestamp NULL DEFAULT NULL,
-  `status` enum('pending','accepted','rejected') NOT NULL DEFAULT 'pending',
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `workspace_collaborators_invitation_token_unique` (`invitation_token`),
-  KEY `workspace_collaborators_workspace_id_user_id_index` (`workspace_id`,`user_id`),
-  KEY `workspace_collaborators_invitation_token_index` (`invitation_token`),
-  KEY `workspace_collaborators_status_index` (`status`),
-  KEY `workspace_collaborators_user_id_foreign` (`user_id`),
-  KEY `workspace_collaborators_invited_by_foreign` (`invited_by`),
-  KEY `workspace_collaborators_invitation_email_index` (`invitation_email`),
-  CONSTRAINT `workspace_collaborators_invited_by_foreign` FOREIGN KEY (`invited_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `workspace_collaborators_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `workspace_collaborators_workspace_id_foreign` FOREIGN KEY (`workspace_id`) REFERENCES `workspaces` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 
 CREATE TABLE `notifications` (
@@ -167,17 +203,25 @@ CREATE TABLE `notifications` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `notifications_notifiable_type_notifiable_id_index` (`notifiable_type`,`notifiable_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=UTF8MB4_UNICODE_CI;
+
+
+CREATE TABLE `password_reset_tokens` (
+    `email` varchar(255) NOT NULL,
+    `token` varchar(255) NOT NULL,
+    `created_at` timestamp NULL DEFAULT NULL,
+    PRIMARY KEY (`email`),
+    KEY `password_reset_tokens_token_index` (`token`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=UTF8MB4_UNICODE_CI;
+
+SELECT * FROM password_reset_tokens
+
+
+
+
 
 SELECT * FROM notifications;
-
-
-
 SELECT * FROM workspace_collaborators;
-
-
-
-
 SELECT 
   w.id as workspace_id,
   w.user_id as user_id,
@@ -191,19 +235,14 @@ SELECT
 FROM `workspaces` w
 LEFT JOIN `workspace_collaborators` wc ON w.id = wc.workspace_id AND w.user_id = wc.user_id
 WHERE wc.id IS NULL;
-
-
 SELECT * FROM model_has_permissions;
 SELECT * FROM role_has_permissions;
 SELECT * FROM permissions;
-
 -- DROPS
 -- DROP TABLE fields;
 -- DROP TABLE topics;
 -- DROP TABLE workspaces;
 -- DROP TABLE type_workspaces;
-
-
 -- Verificar usuários e seus perfis
 SELECT 
 	mhr.model_id,
@@ -214,10 +253,5 @@ SELECT
 FROM users u
 LEFT JOIN model_has_roles mhr ON mhr.model_id = u.id AND mhr.model_type = 'App\Models\User'
 LEFT JOIN roles r ON r.id = mhr.role_id;
-
-
-
 -- Verificar quais roles cada usuário tem
-
-
 SELECT * FROM roles WHERE name = 'admin';

@@ -27,7 +27,7 @@
         <div class="space-y-4 mb-8">
             <div class="flex justify-between items-center">
                 <span class="text-gray-400">Data da Inatividade</span>
-                <span class="text-white font-medium">15/11/2023</span>
+                <span class="text-white font-medium">15/11/2025</span>
             </div>
             <div class="flex justify-between items-center">
                 <span class="text-gray-400">Tipo de Inatividade</span>

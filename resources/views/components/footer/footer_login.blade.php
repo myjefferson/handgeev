@@ -4,7 +4,7 @@
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <div class="flex items-center mb-4 md:mb-0">
                     <a href="{{ route('landing.portfoline' )}}">
-                    <img class="w-28 opacity-60 grayscale hover:grayscale-0 transition-all" src="assets/images/logo.png" alt="Handgeev Logo">
+                    <img class="w-28 opacity-60 grayscale hover:grayscale-0 transition-all" src="{{ asset('assets/images/logo.png') }}" alt="Handgeev Logo">
                     </a>
                 </div>
                 
@@ -32,7 +32,7 @@
             
             <div class="border-t border-slate-700 mt-4 pt-4 text-center">
                 <p class="text-xs text-slate-500">
-                    &copy; 2023 Handgeev. Todos os direitos reservados.
+                    &copy; 2025 Handgeev. Todos os direitos reservados.
                 </p>
             </div>
         </div>

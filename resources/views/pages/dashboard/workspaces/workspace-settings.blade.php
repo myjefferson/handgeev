@@ -59,11 +59,11 @@
                         <p class="text-sm text-gray-500 dark:text-gray-400">{{ $workspace->title }}</p>
                     </div>
                 </div>
-                <div class="flex items-center">
+                {{-- <div class="flex items-center">
                     <button class="text-teal-600 bg-teal-50 hover:bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400 dark:hover:bg-teal-900/50 px-4 py-2 rounded-lg font-medium">
                         <i class="fas fa-save mr-2"></i>Salvar Alterações
                     </button>
-                </div>
+                </div> --}}
             </div>
         </div>
     </header>
@@ -91,16 +91,21 @@
 
                     <!-- Card de Visualização da API -->
                     <div class="settings-card bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-                        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Visualização da API</h2>
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-medium text-gray-900 dark:text-white">Visualização da API</h2>
+                            <button id="save-setting-type-view-api" class="text-teal-600 bg-teal-50 hover:bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400 dark:hover:bg-teal-900/50 px-4 py-2 rounded-lg text-sm">
+                                <i class="fas fa-save mr-2"></i> Save
+                            </button>
+                        </div>
                         <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Escolha como a API será exibida para os usuários.</p>
                         
                         <div class="grid gap-4 md:grid-cols-2">
                             <!-- Opção: Visualização GUI -->
                             <div>
-                                <input type="radio" id="api-gui-mode" name="api_view_mode" value="gui" class="hidden peer" checked />
-                                <label for="api-gui-mode" class="inline-flex items-center justify-between w-full p-4 text-gray-500 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-teal-500 peer-checked:border-teal-600 peer-checked:text-teal-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                <input type="radio" id="interface-api" name="type_view_workspace" value="1" class="hidden peer" @if($workspace->type_view_workspace_id == 1) checked @endif/>
+                                <label for="interface-api" class="inline-flex items-center justify-between w-full p-4 text-gray-500 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-teal-500 peer-checked:border-teal-600 peer-checked:text-teal-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
                                     <div class="block">
-                                        <div class="w-full text-lg font-semibold">Modo GUI</div>
+                                        <div class="w-full text-lg font-semibold">Interface da API</div>
                                         <div class="w-full text-sm">Interface amigável com opção de visualizar JSON</div>
                                     </div>
                                     <i class="fas fa-desktop text-xl"></i>
@@ -110,10 +115,10 @@
                             <!-- Opção: Visualização JSON Puro -->
                             @if(auth()->user()->isAdmin() || auth()->user()->isPro())
                                 <div>
-                                    <input type="radio" id="api-json-mode" name="api_view_mode" value="json" class="hidden peer" />
-                                    <label for="api-json-mode" class="inline-flex items-center justify-between w-full p-4 text-gray-500 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-teal-500 peer-checked:border-teal-600 peer-checked:text-teal-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                    <input type="radio" id="json-rest-api" name="type_view_workspace" value="2" class="hidden peer" @if($workspace->type_view_workspace_id == 2) checked @endif/>
+                                    <label for="json-rest-api" class="inline-flex items-center justify-between w-full p-4 text-gray-500 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-teal-500 peer-checked:border-teal-600 peer-checked:text-teal-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
                                         <div class="block">
-                                            <div class="w-full text-lg font-semibold">JSON Puro</div>
+                                            <div class="w-full text-lg font-semibold">JSON REST API</div>
                                             <div class="w-full text-sm">Apenas o JSON bruto para desenvolvedores</div>
                                         </div>
                                         <i class="fas fa-code text-xl"></i>
@@ -124,7 +129,7 @@
                                     <label class="inline-flex items-center justify-between w-full p-4 text-gray-500 border border-gray-200 rounded-lg cursor-pointer dark:border-gray-700">
                                         <div class="block rounded-full items-center justify-center mr-3 bg-gradient-to-r">
                                             <div class="flex items-center">
-                                                <span class="text-lg font-semibold text-white">JSON Bruto</span>
+                                                <span class="text-lg font-semibold text-white">JSON REST API</span>
                                                 @include("components.badges.pro-badge")
                                             </div>
                                             <div class="w-full text-sm text-purple-300 mt-1"> Apenas o JSON bruto para desenvolvedores </div>
@@ -140,14 +145,14 @@
                     <div class="settings-card bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
                         <div class="flex justify-between items-center mb-4">
                             <h2 class="text-lg font-medium text-gray-900 dark:text-white">Hash Workspace API</h2>
-                            <button id="generate-hash-button" class="text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 flex items-center text-sm">
+                            <button id="generate-hash-button" class="text-teal-600 bg-teal-50 hover:bg-teal-100 dark:bg-teal-900/30 dark:text-teal-400 dark:hover:bg-teal-900/50 px-4 py-2 rounded-lg text-sm">
                                 <i class="fas fa-sync-alt mr-1"></i> Gerar novo hash
                             </button>
                         </div>
                         <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Use este hash para acessar a API deste workspace.</p>
                         
                         <div class="flex">
-                            <input type="text" id="api-hash" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-l-lg focus:ring-teal-500 focus:border-teal-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" value="a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6" readonly />
+                            <input type="text" id="api-hash" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-l-lg focus:ring-teal-500 focus:border-teal-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" value="{{ $workspace->workspace_hash_api }}" readonly />
                             <button id="copy-hash-button" class="relative text-white bg-teal-600 hover:bg-teal-700 focus:ring-4 focus:outline-none focus:ring-teal-300 font-medium rounded-r-lg text-sm px-4 text-center inline-flex items-center dark:bg-teal-500 dark:hover:bg-teal-600 dark:focus:ring-teal-800">
                                 <i class="fas fa-copy"></i>
                                 <span class="copied-tooltip absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded">Copiado!</span>
@@ -167,12 +172,22 @@
                                 <span>Exportar Configurações</span>
                                 <i class="fas fa-download"></i>
                             </button>
-                            
-                            <button class="w-full flex items-center justify-between p-3 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600">
-                                <span>Duplicar Workspace</span>
+                            <button type="button" 
+                                    data-modal-target="duplicateModal" 
+                                    data-modal-toggle="duplicateModal"
+                                    data-workspace-id="{{ $workspace->id }}"
+                                    data-workspace-title="{{ $workspace->title }}"
+                                    data-topics-count="{{ $workspace->topics_count }}"
+                                    data-fields-count="{{ $workspace->totalFields() }}" 
+                                    class="w-full flex items-center justify-between p-3 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600">
+                                <span>Duplicar Workspace 
+                                    @if (!auth()->user()->isPro() && !auth()->user()->isAdmin()) 
+                                        @include("components.badges.pro-badge") 
+                                    @endif
+                                </span>
                                 <i class="fas fa-copy"></i>
                             </button>
-                            
+                   
                             <button class="w-full flex items-center justify-between p-3 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30">
                                 <span>Excluir Workspace</span>
                                 <i class="fas fa-trash"></i>
@@ -323,6 +338,7 @@
                             </div>
                         </div>
                     </div>
+
                 </div>
             @else
                 {{-- Upsell --}}
@@ -333,6 +349,102 @@
             @endif
         </div>
     </main>
+@endsection
+
+@include('components.modals.modal-duplicate-workspace')
+
+<script>
+// Configuração do modal de duplicação
+document.addEventListener('DOMContentLoaded', function() {
+    // Variáveis globais
+    let currentWorkspaceId = null;
+    
+    // Event listeners para os botões de duplicação
+    document.querySelectorAll('.duplicate-workspace-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            currentWorkspaceId = this.dataset.workspaceId;
+            const workspaceTitle = this.dataset.workspaceTitle;
+            const topicsCount = this.dataset.topicsCount;
+            const fieldsCount = this.dataset.fieldsCount;
+            
+            // Preencher informações do modal
+            document.getElementById('new_title').value = workspaceTitle + ' - Cópia';
+            document.getElementById('topicsCount').textContent = `• ${topicsCount} tópicos`;
+            document.getElementById('fieldsCount').textContent = `• ${fieldsCount} campos`;
+            
+            // Limpar mensagens de erro
+            document.getElementById('errorMessage').classList.add('hidden');
+        });
+    });
+    
+    // Submissão do formulário via AJAX
+    document.getElementById('duplicateForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitBtn = document.getElementById('duplicateSubmitBtn');
+        const errorDiv = document.getElementById('errorMessage');
+        const originalText = submitBtn.innerHTML;
+        
+        // Mostrar loading
+        submitBtn.innerHTML = '🔄 Duplicando...';
+        submitBtn.disabled = true;
+        errorDiv.classList.add('hidden');
+        
+        // Fazer requisição AJAX
+        fetch(`{{route('workspace.duplicate', ['id' => $workspace->id])}}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                new_title: document.getElementById('new_title').value
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Sucesso - redirecionar para o novo workspace
+                window.location.href = data.data.redirect_url;
+            } else {
+                // Erro - mostrar mensagem
+                errorDiv.textContent = data.message || 'Erro ao duplicar workspace';
+                errorDiv.classList.remove('hidden');
+                
+                // Focar no campo de erro se for de título
+                if (data.error === 'title_exists') {
+                    document.getElementById('new_title').focus();
+                }
+            }
+        })
+        .catch(error => {
+            errorDiv.textContent = 'Erro de conexão. Tente novamente.';
+            errorDiv.classList.remove('hidden');
+        })
+        .finally(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    });
+    
+    // Fechar modal ao pressionar ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('duplicateModal');
+            if (!modal.classList.contains('hidden')) {
+                modal.classList.add('hidden');
+            }
+        }
+    });
+    
+    // Auto-focus no campo de texto quando modal abrir
+    const modal = document.getElementById('duplicateModal');
+    modal.addEventListener('shown', function() {
+        document.getElementById('new_title').focus();
+        document.getElementById('new_title').select();
+    });
+});
+</script>
 
     <script type="module">
         import '/js/modules/workspace/settings-interations.js';
@@ -350,47 +462,86 @@
                 updateSavePassword();
             });
 
-        checkboxWorkspacePassword.on('change', function() {
-            if (workspacePasswordInput.val().trim()) {
-                workspacePasswordInput.val('');
-                updateSavePassword();
-            }
-        });
+            checkboxWorkspacePassword.on('change', function() {
+                if (workspacePasswordInput.val().trim()) {
+                    workspacePasswordInput.val('');
+                    updateSavePassword();
+                }
+            });
 
-        function updateSavePassword() {
-            // Salva o texto original antes de desabilitar
-            var originalHtml = savePassword.html();
-            // Desabilita o botão e mostra loading
-            savePassword.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Salvando...');
-            
-            $.ajax({
-                url: "{{ route('workspace.update.passwordWorkspace', ['id' => $workspace->id]) }}",
-                method: "PUT",
-                data: {
-                    checkbox: checkboxWorkspacePassword.prop('checked'),
-                    password: workspacePasswordInput.val(),
-                    _token: "{{ csrf_token() }}",
-                },
-                success: function(response) {
-                    if (response.success) {
-                        // Atualiza a interface
-                        savePassword.html('<i class="fas fa-check mr-1"></i> Senha Criada!');
-                        
-                        // Restaura após 2 segundos
-                        setTimeout(function() {
+
+            $('#save-setting-type-view-api').on('click', function(){
+                var originalHtml = $(this).html();
+                // Desabilita o botão e mostra loading
+                $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Saving...');
+
+                $.ajax({
+                    url: "{{ route('workspace.update.viewWorkspace', ['id' => $workspace->id]) }}",
+                    method: "PUT",
+                    data: {
+                        type_view_workspace: $('[name=type_view_workspace]:checked').val(),
+                        _token: "{{ csrf_token() }}",
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Atualiza a interface
+                            $(this).html('<i class="fas fa-check mr-1"></i> Saved!');
+                            
+                            // Restaura após 2 segundos
+                            setTimeout(function() {
+                                $(this).prop('disabled', false).html(originalHtml);
+                            }, 2000);
+                        } else {
+                            alert('Erro: ' + response.message);
+                            $(this).prop('disabled', false).html(originalHtml);
+                        }
+                    },
+                    error: function(xhr) {
+                        alert('Ocorreu um erro: ' + xhr.responseJSON?.message || xhr.responseText);
+                        $(this).prop('disabled', false).html(originalHtml);
+                    },
+                    complete: function() {
+                        // Restaura o botão
+                        $('#save-setting-type-view-api').prop('disabled', false).html(originalHtml);
+                    }
+                }); 
+
+            })
+
+            function updateSavePassword() {
+                // Salva o texto original antes de desabilitar
+                var originalHtml = savePassword.html();
+                // Desabilita o botão e mostra loading
+                savePassword.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Salvando...');
+                
+                $.ajax({
+                    url: "{{ route('workspace.update.passwordWorkspace', ['id' => $workspace->id]) }}",
+                    method: "PUT",
+                    data: {
+                        checkbox: checkboxWorkspacePassword.prop('checked'),
+                        password: workspacePasswordInput.val(),
+                        _token: "{{ csrf_token() }}",
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Atualiza a interface
+                            savePassword.html('<i class="fas fa-check mr-1"></i> Senha Criada!');
+                            
+                            // Restaura após 2 segundos
+                            setTimeout(function() {
+                                savePassword.prop('disabled', false).html(originalHtml);
+                            }, 2000);
+                        } else {
+                            alert('Erro: ' + response.message);
                             savePassword.prop('disabled', false).html(originalHtml);
-                        }, 2000);
-                    } else {
-                        alert('Erro: ' + response.message);
+                        }
+                    },
+                    error: function(xhr) {
+                        alert('Ocorreu um erro: ' + xhr.responseJSON?.message || xhr.responseText);
                         savePassword.prop('disabled', false).html(originalHtml);
                     }
-                },
-                error: function(xhr) {
-                    alert('Ocorreu um erro: ' + xhr.responseJSON?.message || xhr.responseText);
-                    savePassword.prop('disabled', false).html(originalHtml);
-                }
-            });    
-        }
+                });    
+            }
 
             // Funcionalidade das abas
             const tabButtons = document.querySelectorAll('.tab-button');
@@ -707,4 +858,3 @@
             });
         </script>
 
-@endsection

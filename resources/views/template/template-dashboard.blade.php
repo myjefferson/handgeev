@@ -57,9 +57,12 @@
                             <div class="px-4 pb-3 text-gray-300">
                                 @auth
                                     @free
-                                        <p class="bg-primary-600 w-max text-black rounded-md px-2 py-1 mt-2">
-                                            Conta Free
-                                        </p>
+                                        <div class="mt-2 border-slate-700">
+                                            <a href="{{ route('landing.offers') }}" 
+                                            class="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-all duration-300 flex items-center justify-center">
+                                                <i class="fas fa-rocket mr-2"></i> Upgrade
+                                            </a>
+                                        </div>
                                     @endfree
 
                                     @pro
@@ -129,11 +132,29 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{route('workspaces.myworkspaces')}}" class="nav-item button-item flex items-center p-3 text-gray-300 rounded-lg group {{ request()->routeIs('workspaces.myworkspaces') ? 'active' : '' }}">
-                            <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
-                                <i class="fas fa-folder text-teal-400"></i>
+                        <a href="{{route('workspaces.index')}}" class="nav-item button-item flex items-center justify-between p-3 text-gray-300 rounded-lg group {{ request()->routeIs('workspaces.index') ? 'active' : '' }}">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
+                                    <i class="fas fa-layer-group text-teal-400"></i>
+                                </div>
+                                <span class="font-medium">My Workspaces</span>
                             </div>
-                            <span class="font-medium">My Workspaces</span>
+                            <div class="bg-teal-800 h-5 w-5 flex justify-center items-center rounded-full">
+                                <span class="text-sm font-semibold">{{ auth()->user()->workspaces()->count() }}</span>
+                            </div>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{route('collaborations.index')}}" class="nav-item button-item flex items-center justify-between p-3 text-gray-300 rounded-lg group {{ request()->routeIs('collaborations.index') ? 'active' : '' }}">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
+                                    <i class="fas fa-users text-teal-400"></i>
+                                </div>
+                                <span class="font-medium">Collaborations</span>
+                            </div>
+                            <div class="bg-teal-800 h-5 w-5 flex justify-center items-center rounded-full">
+                                <span class="text-sm font-semibold">{{ auth()->user()->collaborations()->count() }}</span>
+                            </div>
                         </a>
                     </li>
 
@@ -220,7 +241,7 @@
                         <div class="text-center">
                             <i class="fas fa-exclamation-triangle text-yellow-400 text-4xl mb-4"></i>
                             <p class="text-gray-400">Faça login para acessar o dashboard</p>
-                            <a href="{{ route('login.index') }}" class="inline-block mt-4 px-4 py-2 bg-teal-400 text-slate-900 rounded-lg font-medium hover:bg-teal-300 transition-colors">Fazer Login</a>
+                            <a href="{{ route('login.show') }}" class="inline-block mt-4 px-4 py-2 bg-teal-400 text-slate-900 rounded-lg font-medium hover:bg-teal-300 transition-colors">Fazer Login</a>
                         </div>
                     </div>
                 @endif
@@ -230,7 +251,6 @@
         @stack('scripts')
 
         @include('components.modals.modal-input-text')
-        @include('components.modals.modal-confirm')
         {{-- @include('components.modals.modal-edit-workspace') --}}
 
         <script>

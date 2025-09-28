@@ -92,7 +92,7 @@
                 </nav>
                 
                 <div class="flex items-center space-x-4">
-                    <a href="{{ route('login.index') }}" class="hidden md:inline-block text-teal-400 hover:text-teal-300 font-medium">Entrar</a>
+                    <a href="{{ route('login.show') }}" class="hidden md:inline-block text-teal-400 hover:text-teal-300 font-medium">Entrar</a>
                     <a href="#pricing" class="bg-teal-500 hover:bg-teal-400 text-slate-900 px-5 py-2 rounded-lg font-medium transition-colors teal-glow-hover">Começar Grátis</a>
                     
                     <button class="md:hidden text-slate-300">

@@ -8,7 +8,11 @@ use App\Services\HashService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Validation\Rule;
+use App\Mail\VerificationEmail;
+use Illuminate\Support\Facades\Mail;
 use Auth;
+use Validator;
 
 class UserController extends Controller
 {
@@ -32,10 +36,7 @@ class UserController extends Controller
         //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function storeProfile(Request $request)
     {
         // Validar os dados
         $validated = $request->validate([
@@ -43,52 +44,179 @@ class UserController extends Controller
             'surname' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
-            // 'timezone' => 'nullable|string|max:50',
-            // 'language' => 'nullable|string|max:10',
-            // 'phone' => 'nullable|string|max:20',
-        ]);
-        
-        // Criar o usuário com todos os campos necessários
-        $user = User::create([
-            'name' => $validated['name'],
-            'surname' => $validated['surname'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            // 'timezone' => $validated['timezone'] ?? 'UTC',
-            'timezone' => 'UTC',
-            // 'language' => $validated['language'] ?? 'pt_BR',
-            'language' => $validated['language'] ?? 'pt_BR',
-            // 'phone' => $validated['phone'] ?? null,
-            'phone' => null,
-            'status' => 'active',
-            'email_verified_at' => now(), // Ou null se precisar verificação por email
+            'terms' => 'required|accepted',
         ]);
 
-        // // Atribuir role free ao usuário
-        // $freeRole = Role::where('name', 'free')->first();
-        // if ($freeRole) {
-        //     $user->assignRole($freeRole);
-        // }
-
-        $user->assignRole(User::ROLE_FREE);
-
-        // Gerar hashes API se necessário
-        $user->update([
-            'global_hash_api' =>  HashService::generateUniqueHash()
-        ]);
-
-        // Logar o usuário
-        Auth::login($user);
-
-        return redirect()->route('dashboard.home')
-            ->with(['success' => 'Conta criada com sucesso!']);
         try {
+            // Criar o usuário com email não verificado
+            $user = User::create([
+                'name' => $validated['name'],
+                'surname' => $validated['surname'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'timezone' => 'UTC',
+                'language' => 'pt_BR',
+                'phone' => null,
+                'status' => 'active',
+                'email_verified' => false,
+                'email_verification_code' => null,
+                'email_verification_sent_at' => null,
+            ]);
+
+            // Atribuir role free ao usuário
+            $user->assignRole(User::ROLE_FREE);
+
+            // Gerar hashes API
+            $user->update([
+                'global_hash_api' => HashService::generateUniqueHash()
+            ]);
+
+            // Enviar código de verificação
+            $verificationCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            
+            $user->update([
+                'email_verification_code' => $verificationCode,
+                'email_verification_sent_at' => now(),
+            ]);
+
+            // Enviar email
+            Mail::to($user->email)->send(new VerificationEmail($user, $verificationCode));
+
+            // Log para debug
+            \Log::info("Novo usuário registrado: {$user->email} - Código: {$verificationCode}");
+
+            // Logar o usuário
+            Auth::login($user);
+
+            // Redirecionar para página de verificação
+            return redirect()->route('verification.show')
+                ->with([
+                    'success' => 'Conta criada com sucesso! Enviamos um código de verificação para seu email.',
+                    'email' => $user->email
+                ]);
 
         } catch (\Exception $e) {
-            // return redirect()->route('register.index')
-            //     ->with(['error' => 'Ocorreu um erro ao criar a conta: ' . $e->getMessage()])
-            //     ->withInput();
-            return dd($e->error());
+            \Log::error("Erro ao criar usuário: " . $e->getMessage());
+            
+            return redirect()->back()
+                ->with(['error' => 'Ocorreu um erro ao criar a conta: ' . $e->getMessage()])
+                ->withInput();
+        }
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function updateProfile(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            
+            // Validação dos dados usando validate() diretamente
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'surname' => 'required|string|max:255',
+                'email' => [
+                    'required',
+                    'email',
+                    'max:255',
+                    Rule::unique('users')->ignore($user->id)
+                ],
+                'phone' => 'nullable|string|max:20',
+            ], [
+                'name.required' => 'O nome é obrigatório.',
+                'name.max' => 'O nome não pode ter mais de 255 caracteres.',
+                'surname.required' => 'O sobrenome é obrigatório.',
+                'surname.max' => 'O sobrenome não pode ter mais de 255 caracteres.',
+                'email.required' => 'O email é obrigatório.',
+                'email.email' => 'Digite um email válido.',
+                'email.unique' => 'Este email já está em uso.',
+                'phone.max' => 'O telefone não pode ter mais de 20 caracteres.',
+            ]);
+
+            // Preparar dados para atualização
+            $updateData = [
+                'name' => $validated['name'],
+                'surname' => $validated['surname'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'] ?? null,
+            ];
+
+            // Verificar se o email foi alterado
+            if ($user->email !== $validated['email']) {
+                $updateData['email_verified_at'] = null;
+                // Aqui você pode adicionar lógica para reenviar verificação de email
+            }
+
+            // Atualizar usuário
+            $user->update($updateData);
+
+            return redirect()->route('user.profile')
+                ->with('success', 'Perfil atualizado com sucesso!');
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()
+                ->withErrors($e->validator)
+                ->withInput()
+                ->with('error', 'Por favor, corrija os erros abaixo.');
+                
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Erro ao atualizar perfil: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
+    /**
+     * Atualizar senha do usuário
+     */
+    public function updatePassword(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            
+            $validated = $request->validate([
+                'current_password' => 'required|string',
+                'new_password' => 'required|string|min:8|confirmed',
+            ], [
+                'current_password.required' => 'A senha atual é obrigatória.',
+                'new_password.required' => 'A nova senha é obrigatória.',
+                'new_password.min' => 'A nova senha deve ter pelo menos 8 caracteres.',
+                'new_password.confirmed' => 'A confirmação da senha não coincide.',
+            ]);
+
+            // Verificar senha atual
+            if (!Hash::check($validated['current_password'], $user->password)) {
+                return redirect()->back()
+                    ->with('error', 'A senha atual está incorreta.')
+                    ->with('tab', 'password');
+            }
+
+            // Verificar se a nova senha é diferente da atual
+            if (Hash::check($validated['new_password'], $user->password)) {
+                return redirect()->back()
+                    ->with('error', 'A nova senha deve ser diferente da senha atual.')
+                    ->with('tab', 'password');
+            }
+
+            // Atualizar senha
+            $user->update([
+                'password' => Hash::make($validated['new_password'])
+            ]);
+
+            return redirect()->route('user.profile')
+                ->with('success', 'Senha atualizada com sucesso!');
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()
+                ->withErrors($e->validator)
+                ->with('tab', 'password')
+                ->with('error', 'Por favor, corrija os erros abaixo.');
+                
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Erro ao atualizar senha: ' . $e->getMessage())
+                ->with('tab', 'password');
         }
     }
 

@@ -39,6 +39,9 @@ class User extends Authenticatable implements JWTSubject
         'phone',
         'status',
         'global_hash_api',
+        'email_verification_code',
+        'email_verification_sent_at',
+        'email_verified',
     ];
 
     /**
@@ -49,6 +52,7 @@ class User extends Authenticatable implements JWTSubject
     protected $hidden = [
         'password',
         'remember_token',
+        'email_verification_code',
     ];
 
     /**
@@ -60,7 +64,9 @@ class User extends Authenticatable implements JWTSubject
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed'
+            'email_verification_sent_at' => 'datetime',
+            'password' => 'hashed',
+            'email_verified' => 'boolean',
         ];
     }
 
@@ -74,14 +80,14 @@ class User extends Authenticatable implements JWTSubject
 
     public function collaborations()
     {
-        return $this->hasMany(WorkspaceCollaborator::class, 'user_id')
-                    // ->where('status', 'accepted')
+        return $this->hasMany(Collaborator::class, 'user_id')
+                    ->where('status', 'accepted')
                     ->with('workspace');
     }
 
     public function pendingCollaborations()
     {
-        return $this->hasMany(WorkspaceCollaborator::class, 'user_id')
+        return $this->hasMany(Collaborator::class, 'user_id')
                     ->where('status', 'pending');
     }
     
@@ -91,7 +97,9 @@ class User extends Authenticatable implements JWTSubject
 
     public function fields()
     {
-        return $this->hasManyThrough(Field::class, Topic::class);
+        return Field::whereHas('topic.workspace', function($query) {
+            $query->where('user_id', $this->id);
+        });
     }
     
     public function topics()
@@ -133,16 +141,41 @@ class User extends Authenticatable implements JWTSubject
         ];
     }
 
+    /**
+     * Verifica se o email foi verificado
+     */
+    public function hasVerifiedEmail(): bool
+    {
+        return $this->email_verified;
+    }
+
+    /**
+     * Gera um código de verificação
+     */
+    public function generateVerificationCode(): string
+    {
+        return str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Verifica se usuário é ADMIN
+     */
     public function isAdmin(): bool
     {
         return $this->hasRole(self::ROLE_ADMIN);
     }
 
+    /**
+     * Verifica se usuário é PRO
+     */
     public function isPro(): bool
     {
         return $this->hasRole(self::ROLE_PRO);
     }
 
+    /**
+     * Verifica se usuário é FREE
+     */
     public function isFree(): bool
     {
         return $this->hasRole(self::ROLE_FREE);

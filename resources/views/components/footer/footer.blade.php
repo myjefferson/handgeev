@@ -4,7 +4,7 @@
         <div class="grid md:grid-cols-4 gap-8">
             <div>
                 <div class="flex items-center mb-6">
-                    <img class="w-32" src="assets/images/logo.png" alt="Handgeev">
+                    <img class="w-32" src="{{ asset('assets/images/logo.png') }}" alt="Handgeev">
                 </div>
                 <p class="mb-6">Soluções digitais para profissionais criativos exibirem seu trabalho.</p>
                 <div class="flex space-x-4">

@@ -1,4 +1,4 @@
-class WorkspaceCollaborator {
+class Collaborator {
     constructor(workspaceId) {
         this.workspaceId = workspaceId;
         this.init();

@@ -2,7 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Models\WorkspaceCollaborator;
+use App\Models\Collaborator;
 use App\Models\Workspace;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
@@ -18,7 +18,7 @@ class WorkspaceInviteNotification extends Notification
     public $workspace;
     public $inviter;
 
-    public function __construct(WorkspaceCollaborator $collaborator, Workspace $workspace, User $inviter)
+    public function __construct(Collaborator $collaborator, Workspace $workspace, User $inviter)
     {
         $this->collaborator = $collaborator;
         $this->workspace = $workspace;

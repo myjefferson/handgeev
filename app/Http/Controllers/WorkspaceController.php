@@ -10,13 +10,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
+use App\Services\HashService;
 
 class WorkspaceController extends Controller
 {
     /**
      * Exibe a lista de todos os workspaces do usuário autenticado.
      */
-    public function listWorkspaces()
+    public function indexWorkspaces()
     {
         // $workspaces = Workspace::where('user_id', Auth::id())->get();
         // if (!$workspaces) {
@@ -25,7 +26,7 @@ class WorkspaceController extends Controller
 
         $user = auth()->user();
     
-        $myWorkspaces = $user->workspaces()
+        $workspaces = $user->workspaces()
             ->withCount('topics')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -37,7 +38,7 @@ class WorkspaceController extends Controller
             }])
             ->orderBy('joined_at', 'desc')
             ->get();
-        return view('pages.dashboard.workspaces.my-workspaces', compact('myWorkspaces', 'collaborations'));
+        return view('pages.dashboard.workspaces.my-workspaces', compact('workspaces', 'collaborations'));
     }
     /**
      * Exibe a lista de todos os workspaces do usuário autenticado.
@@ -81,11 +82,12 @@ class WorkspaceController extends Controller
     public function store(Request $request)
     {
         try {
-            $data = $request->all();
+            $workspaceData = $request->all();
             // Converte o checkbox para boolean
-            $data['is_published'] = $request->has('is_published');
+            $workspaceData['is_published'] = $request->has('is_published');
+            $workspaceData['workspace_hash_api'] = HashService::generateUniqueHash();            
             
-            $validatedData = Validator::make($data, Workspace::$rules)->validate();
+            $validatedData = Validator::make($workspaceData, Workspace::$rules)->validate();
             $workspace = auth()->user()->workspaces()->create($validatedData);
             // 4. Cria um tópico padrão para o novo workspace.
             $workspace->topics()->create([
@@ -154,7 +156,7 @@ class WorkspaceController extends Controller
             // Terceiro: deletar o workspace
             $workspace->delete();
 
-            return redirect(route('dashboard.home'))->with([
+            return redirect(route('workspaces.index'))->with([
                 'success' => true,
                 'message' => 'Workspace excluído com sucesso',
                 'deleted_topics' => $workspace->topics->count(),

@@ -18,36 +18,36 @@
             <!-- Card Workspaces -->
             <div class="bg-slate-800 rounded-2xl shadow-lg p-6 border-l border-teal-400 hover:border">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="p-3 bg-teal-400/10 rounded-full">
+                    <div class="h-12 w-12 flex items-center justify-center bg-teal-400/10 rounded-full">
                         <i class="fas fa-layer-group text-teal-400 text-xl"></i>
                     </div>
                     <span class="text-sm text-gray-400">Total</span>
                 </div>
-                <h3 class="text-2xl font-bold text-white mb-2">5 Workspaces</h3>
+                <h3 class="text-2xl font-bold text-white mb-2">{{ auth()->user()->workspaces()->count() }} Workspaces</h3>
                 <p class="text-sm text-gray-400">Seus ambientes de trabalho</p>
             </div>
 
             <!-- Card Tópicos -->
             <div class="bg-slate-800 rounded-2xl shadow-lg p-6 border-l border-teal-400 hover:border">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="p-3 bg-teal-400/10 rounded-full">
+                    <div class="h-12 w-12 flex items-center justify-center bg-teal-400/10 rounded-full">
                         <i class="fas fa-folder text-teal-400 text-xl"></i>
                     </div>
                     <span class="text-sm text-gray-400">Total</span>
                 </div>
-                <h3 class="text-2xl font-bold text-white mb-2">23 Tópicos</h3>
+                <h3 class="text-2xl font-bold text-white mb-2">{{ auth()->user()->topics()->count() }} Tópicos</h3>
                 <p class="text-sm text-gray-400">Organizados por workspace</p>
     </div>
 
             <!-- Card Campos -->
             <div class="bg-slate-800 rounded-2xl shadow-lg p-6 border-l border-teal-400 hover:border">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="p-3 bg-teal-400/10 rounded-full">
+                    <div class="h-12 w-12 flex items-center justify-center bg-teal-400/10 rounded-full">
                         <i class="fas fa-table text-teal-400 text-xl"></i>
                     </div>
                     <span class="text-sm text-gray-400">Total</span>
                 </div>
-                <h3 class="text-2xl font-bold text-white mb-2">156 Campos</h3>
+                <h3 class="text-2xl font-bold text-white mb-2">{{ auth()->user()->fields()->count() }} Campos</h3>
                 <p class="text-sm text-gray-400">Dados cadastrados</p>
             </div>
         </div>
@@ -58,7 +58,7 @@
             <div class="bg-slate-800 rounded-2xl shadow-lg p-6">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-xl font-semibold text-white">Workspaces Recentes</h2>
-                    <a href="{{route('workspaces.myworkspaces')}}" class="text-teal-400 hover:text-teal-300 text-sm font-medium">
+                    <a href="{{route('workspaces.index')}}" class="text-teal-400 hover:text-teal-300 text-sm font-medium">
                         Ver todos →
                     </a>
                 </div>

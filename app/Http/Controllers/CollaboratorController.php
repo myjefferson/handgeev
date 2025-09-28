@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Workspace;
 use App\Models\User;
-use App\Models\WorkspaceCollaborator;
+use App\Models\Collaborator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\WorkspaceInvitation;
@@ -12,12 +12,25 @@ use App\Notifications\WorkspaceInviteNotification;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 
-class WorkspaceCollaboratorController extends Controller
+class CollaboratorController extends Controller
 {
+    public function indexCollaborations()
+    {
+        $user = auth()->user();
+        // Agora usando o relacionamento correto
+        $collaborations = $user->collaborations()
+            ->with(['workspace' => function($query) {
+                $query->withCount('topics');
+            }])
+            ->orderBy('joined_at', 'desc')
+            ->get();
+        return view('pages.dashboard.collaborations.my-collaborations', compact('collaborations'));
+    }
+
     /**
      * Workspace colaborador
      */
-    public function index($id)
+    public function showCollaboration($id)
     {
         $user = Auth::user();
         
@@ -27,7 +40,7 @@ class WorkspaceCollaboratorController extends Controller
             ->exists();
 
         // Se não é dono, verifica se é colaborador ACEITO através da tabela workspace_collaborators
-        $collaborator = WorkspaceCollaborator::where('workspace_id', $id)
+        $collaborator = Collaborator::where('workspace_id', $id)
             ->where('user_id', $user->id)
             ->where('status', 'accepted')
             ->first();
@@ -84,7 +97,7 @@ class WorkspaceCollaboratorController extends Controller
         $invitedUser = User::where('email', $request->email)->first();
         
         // Verificar se já existe convite pendente
-        $existingInvite = WorkspaceCollaborator::where('workspace_id', $workspaceId)
+        $existingInvite = Collaborator::where('workspace_id', $workspaceId)
             ->where(function($query) use ($request, $invitedUser) {
                 $query->where('invitation_email', $request->email)
                     ->orWhere('user_id', $invitedUser?->id);
@@ -100,7 +113,7 @@ class WorkspaceCollaboratorController extends Controller
         $invitationToken = Str::random(60);
 
         // Criar convite
-        $collaborator = WorkspaceCollaborator::create([
+        $collaborator = Collaborator::create([
             'workspace_id' => $workspaceId,
             'user_id' => $invitedUser?->id,
             'role' => $request->role,
@@ -183,7 +196,7 @@ class WorkspaceCollaboratorController extends Controller
             return response()->json(['error' => 'Sem permissão'], 403);
         }
 
-        $collaborator = WorkspaceCollaborator::where('workspace_id', $workspaceId)
+        $collaborator = Collaborator::where('workspace_id', $workspaceId)
             ->where('id', $collaboratorId)
             ->firstOrFail();
 
@@ -202,7 +215,7 @@ class WorkspaceCollaboratorController extends Controller
     public function acceptInvite($token)
     {
         try {
-            $collaborator = WorkspaceCollaborator::where('invitation_token', $token)
+            $collaborator = Collaborator::where('invitation_token', $token)
                 ->whereNull('joined_at')
                 ->firstOrFail();
 
@@ -231,7 +244,7 @@ class WorkspaceCollaboratorController extends Controller
                 ->with('success', 'Convite aceito com sucesso!');
 
         } catch (\Exception $e) {
-            return redirect()->route('workspaces.myworkspaces')
+            return redirect()->route('workspaces.index')
                 ->with('error', 'Convite inválido ou expirado.');
         }
     }
@@ -242,7 +255,7 @@ class WorkspaceCollaboratorController extends Controller
     public function acceptInviteById($id)
     {
         try {
-            $collaborator = WorkspaceCollaborator::findOrFail($id);
+            $collaborator = Collaborator::findOrFail($id);
             
             // Verificar permissões
             if ($collaborator->invitation_email !== auth()->user()->email) {
@@ -278,7 +291,7 @@ class WorkspaceCollaboratorController extends Controller
     public function rejectInviteById($id)
     {
         try {
-            $collaborator = WorkspaceCollaborator::findOrFail($id);
+            $collaborator = Collaborator::findOrFail($id);
             
             // Verificar permissões
             if ($collaborator->invitation_email !== auth()->user()->email) {
@@ -312,7 +325,7 @@ class WorkspaceCollaboratorController extends Controller
     public function rejectInvite($token)
     {
         try {
-            $collaborator = WorkspaceCollaborator::where('invitation_token', $token)
+            $collaborator = Collaborator::where('invitation_token', $token)
                 ->firstOrFail();
 
             $collaborator->update([

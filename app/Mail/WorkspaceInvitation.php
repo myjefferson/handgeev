@@ -6,7 +6,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use App\Models\WorkspaceCollaborator;
+use App\Models\Collaborator;
 use App\Models\Workspace;
 use App\Models\User;
 
@@ -23,7 +23,7 @@ class WorkspaceInvitation extends Mailable implements ShouldQueue
     /**
      * Create a new message instance.
      */
-    public function __construct(WorkspaceCollaborator $collaborator, Workspace $workspace, ?User $inviter = null)
+    public function __construct(Collaborator $collaborator, Workspace $workspace, ?User $inviter = null)
     {
         $this->collaborator = $collaborator;
         $this->workspace = $workspace;

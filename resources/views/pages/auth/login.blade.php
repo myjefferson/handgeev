@@ -63,7 +63,7 @@
         <div class="login-container w-full max-w-md p-8 border border-teal-500">
             <div class="text-center mb-8">
                 <div class="flex justify-center mb-4">
-                    <img class="w-52" src="assets/images/logo.png" alt="Handgeev Logo">
+                    <img class="w-52" src="{{ asset('assets/images/logo.png') }}" alt="Handgeev Logo">
                 </div>
                 <p class="text-slate-300">Faça login para acessar sua conta</p>
             </div>
@@ -106,7 +106,7 @@
                     </div>
 
                     <div class="text-sm">
-                        <a href="#" class="font-medium text-primary-500 hover:text-primary-400 transition-colors">
+                        <a href="{{ route('recovery.account.show') }}" class="font-medium text-primary-500 hover:text-primary-400 transition-colors">
                             Esqueceu a senha?
                         </a>
                     </div>

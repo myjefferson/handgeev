@@ -22,6 +22,9 @@ class Workspace extends Model
         'title',
         'is_published',
         'password',
+        'type_view_workspace_id',
+        'workspace_hash_api',
+        'api_enabled',
     ];
 
 
@@ -29,6 +32,7 @@ class Workspace extends Model
         'title' => 'required|string|max:100',
         'type_workspace_id' => 'required|integer|exists:type_workspaces,id',
         'is_published' => 'sometimes|boolean',
+        'workspace_hash_api' => 'required|string',
     ];
 
     
@@ -39,6 +43,21 @@ class Workspace extends Model
             'title.max' => 'O título não pode ter mais de 100 caracteres',
             'type_workspace_id.exists' => 'O tipo de workspace selecionado é inválido',
         ];
+    }
+    
+    protected static function booted()
+    {
+        static::created(function ($workspace) {
+            Collaborator::create([
+                'workspace_id' => $workspace->id,
+                'user_id' => $workspace->user_id,
+                'role' => 'owner',
+                'invited_by' => $workspace->user_id,
+                'invited_at' => now(),
+                'joined_at' => now(),
+                'status' => 'accepted'
+            ]);
+        });
     }
 
     /**
@@ -52,7 +71,7 @@ class Workspace extends Model
      * Relacionamento: Um workspace tem muitos tópicos
      */
     public function topics(): HasMany{
-        return $this->hasMany(Topic::class); //workspace tem muitos tópicos
+        return $this->hasMany(Topic::class)->orderBy('order', 'asc'); //workspace tem muitos tópicos
     }
 
     /**
@@ -66,7 +85,7 @@ class Workspace extends Model
 
     public function collaborators()
     {
-        return $this->hasMany(WorkspaceCollaborator::class);
+        return $this->hasMany(Collaborator::class);
     }
 
     public function totalFields()
@@ -111,18 +130,71 @@ class Workspace extends Model
         return true;
     }
 
-    protected static function booted()
+    /**
+     * Relacionamento com domínios permitidos
+     */
+    public function allowedDomains(): HasMany
     {
-        static::created(function ($workspace) {
-            WorkspaceCollaborator::create([
-                'workspace_id' => $workspace->id,
-                'user_id' => $workspace->user_id,
-                'role' => 'owner',
-                'invited_by' => $workspace->user_id,
-                'invited_at' => now(),
-                'joined_at' => now(),
-                'status' => 'accepted'
-            ]);
-        });
+        return $this->hasMany(WorkspaceAllowedDomain::class);
+    }
+
+    /**
+     * Verificar se um domínio é permitido
+     */
+    public function isDomainAllowed($domain): bool
+    {
+        if (!$this->api_enabled) {
+            return false;
+        }
+
+        return $this->allowedDomains()
+            ->where('domain', $domain)
+            ->where('is_active', true)
+            ->exists();
+    }
+
+    /**
+     * Obter lista de domínios ativos
+     */
+    public function getActiveDomainsAttribute()
+    {
+        return $this->allowedDomains()
+            ->where('is_active', true)
+            ->pluck('domain')
+            ->toArray();
+    }
+
+    /**
+     * Adicionar domínio
+     */
+    public function addAllowedDomain($domain): bool
+    {
+        return WorkspaceAllowedDomain::updateOrCreate(
+            [
+                'workspace_id' => $this->id,
+                'domain' => $domain
+            ],
+            ['is_active' => true]
+        ) !== null;
+    }
+
+    /**
+     * Remover/desativar domínio
+     */
+    public function removeAllowedDomain($domain): bool
+    {
+        return $this->allowedDomains()
+            ->where('domain', $domain)
+            ->update(['is_active' => false]);
+    }
+
+    /**
+     * Ativar domínio previamente removido
+     */
+    public function activateDomain($domain): bool
+    {
+        return $this->allowedDomains()
+            ->where('domain', $domain)
+            ->update(['is_active' => true]);
     }
 }

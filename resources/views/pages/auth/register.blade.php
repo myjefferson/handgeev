@@ -57,7 +57,7 @@
                         </div>
                         
                         <div class="relative z-10">
-                            <img class="mb-5 w-48" src="assets/images/logo.png" alt="Handgeev">
+                            <img class="mb-5 w-48" src="{{asset('assets/images/logo.png')}}" alt="Handgeev">
                         </div>
                         
                         <div class="relative z-10">
@@ -126,7 +126,7 @@
                                 </p>
                                 
                                 <p class="text-sm mt-2 mb-6 text-center md:text-left">
-                                    Já tem uma conta? <a href="{{route('login.index')}}" class="underline text-teal-400 hover:text-teal-300 transition-colors">Fazer login</a>.
+                                    Já tem uma conta? <a href="{{route('login.show')}}" class="underline text-teal-400 hover:text-teal-300 transition-colors">Fazer login</a>.
                                 </p>
                                 
                                 <form class="space-y-4" action="{{route('register.store')}}" method="POST">
