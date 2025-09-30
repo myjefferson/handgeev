@@ -3,6 +3,9 @@
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\AuthTokenApi;
 use App\Http\Middleware\RoleMiddleware;
+use App\Http\Middleware\PlanRateLimitMiddleware;
+use App\Http\Middleware\CheckApiAccessMiddleware;
+use App\Http\Middleware\LogApiRequests;
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -20,7 +23,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'auth' => Authenticate::class,
             'role' => RoleMiddleware::class,
-            'authTokenApi' => AuthTokenApi::class,
+            'plan.rate_limit' => PlanRateLimitMiddleware::class,
+            'api.auth_token' => AuthTokenApi::class,
+            'api.access' => CheckApiAccessMiddleware::class,
+            'api.log' => LogApiRequests::class,
             // 'permission' => PermissionMiddleware::class,
         ]);
     })

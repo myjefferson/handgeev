@@ -50,7 +50,7 @@ class WorkspaceSettingController extends Controller
             }
         }
         
-        return view('pages.dashboard.workspaces.workspace-settings', compact('workspace', 'hasPasswordWorkspace'));
+        return view('pages.dashboard.workspace.workspace-settings', compact('workspace', 'hasPasswordWorkspace'));
     }
 
     public function generateNewHashApi($id)
@@ -150,6 +150,15 @@ class WorkspaceSettingController extends Controller
      */
     public function duplicate(Request $request, $workspaceId)
     {
+        // Verificar se usuário é Pro ou Admin
+        if (!auth()->user()->isPro() && !auth()->user()->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'server_error',
+                'message' => 'A duplicação de workspaces está disponível apenas para usuários Pro.'
+            ], 500);
+        }
+
         try {
             DB::beginTransaction();
 

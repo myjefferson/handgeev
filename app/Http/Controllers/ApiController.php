@@ -8,78 +8,98 @@ use App\Models\Project;
 use App\Models\Topic;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\ApiRequestLog;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 
 class ApiController extends Controller
 {
-    public function refresh()
+    // Fornecer as hashes para garantir o tokenJWT
+    public function getTokenByHashes(Request $request)
     {
-        try {
-            // A middleware 'jwt.refresh' já validou que o token pode ser renovado.
-            // O método refresh() obtém o novo token.
-            $newToken = Auth::guard('api')->refresh();
-
+        // Rate limiting específico para endpoint de autenticação
+        $authLimitKey = 'auth_attempts:' . $request->ip();
+        if (!RateLimiter::attempt($authLimitKey, 5, function() {}, 300)) { // 5 tentativas a cada 5 minutos
             return response()->json([
-                'status' => 'success',
-                'authorization' => [
-                    'token' => $newToken,
-                    'type' => 'bearer',
-                    'expires_in' => Auth::guard('api')->factory()->getTTL() * 60
-                ]
-            ]);
-        } catch (JWTException $e) {
-            // Em caso de qualquer erro na renovação (token na blacklist, por exemplo).
-            return response()->json(['error' => 'Token inválido ou não pode ser renovado.'], 401);
+                'error' => 'Too many authentication attempts',
+                'message' => 'Please try again in 5 minutes'
+            ], 429);
         }
-    }
 
-    //Fornecer as hashes para garantir o tokenJWT
-    public function getTokenByHashes(Request $request){
         $auth = auth('api');
-
         $globalHash = $request->input('global_hash_api');
 
-        if (!$primaryHash || !$secondaryHash) {
-            return response()->json(['error' => 'Hashes not provided.'], 400);
+        if (!$globalHash) {
+            return response()->json(['error' => 'Global hash not provided.'], 400);
         }
 
-        //consulta do usuario no banco
-        $user = User::where([
-            'global_hash_api' => $globalHash
-        ])->first();
+        // Consulta do usuario no banco
+        $user = User::where(['global_hash_api' => $globalHash])->first();
 
-        //Se o usuário não for encontrado
         if (!$user) {
             return response()->json(['error' => 'Invalid hashes.'], 401);
         }
 
-        try{
+        // Verificar se o usuário tem acesso à API
+        $plan = $user->getPlan();
+        if (!$plan || !$plan->can_use_api) {
+            return response()->json([
+                'error' => 'API access denied',
+                'message' => 'Your plan does not include API access'
+            ], 403);
+        }
+
+        try {
             $token = $auth->fromUser($user);
             return response()->json([
                 'status' => 'success',
                 'authorization' => [
                     'token' => $token,
                     'type' => 'bearer',
-                    'expires_in' => $auth->factory()->getTTL() * 60
+                    'expires_in' => $auth->factory()->getTTL() * 60,
+                    'rate_limits' => [
+                        'per_minute' => $plan->api_requests_per_minute,
+                        'per_hour' => $plan->api_requests_per_hour,
+                        'per_day' => $plan->api_requests_per_day
+                    ]
                 ]
             ]);
-        }catch(\Exeption $e){
-            
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Token generation failed',
+                'message' => $e->getMessage()
+            ], 500);
         }
-
     }
 
     public function getVisibleWorkspaceData(string $workspaceId)
     {
         try {
+            $user = Auth::user();
+            $plan = $user->getPlan();
+
+            // Verificar rate limits antes de processar
+            $rateLimitKey = 'workspace_request:' . $user->id;
+            if (!RateLimiter::attempt($rateLimitKey . ':minute', $plan->api_requests_per_minute ?? 60, function() {}, 60)) {
+                return response()->json([
+                    'error' => 'Rate limit exceeded',
+                    'message' => 'Too many workspace requests. Please try again in a minute.',
+                    'limits' => [
+                        'per_minute' => $plan->api_requests_per_minute,
+                        'per_hour' => $plan->api_requests_per_hour,
+                        'per_day' => $plan->api_requests_per_day
+                    ]
+                ], 429);
+            }
+
             $workspace = Workspace::with(['user', 'typeWorkspace', 'topics.fields'])
                 ->where('id', $workspaceId)
-                ->where('user_id', Auth::id())
+                ->where('user_id', $user->id)
                 ->firstOrFail();
 
             // Transformar para formato JSON estruturado
@@ -87,7 +107,12 @@ class ApiController extends Controller
                 'metadata' => [
                     'version' => '1.0',
                     'generated_at' => now()->toISOString(),
-                    'workspace_id' => $workspace->id
+                    'workspace_id' => $workspace->id,
+                    'rate_limits' => [
+                        'remaining_minute' => RateLimiter::remaining($rateLimitKey . ':minute', $plan->api_requests_per_minute ?? 60),
+                        'remaining_hour' => RateLimiter::remaining($rateLimitKey . ':hour', $plan->api_requests_per_hour ?? 1000),
+                        'plan' => $plan->name
+                    ]
                 ],
                 'workspace' => [
                     'id' => $workspace->id,
@@ -147,17 +172,31 @@ class ApiController extends Controller
         }
     }  
 
-    public function getWorkspaceData(string $workspaceId){
+    public function getWorkspaceData(string $workspaceId)
+    {
         try {
+            $user = Auth::user();
+            $plan = $user->getPlan();
+
+            // Rate limiting específico para este endpoint
+            $rateLimitKey = 'workspace_data:' . $user->id;
+            if (!RateLimiter::attempt($rateLimitKey . ':minute', $plan->api_requests_per_minute ?? 60, function() {}, 60)) {
+                return response()->json([
+                    'error' => 'Rate limit exceeded',
+                    'message' => 'Too many requests for workspace data.',
+                    'retry_after' => RateLimiter::availableIn($rateLimitKey . ':minute')
+                ], 429);
+            }
+
             // Verificar se o workspace existe e pertence ao usuário
             $workspace = Workspace::with(['user', 'typeWorkspace'])
                 ->where('id', $workspaceId)
-                ->where('user_id', Auth::id())
+                ->where('user_id', $user->id)
                 ->firstOrFail();
 
             // Carregar tópicos apenas com campos visíveis
             $topics = Topic::with(['fields' => function($query) {
-                    $query->where('is_visible', 1) // ← FILTRO AQUI
+                    $query->where('is_visible', 1)
                         ->orderBy('order');
                 }])
                 ->where('workspace_id', $workspaceId)
@@ -166,6 +205,12 @@ class ApiController extends Controller
 
             // Estrutura da resposta
             $response = [
+                'metadata' => [
+                    'rate_limits' => [
+                        'remaining' => RateLimiter::remaining($rateLimitKey . ':minute', $plan->api_requests_per_minute ?? 60),
+                        'plan' => $plan->name
+                    ]
+                ],
                 'workspace' => [
                     'id' => $workspace->id,
                     'title' => $workspace->title,
@@ -179,16 +224,6 @@ class ApiController extends Controller
                         'id' => $topic->id,
                         'title' => $topic->title,
                         'order' => $topic->order,
-                        // 'fields' => $topic->fields->map(function($field) {
-                        //     return [
-                        //         'id' => $field->id,
-                        //         'key_name' => $field->key_name,
-                        //         'value' => $field->value,
-                        //         'order' => $field->order,
-                        //         'created_at' => $field->created_at,
-                        //         'updated_at' => $field->updated_at
-                        //     ];
-                        // })
                         'fields' => $topic->fields->mapWithKeys(function($field) {
                             return [$field->key_name => $field->value];
                         })
@@ -218,54 +253,29 @@ class ApiController extends Controller
         }
     }
 
-    public function getCourseById(Request $request)
+    // Método para verificar os limites atuais
+    public function getRateLimitStatus(Request $request)
     {
-        // try {
-        //     $course = Course::where([
-        //         'id_user' => Auth::id(),
-        //         'id' => $request->idCourse
-        //     ])->first();
+        $user = Auth::user();
+        $plan = $user->getPlan();
 
-        //     if(!$course){
-        //         return response()->json(['message' => 'Projeto não encontrado'], 404);
-        //     }
-
-        //     return response()->json($course);
-        // } catch (\Exception $e) {
-        //     //Retornar pra página de hash inválido, ou configuração de ambiente incompleta
-        //     return response()->json(['message' => 'An error occurred. ' . $e->getMessage()], 500);
-        // }
-    }
-
-    public function getProjectById(Request $request)
-    {
-        // try {
-        //     $project = Project::select(
-        //         'id',
-        //         'title',
-        //         'subtitle',
-        //         'description',
-        //         DB::raw('JSON_UNQUOTE(JSON_EXTRACT(images, "$[0]")) as cover'),
-        //         'images',
-        //         'start_date',
-        //         'end_date',
-        //         'status',
-        //         'technologies_used',
-        //         'project_link',
-        //         'git_repository_link'
-        //     )->where([
-        //         'id_user' => Auth::id(), 
-        //         'id' => $request->idProject
-        //     ])->first();
-
-        //     if(!$project){
-        //         return response()->json(['message' => 'Project not found.'], 404);
-        //     }
-
-        //     return response()->json($project);
-        // } catch (\Exception $e) {
-        //     //Retornar pra página de hash inválido, ou configuração de ambiente incompleta
-        //     return response()->json(['message' => 'An error occurred. ' . $e->getMessage()], 500);
-        // }
+        return response()->json([
+            'plan' => $plan->name,
+            'limits' => [
+                'per_minute' => $plan->api_requests_per_minute,
+                'per_hour' => $plan->api_requests_per_hour,
+                'per_day' => $plan->api_requests_per_day
+            ],
+            'current_usage' => [
+                'minute' => [
+                    'remaining' => RateLimiter::remaining('user_api:' . $user->id . ':minute', $plan->api_requests_per_minute),
+                    'available_in' => RateLimiter::availableIn('user_api:' . $user->id . ':minute')
+                ],
+                'hour' => [
+                    'remaining' => RateLimiter::remaining('user_api:' . $user->id . ':hour', $plan->api_requests_per_hour),
+                    'available_in' => RateLimiter::availableIn('user_api:' . $user->id . ':hour')
+                ]
+            ]
+        ]);
     }
 }

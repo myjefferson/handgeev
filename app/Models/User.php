@@ -181,6 +181,9 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasRole(self::ROLE_FREE);
     }
 
+    /**
+     * Consulta todos os usuário
+     */
     public function getAllUsers() {
         try{
             return User::select(

@@ -124,7 +124,7 @@ CREATE TABLE topics (
 	`order` INTEGER NOT NULL,
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- DROP TABLE topics;
 SELECT * FROM topics;
@@ -140,7 +140,7 @@ CREATE TABLE fields (
 	`order` INTEGER NOT NULL,
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SELECT * FROM FIELDS
 
@@ -156,16 +156,31 @@ CREATE TABLE plans (
     can_export BOOLEAN DEFAULT FALSE,
     can_use_api BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
+    api_requests_per_minute INT UNSIGNED DEFAULT 60,
+    api_requests_per_hour INT UNSIGNED DEFAULT 1000,
+    api_requests_per_day INT UNSIGNED DEFAULT 10000,
+    burst_requests INT UNSIGNED DEFAULT 10,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-ALTER TABLE plans CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=UTF8MB4_UNICODE_CI;
 
 -- Inserir planos básicos
-INSERT INTO plans (name, price, max_workspaces, max_topics, max_fields, can_export, can_use_api) VALUES
-('free', 0.00, 3, 3, 10, FALSE, FALSE),
-('pro', 29.00, 5, 0, 0, TRUE, TRUE),
-('admin', 0.00, 0, 0, 0, TRUE, TRUE);
+INSERT INTO plans (
+	name, 
+	price, 
+	max_workspaces, 
+	max_topics, 
+	max_fields, 
+	can_export, 
+	can_use_api, 
+	api_requests_per_minute, 
+	api_requests_per_hour, 
+	api_requests_per_day, 
+	burst_requests
+) VALUES
+('free', 0.00, 3, 3, 10, FALSE, FALSE, 60, 1000, 1000, 10),
+('pro', 29.00, 5, 0, 0, TRUE, TRUE, 300, 10000, 100000, 50),
+('admin', 0.00, 0, 0, 0, TRUE, TRUE, 1000, 0, 0, 100);
 
 SELECT * FROM plans;
 SELECT * FROM users;
@@ -214,7 +229,94 @@ CREATE TABLE `password_reset_tokens` (
     KEY `password_reset_tokens_token_index` (`token`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=UTF8MB4_UNICODE_CI;
 
-SELECT * FROM password_reset_tokens
+SELECT * FROM password_reset_tokens;
+
+
+CREATE TABLE `api_request_logs` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `user_id` BIGINT UNSIGNED NULL,
+    `workspace_id` BIGINT UNSIGNED NULL,
+    `ip_address` VARCHAR(45) NOT NULL,
+    `method` VARCHAR(10) NOT NULL,
+    `endpoint` VARCHAR(255) NOT NULL,
+    `response_code` INT NOT NULL,
+    `response_time` INT NOT NULL COMMENT 'em milissegundos',
+    `user_agent` VARCHAR(255) NULL,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    -- Foreign keys
+    CONSTRAINT `api_request_logs_user_id_foreign` 
+        FOREIGN KEY (`user_id`) 
+        REFERENCES `users` (`id`) 
+        ON DELETE CASCADE,
+        
+    CONSTRAINT `api_request_logs_workspace_id_foreign` 
+        FOREIGN KEY (`workspace_id`) 
+        REFERENCES `workspaces` (`id`) 
+        ON DELETE CASCADE,
+    
+    -- Indexes
+    INDEX `api_request_logs_user_id_created_at_index` (`user_id`, `created_at`),
+    INDEX `api_request_logs_ip_address_created_at_index` (`ip_address`, `created_at`),
+    INDEX `api_request_logs_created_at_index` (`created_at`),
+    
+    -- Indexes adicionais para otimização
+    INDEX `api_request_logs_response_code_index` (`response_code`),
+    INDEX `api_request_logs_method_index` (`method`),
+    INDEX `api_request_logs_user_id_index` (`user_id`),
+    INDEX `api_request_logs_workspace_id_index` (`workspace_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Comentários para documentação
+ALTER TABLE `api_request_logs` 
+    COMMENT = 'Tabela para logging de requisições da API com rate limiting';
+    
+    
+    
+    
+    
+-- Índices adicionais para queries de analytics
+-- CREATE INDEX `api_request_logs_date_method_index` ON `api_request_logs` (DATE(created_at), method);
+CREATE INDEX `api_request_logs_workspace_response_index` ON `api_request_logs` (workspace_id, response_code, created_at);
+-- Índice para limpeza de logs antigos
+-- CREATE INDEX `api_request_logs_old_logs_index` ON `api_request_logs` (created_at) WHERE created_at < DATE_SUB(NOW(), INTERVAL 30 DAY);
+
+
+
+DELIMITER //
+
+CREATE PROCEDURE `CleanupOldApiLogs`(IN retention_days INT)
+BEGIN
+    DELETE FROM `api_request_logs` 
+    WHERE `created_at` < DATE_SUB(NOW(), INTERVAL retention_days DAY);
+END //
+
+DELIMITER ;
+
+
+
+-- CREATE VIEW `api_usage_stats` AS
+SELECT 
+    DATE(created_at) as date,
+    user_id,
+    workspace_id,
+    COUNT(*) as total_requests,
+    COUNT(CASE WHEN response_code >= 400 THEN 1 END) as failed_requests,
+    AVG(response_time) as avg_response_time,
+    MAX(response_time) as max_response_time
+FROM `api_request_logs`
+GROUP BY DATE(created_at), user_id, workspace_id;
+CREATE VIEW `api_usage_stats` AS
+SELECT 
+    DATE(created_at) as date,
+    user_id,
+    workspace_id,
+    COUNT(*) as total_requests,
+    COUNT(CASE WHEN response_code >= 400 THEN 1 END) as failed_requests,
+    AVG(response_time) as avg_response_time,
+    MAX(response_time) as max_response_time
+FROM `api_request_logs`
+GROUP BY DATE(created_at), user_id, workspace_id;
 
 
 

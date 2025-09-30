@@ -98,7 +98,7 @@
                 </div>
 
                 <div class="text-center pt-4 border-t border-slate-700">
-                    <form action="{{ route('logout') }}" method="POST" class="inline">
+                    <form action="{{ route('logout') }}" method="GET" class="inline">
                         @csrf
                         <button type="submit" class="text-slate-500 hover:text-slate-400 text-sm">
                             <i class="fas fa-sign-out-alt mr-1"></i> Sair

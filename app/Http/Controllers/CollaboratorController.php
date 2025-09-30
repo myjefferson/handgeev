@@ -67,7 +67,7 @@ class CollaboratorController extends Controller
         // Obter role do usuário
         $userRole = $isOwner ? 'owner' : ($collaborator->role ?? 'viewer');
         
-        return view('pages.dashboard.workspaces.workspace', compact(
+        return view('pages.dashboard.workspace.workspace', compact(
             'workspace',
             'canAddMoreFields',
             'fieldsLimit',

@@ -248,6 +248,10 @@
             </div>
         </div>
 
+        {{-- Stack para modais --}}
+        @stack('modals')
+
+        {{-- Stack para scripts --}}
         @stack('scripts')
 
         @include('components.modals.modal-input-text')

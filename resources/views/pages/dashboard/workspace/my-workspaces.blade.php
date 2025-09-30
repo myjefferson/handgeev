@@ -1,6 +1,46 @@
 @extends('template.template-dashboard')
 
 @section('content_dashboard')
+    <style>
+        /* Animações para os botões de exportação */
+        .teal-glow-hover:hover {
+            box-shadow: 0 0 15px rgba(45, 212, 191, 0.5);
+            transform: translateY(-1px);
+            transition: all 0.3s ease;
+        }
+
+        /* Estilo para o JSON preview */
+        #json-preview-content {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            line-height: 1.4;
+        }
+
+        /* Loading states */
+        .btn-loading {
+            position: relative;
+            color: transparent !important;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-right-color: transparent;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
     <div class="min-h-screen">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <!-- Header com Título e Botão Add -->
@@ -14,17 +54,37 @@
                     </p>
                 </div>
                 <!-- Simulando a verificação de permissão -->
-                @if (auth()->user()->canCreateWorkspace())
-                    <button id="modal-add-workspace-btn" data-modal-target="modal-add-workspace" data-modal-toggle="modal-add-workspace"
-                        class="flex items-center px-4 py-2 text-white rounded-lg bg-teal-600 hover:bg-teal-700 transition-colors teal-glow-hover">
-                        <i class="fas fa-plus mr-2"></i>
-                        New Workspace
-                    </button>
-                @else
-                    <div>
-                        @include('components.upsell.button-upgrade-pro', ['subtitle' => 'Unlock unlimited workspaces'])
-                    </div>
-                @endif
+                <div class="flex items-center space-x-3">
+                    @if (auth()->user()->canCreateWorkspace())
+                        <button id="modal-add-workspace-btn" data-modal-target="modal-add-workspace" data-modal-toggle="modal-add-workspace"
+                            class="flex items-center px-4 py-2 text-white rounded-lg bg-teal-600 hover:bg-teal-700 transition-colors teal-glow-hover">
+                            <i class="fas fa-plus mr-2"></i>
+                            New Workspace
+                        </button>
+                    @else
+                        <div>
+                            @include('components.upsell.button-upgrade-pro', [
+                                'title' => 'Workspaces? Upgrade to',
+                                'iconPrincipal' => false,
+                                'iconLeft' => '<i class="fas fa-plus mx-2"></i>'
+                            ])
+                        </div>
+                    @endif
+                    {{-- Botão de Importação apenas para Pro e Admin --}}
+                    @if(auth()->user()->isPro() || auth()->user()->isAdmin())
+                        <a href="{{ route('workspace.import.form') }}" 
+                            class="flex items-center px-4 py-2 text-white rounded-lg bg-purple-600 hover:bg-purple-700 transition-colors purple-glow-hover">
+                            <i class="fas fa-upload mr-2"></i>
+                            Importar Workspace
+                        </a>
+                    @else
+                        @include('components.upsell.button-upgrade-pro', [
+                            'title' => 'Import', 
+                            'iconPrincipal' => false,
+                            'iconLeft' => '<i class="fas fa-upload mx-2"></i>'
+                        ])
+                    @endif
+                </div>
             </div>
 
             <!-- Barra de Pesquisa e Filtros -->
@@ -102,16 +162,25 @@
                                         </a>
                                         
                                         <div class="flex space-x-2">
+                                            <!-- Botão Exportar -->
+                                            <a href="{{ route('workspace.export', ['id' => $workspace->id]) }}"
+                                            class="p-1.5 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-md"
+                                            title="Exportar Workspace">
+                                                <i class="fas fa-file-export"></i>
+                                            </a>
+                                            
                                             <!-- Botão Configurar -->
                                             <a href="{{ route('workspace.setting', ['id' => $workspace->id]) }}"
                                             class="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md">
                                                 <i class="fas fa-cog"></i>
                                             </a>
+                                            
+                                            <!-- Botão Excluir -->
                                             <button type="button" 
-                                                class="delete-btn p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md"
-                                                data-id="{{ $workspace->id }}"
-                                                data-title="{{ $workspace->title }}"
-                                                data-route="{{ route('workspace.delete', ['id' => $workspace->id]) }}">
+                                                    class="delete-btn p-1.5 text-gray-500 dark:text-gray-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-md"
+                                                    data-id="{{ $workspace->id }}"
+                                                    data-title="{{ $workspace->title }}"
+                                                    data-route="{{ route('workspace.delete', ['id' => $workspace->id]) }}">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </div>
@@ -141,8 +210,11 @@
         </div>
     </div>
 @endsection
-@include('components.modals.modal-add-workspace')
-@include('components.modals.modal-delete-workspace')
+
+@push('modals')    
+    @include('components.modals.modal-add-workspace')
+    @include('components.modals.modal-delete-workspace')
+@endpush
 
 @push('scripts')
     <script>
@@ -163,5 +235,61 @@
                 });
             });
         });
+
+        // Função para visualizar JSON
+        async function previewWorkspaceJson(workspaceId) {
+            try {
+                const response = await fetch(`/workspace/${workspaceId}/export`);
+                const data = await response.json();
+                
+                const jsonPreview = document.getElementById('json-preview-content');
+                jsonPreview.textContent = JSON.stringify(data, null, 2);
+                
+                const modal = document.getElementById('json-preview-modal');
+                modal.classList.remove('hidden');
+            } catch (error) {
+                console.error('Erro ao carregar JSON:', error);
+                showNotification('Erro ao carregar JSON para visualização', 'error');
+            }
+        }
+
+        // Visualizar JSON
+        const previewJsonButtons = document.querySelectorAll('.export-preview-json');
+        previewJsonButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const workspaceId = this.getAttribute('data-workspace-id');
+                previewWorkspaceJson(workspaceId);
+            });
+        });
+
+        // Função para copiar JSON para clipboard
+        async function copyWorkspaceJsonToClipboard(workspaceId) {
+            try {
+                const response = await fetch(`/workspace/${workspaceId}/export`);
+                const data = await response.json();
+                
+                await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+                
+                // Feedback visual
+                showNotification('JSON copiado para a área de transferência!', 'success');
+            } catch (error) {
+                console.error('Erro ao copiar JSON:', error);
+                showNotification('Erro ao copiar JSON', 'error');
+            }
+        }
+
+        // Fechar modal de preview
+        function closeJsonPreview() {
+            const modal = document.getElementById('json-preview-modal');
+            modal.classList.add('hidden');
+        }
+
+        // Copiar JSON do modal
+        function copyJsonToClipboard() {
+            const jsonContent = document.getElementById('json-preview-content').textContent;
+            navigator.clipboard.writeText(jsonContent).then(() => {
+                showNotification('JSON copiado para a área de transferência!', 'success');
+            });
+        }
     </script>
 @endpush

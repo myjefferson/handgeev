@@ -75,6 +75,12 @@ Route::middleware(['auth:web'])->group(function(){
         Route::post('/workspace/store', 'store')->name('workspace.store');
         Route::put('/workspace/{id}/update', 'update')->name('workspace.update');
         Route::delete('/workspace/{id}/delete', 'destroy')->name('workspace.delete');
+        // Importação/Exportação de Workspaces    
+        Route::get('/workspace/import/form', 'showImportForm')->name('workspace.import.form');
+        Route::post('/workspace/import/process', 'import')->name('workspace.import');
+        //Exportação
+        Route::get('/workspace/{id}/export', 'export')->name('workspace.export');
+        Route::get('/workspace/{id}/export/quick', 'exportQuick')->name('workspace.export.quick');
     });
     
     Route::controller(WorkspaceSettingController::class)->group(function(){
@@ -162,6 +168,8 @@ Route::middleware(['auth:web'])->group(function(){
         });
     });
 
+    
+
     // routes/web.php
 
     // Rotas para usuários pro (se necessário)
@@ -179,18 +187,15 @@ Route::get('/user/notifications', function (Request $request) {
 });
 
 
-//Modo GUI
-
-
-//API
-Route::post('/api/auth/refresh', [ApiController::class, 'refresh'])
-->withoutMiddleware(ValidateCsrfToken::class)
-->middleware('jwt.refresh');
-
-
-Route::middleware(['authTokenApi'])->group(function(){
+// routes/api.php
+Route::middleware(['api.auth_token', 'api.log'])->group(function(){
     Route::controller(ApiController::class)->group(function(){
-            Route::post('/api/token/auth', 'getTokenByHashes')->name('api.token-auth');
-            Route::get('/api/{id}/workspace', 'getWorkspaceData')->name('api.workspace');
+        Route::post('/api/token/auth', 'getTokenByHashes')->name('api.token-auth');
+        Route::get('/api/{id}/workspace', 'getWorkspaceData')->name('api.workspace');
+        Route::get('/api/workspace/{id}/visible', 'getVisibleWorkspaceData')->name('api.workspace.visible');
+        Route::get('/api/rate-limit-status', 'getRateLimitStatus')->name('api.rate-limit.status');
     });
 });
+
+// Rota pública para autenticação (sem authTokenApi, mas com logging)
+Route::middleware(['api.log'])->post('/api/token/auth', [ApiController::class, 'getTokenByHashes']);
