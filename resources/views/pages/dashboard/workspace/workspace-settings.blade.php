@@ -1,5 +1,8 @@
 @extends('template.template-dashboard')
 
+@section('title', 'Configurações do Workspace')
+@section('description', 'Configurações do Workspace')
+
 @section('content_dashboard')
     <style>
         .toggle-checkbox:checked {
@@ -125,7 +128,7 @@
                                     </label>
                                 </div>
                             @else
-                                <a href="{{ route('landing.offers') }}" class="dark:bg-purple-900/20 rounded-lg">
+                                <a href="{{ route('subscription.pricing') }}" class="dark:bg-purple-900/20 rounded-lg">
                                     <label class="inline-flex items-center justify-between w-full p-4 text-gray-500 border border-gray-200 rounded-lg cursor-pointer dark:border-gray-700">
                                         <div class="block rounded-full items-center justify-center mr-3 bg-gradient-to-r">
                                             <div class="flex items-center">
@@ -174,7 +177,7 @@
                             </button> --}}
 
 
-                            @if (auth()->user()->isPro() && auth()->user()->isAdmin()) 
+                            @if (auth()->user()->isPro() || auth()->user()->isAdmin()) 
                                 <button type="button" 
                                         data-modal-target="duplicateModal" 
                                         data-modal-toggle="duplicateModal"
@@ -187,7 +190,7 @@
                                     <i class="fas fa-copy"></i>
                                 </button>
                             @else
-                                <a href="{{route('landing.offers')}}"  
+                                <a href="{{route('subscription.pricing')}}"  
                                         class="w-full flex items-center justify-between p-3 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600">
                                     <span>Duplicar Workspace @include("components.badges.pro-badge")</span>
                                     <i class="fas fa-copy"></i>

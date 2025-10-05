@@ -1,6 +1,135 @@
 @extends('template.template-site')
 
+@section('title', 'Login')
+@section('description', 'Entre na sua conta')
+
 @section('content_site')
+    <div class="flex flex-col min-h-screen">
+        <div class="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+            <div class="login-container w-full max-w-md p-8 border border-teal-500">
+                <div class="text-center mb-8">
+                    <div class="flex justify-center mb-4">
+                        <img class="w-52" src="{{ asset('assets/images/logo.png') }}" alt="Handgeev Logo">
+                    </div>
+                    <p class="text-slate-300">{{ __('auth.login.title') }}</p>
+                </div>
+
+                <!-- Mensagens de Sucesso -->
+                @if(session('success'))
+                    <div class="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-green-400 text-sm">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        {{ session('success') }}
+                    </div>
+                @endif
+
+                <!-- Mensagens de Erro -->
+                @if($errors->any())
+                    <div class="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        {{ $errors->first('error') }}
+                    </div>
+                @endif
+
+                <form class="space-y-6" action="{{ route('login.auth') }}" method="POST">
+                    @csrf
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-slate-300 mb-2">
+                            {{ __('auth.login.email') }}
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-envelope text-slate-500"></i>
+                            </div>
+                            <input id="email" name="email" type="email" autocomplete="email" required 
+                                value="{{ old('email') }}"
+                                class="input-field appearance-none relative block w-full pl-10 pr-3 py-3 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-0 sm:text-sm" 
+                                placeholder="{{ __('auth.login.email_placeholder') }}">
+                        </div>
+                        @error('email')
+                            <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-slate-300 mb-2">
+                            {{ __('auth.login.password') }}
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-lock text-slate-500"></i>
+                            </div>
+                            <input id="password" name="password" type="password" autocomplete="current-password" required 
+                                class="input-field appearance-none relative block w-full pl-10 pr-10 py-3 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-0 sm:text-sm" 
+                                placeholder="{{ __('auth.login.password_placeholder') }}">
+                            <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-400">
+                                <i class="fas fa-eye" id="eye-icon"></i>
+                            </button>
+                        </div>
+                        @error('password')
+                            <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <input id="remember-me" name="remember" type="checkbox" class="h-4 w-4 text-primary-500 focus:ring-primary-500 border-slate-600 rounded bg-slate-700">
+                            <label for="remember-me" class="ml-2 block text-sm text-slate-400">
+                                {{ __('auth.login.remember_me') }}
+                            </label>
+                        </div>
+
+                        <div class="text-sm">
+                            <a href="{{ route('recovery.account.show') }}" class="font-medium text-primary-500 hover:text-primary-400 transition-colors">
+                                {{ __('auth.login.forgot_password') }}
+                            </a>
+                        </div>
+                    </div>
+
+                    <div>
+                        <button type="submit" class="btn-primary group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 shadow-md">
+                            <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                                <i class="fas fa-sign-in-alt"></i>
+                            </span>
+                            {{ __('auth.login.submit_button') }}
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-slate-400">
+                        {{ __('auth.login.no_account') }}
+                        <a href="{{ route('register.index') }}" class="font-medium text-primary-500 hover:text-primary-400 transition-colors ml-1">
+                            {{ __('auth.login.signup_link') }}
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @include('components.footer.footer')
+@endsection
+
+@push('scripts')
+    <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eye-icon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        }
+    </script>
+@endpush
+
+@push('style')
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -57,124 +186,4 @@
             background-clip: text;
         }
     </style>
-</head>
-<body class="flex flex-col min-h-screen">
-    <div class="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div class="login-container w-full max-w-md p-8 border border-teal-500">
-            <div class="text-center mb-8">
-                <div class="flex justify-center mb-4">
-                    <img class="w-52" src="{{ asset('assets/images/logo.png') }}" alt="Handgeev Logo">
-                </div>
-                <p class="text-slate-300">Faça login para acessar sua conta</p>
-            </div>
-
-            <form class="space-y-6" action="{{ route('login.auth') }}" method="POST">
-                @csrf
-                <div>
-                    <label for="email" class="block text-sm font-medium text-slate-300 mb-2">E-mail</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-envelope text-slate-500"></i>
-                        </div>
-                        <input id="email" name="email" type="email" autocomplete="email" required 
-                            class="input-field appearance-none relative block w-full pl-10 pr-3 py-3 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-0 sm:text-sm" 
-                            placeholder="seu@email.com">
-                    </div>
-                </div>
-
-                <div>
-                    <label for="password" class="block text-sm font-medium text-slate-300 mb-2">Senha</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-lock text-slate-500"></i>
-                        </div>
-                        <input id="password" name="password" type="password" autocomplete="current-password" required 
-                            class="input-field appearance-none relative block w-full pl-10 pr-10 py-3 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-0 sm:text-sm" 
-                            placeholder="Sua senha">
-                        <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-400">
-                            <i class="fas fa-eye" id="eye-icon"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-primary-500 focus:ring-primary-500 border-slate-600 rounded bg-slate-700">
-                        <label for="remember-me" class="ml-2 block text-sm text-slate-400">
-                            Lembrar-me
-                        </label>
-                    </div>
-
-                    <div class="text-sm">
-                        <a href="{{ route('recovery.account.show') }}" class="font-medium text-primary-500 hover:text-primary-400 transition-colors">
-                            Esqueceu a senha?
-                        </a>
-                    </div>
-                </div>
-
-                <div>
-                    <button type="submit" class="btn-primary group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 shadow-md">
-                        <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-                            <i class="fas fa-sign-in-alt"></i>
-                        </span>
-                        Entrar
-                    </button>
-                </div>
-            </form>
-
-            {{-- <div class="mt-6">
-                <div class="relative">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-slate-700"></div>
-                    </div>
-                    <div class="relative flex justify-center text-sm">
-                        <span class="px-2 bg-slate-800 text-slate-400">
-                            Ou continue com
-                        </span>
-                    </div>
-                </div>
-
-                <div class="mt-6 grid grid-cols-2 gap-3">
-                    <a href="#" class="w-full inline-flex justify-center py-2 px-4 border border-slate-700 rounded-md shadow-sm bg-slate-800 text-sm font-medium text-slate-300 hover:bg-slate-700 transition-colors">
-                        <i class="fab fa-google text-red-400 mr-2"></i>
-                        Google
-                    </a>
-                    <a href="#" class="w-full inline-flex justify-center py-2 px-4 border border-slate-700 rounded-md shadow-sm bg-slate-800 text-sm font-medium text-slate-300 hover:bg-slate-700 transition-colors">
-                        <i class="fab fa-github text-slate-400 mr-2"></i>
-                        GitHub
-                    </a>
-                </div>
-            </div> --}}
-
-            <div class="mt-6 text-center">
-                <p class="text-sm text-slate-400">
-                    Não tem uma conta?
-                    <a href="{{ route('register.index') }}" class="font-medium text-primary-500 hover:text-primary-400 transition-colors ml-1">
-                        Cadastre-se
-                    </a>
-                </p>
-            </div>
-        </div>
-    </div>
-
-    @include('components.footer.footer_login')
-
-    <script>
-        // Função para alternar a visibilidade da senha
-        function togglePassword() {
-            const passwordInput = document.getElementById('password');
-            const eyeIcon = document.getElementById('eye-icon');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                eyeIcon.classList.remove('fa-eye');
-                eyeIcon.classList.add('fa-eye-slash');
-            } else {
-                passwordInput.type = 'password';
-                eyeIcon.classList.remove('fa-eye-slash');
-                eyeIcon.classList.add('fa-eye');
-            }
-        }
-    </script>
-    
-@endsection
+@endpush

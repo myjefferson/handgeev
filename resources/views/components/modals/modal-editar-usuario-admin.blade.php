@@ -31,7 +31,9 @@
                     <label class="block text-sm font-medium text-slate-400 mb-1">Perfil</label>
                     <select id="edit_user_role" class="w-full bg-slate-700 border border-slate-600 text-white rounded-lg px-3 py-2">
                         <option value="free">Free</option>
+                        <option value="start">Start</option>
                         <option value="pro">Pro</option>
+                        <option value="premium">Premium</option>
                         <option value="admin">Administrador</option>
                     </select>
                 </div>
@@ -42,6 +44,10 @@
                         <option value="active">Ativo</option>
                         <option value="inactive">Inativo</option>
                         <option value="suspended">Suspenso</option>
+                        <option value="past_due">past_due</option>
+                        <option value="unpaid">Não pago</option>
+                        <option value="incomplete">Incompleto</option>
+                        <option value="trial">Trial</option>
                     </select>
                 </div>
             </div>

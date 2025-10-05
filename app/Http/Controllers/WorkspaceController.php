@@ -190,8 +190,12 @@ class WorkspaceController extends Controller
      */
     public function showImportForm()
     {
-        // Verificar se usuário é Pro
-        if (!auth()->user()->isPro() && !auth()->user()->isAdmin()) {
+        if (
+            !auth()->user()->isStart() &&
+            !auth()->user()->isPro() && 
+            !auth()->user()->isPremium() && 
+            !auth()->user()->isAdmin()
+        ) {
             return redirect()->route('workspaces.index')
                 ->with('error', 'A importação de workspaces está disponível apenas para usuários Pro.');
         }
@@ -350,8 +354,12 @@ class WorkspaceController extends Controller
      */
     public function import(Request $request)
     {
-        // Verificar se usuário é Pro ou Admin
-        if (!auth()->user()->isPro() && !auth()->user()->isAdmin()) {
+        if (
+            !auth()->user()->isStart() &&
+            !auth()->user()->isPro() && 
+            !auth()->user()->isPremium() && 
+            !auth()->user()->isAdmin()
+        ) {
             return redirect()->route('workspaces.index')
                 ->with('error', 'A importação de workspaces está disponível apenas para usuários Pro.');
         }

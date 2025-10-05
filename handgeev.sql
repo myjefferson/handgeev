@@ -1,7 +1,7 @@
+-- NEW DATABASE HANDGEEV
 CREATE DATABASE handgeev;
 USE handgeev;
 
--- NEW DATABASE HANDGEEV
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     name VARCHAR(30) NOT NULL,
@@ -17,15 +17,23 @@ CREATE TABLE users (
     email_verification_code VARCHAR(255) NULL,
     email_verification_sent_at TIMESTAMP NULL,
     email_verified TINYINT(1) NOT NULL DEFAULT 0,
---    current_plan_id TINYINT UNSIGNED DEFAULT 1,
+    
+    stripe_id VARCHAR(255) NULL,
+    pm_type VARCHAR(255) NULL,
+    pm_last_four VARCHAR(4) NULL,
+    trial_ends_at TIMESTAMP NULL,
+	 stripe_customer_id VARCHAR(255) NULL,
+	 stripe_subscription_id VARCHAR(255) NULL,
     plan_expires_at TIMESTAMP TINYINT(1) NOT NULL DEFAULT 0,
-	 status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	 status ENUM('active', 'inactive', 'suspended', 'past_due', 'unpaid', 'incomplete', 'trial') DEFAULT 'active',
+    
+	 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    -- FOREIGN KEY (current_plan_id) REFERENCES plans(id),
+    FOREIGN KEY (current_plan_id) REFERENCES plans(id),
     INDEX idx_email (email),
-    INDEX idx_status (status)
-) ENGINE=InnoDB;
+    INDEX idx_status (STATUS),
+    INDEX `users_stripe_id_index` (`stripe_id`)
+) ENGINE=INNODB;
 
 SELECT * FROM users;
 -- DROP TABLE users;
@@ -164,23 +172,33 @@ CREATE TABLE plans (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=UTF8MB4_UNICODE_CI;
 
+
 -- Inserir planos básicos
 INSERT INTO plans (
-	name, 
-	price, 
-	max_workspaces, 
-	max_topics, 
-	max_fields, 
-	can_export, 
-	can_use_api, 
-	api_requests_per_minute, 
-	api_requests_per_hour, 
-	api_requests_per_day, 
-	burst_requests
+    name, 
+    price, 
+    max_workspaces, 
+    max_topics, 
+    max_fields, 
+    can_export, 
+    can_use_api, 
+    api_requests_per_minute, 
+    api_requests_per_hour, 
+    api_requests_per_day, 
+    burst_requests
 ) VALUES
-('free', 0.00, 3, 3, 10, FALSE, FALSE, 60, 1000, 1000, 10),
-('pro', 29.00, 5, 0, 0, TRUE, TRUE, 300, 10000, 100000, 50),
-('admin', 0.00, 0, 0, 0, TRUE, TRUE, 1000, 0, 0, 100);
+-- Plano Free: para teste básico
+('free', 0.00, 1, 3, 10, FALSE, FALSE, 30, 500, 2000, 5),
+-- Plano Start: pequenos negócios
+('start', 29.90, 3, 10, 50, TRUE, TRUE, 60, 2000, 10000, 15),
+-- Plano Pro: negócios estabelecidos  
+('pro', 79.90, 10, 30, 200, TRUE, TRUE, 120, 5000, 50000, 25),
+-- Plano Premium: empresas
+('premium', 249.90, NULL, NULL, NULL, TRUE, TRUE, 250, 25000, 250000, 50),
+-- Admin: uso interno
+('admin', 0.00, NULL, NULL, NULL, TRUE, TRUE, 1000, NULL, NULL, 200);
+
+
 
 SELECT * FROM plans;
 SELECT * FROM users;
@@ -194,6 +212,8 @@ CREATE TABLE roles (
 SELECT * FROM roles;
 
 
+
+
 CREATE TABLE model_has_roles (
     role_id BIGINT UNSIGNED NOT NULL,
     model_type VARCHAR(255) NOT NULL,
@@ -202,9 +222,6 @@ CREATE TABLE model_has_roles (
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
 );
 SELECT * FROM model_has_roles;
-
-
-
 
 
 CREATE TABLE `notifications` (

@@ -1,5 +1,8 @@
 @extends('template.template-dashboard')
 
+@section('title', 'Meus Workspaces')
+@section('description', 'Meus workspaces do HandGeev')
+
 @section('content_dashboard')
     <style>
         /* Animações para os botões de exportação */
@@ -70,8 +73,8 @@
                             ])
                         </div>
                     @endif
-                    {{-- Botão de Importação apenas para Pro e Admin --}}
-                    @if(auth()->user()->isPro() || auth()->user()->isAdmin())
+                    {{-- Botão de Importação apenas para Start, Pro, Premium e Admin --}}
+                    @if(auth()->user()->isStart() || auth()->user()->isPro() || auth()->user()->isPremium() || auth()->user()->isAdmin())
                         <a href="{{ route('workspace.import.form') }}" 
                             class="flex items-center px-4 py-2 text-white rounded-lg bg-purple-600 hover:bg-purple-700 transition-colors purple-glow-hover">
                             <i class="fas fa-upload mr-2"></i>

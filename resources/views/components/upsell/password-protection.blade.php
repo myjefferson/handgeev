@@ -19,7 +19,7 @@
                     Recurso exclusivo para assinantes PRO
                 </h3>
                 <div class="mt-2 text-sm text-purple-700 dark:text-purple-300">
-                    <p><a href="{{ route('landing.offers') }}" class="underline text-white">Faça upgrade</a> e desbloqueie a proteção por senha e outros recursos avançados com uma assinatura PRO.</p>
+                    <p><a href="{{ route('subscription.pricing') }}" class="underline text-white">Faça upgrade</a> e desbloqueie a proteção por senha e outros recursos avançados com uma assinatura PRO.</p>
                 </div>
             </div>
         </div>

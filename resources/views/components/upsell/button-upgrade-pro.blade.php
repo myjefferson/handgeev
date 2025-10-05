@@ -1,4 +1,4 @@
-<a href="{{ route('landing.offers') }}" class="flex items-center px-3 py-2 rounded-lg transition-all duration-300 group purple-neon-glow">
+<a href="{{ route('subscription.pricing') }}" class="flex items-center px-3 py-2 rounded-lg transition-all duration-300 group purple-neon-glow">
     @if(isset($iconPrincipal) ? $iconPrincipal : true)
         <div class="w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-gradient-to-r from-purple-500 to-purple-600 shadow-lg shadow-purple-500/30">
             <i class="fas fa-crown text-white"></i>

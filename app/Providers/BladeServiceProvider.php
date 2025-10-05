@@ -9,14 +9,6 @@ use App\Models\User;
 class BladeServiceProvider extends ServiceProvider
 {
     /**
-     * Registra quaisquer serviços da aplicação.
-     */
-    public function register(): void
-    {
-        //
-    }
-
-    /**
      * Inicializa quaisquer serviços da aplicação.
      */
     public function boot(): void
@@ -29,6 +21,16 @@ class BladeServiceProvider extends ServiceProvider
         Blade::if('pro', function () {
             // Chama o método isPro() do modelo User
             return auth()->user() && auth()->user()->isPro();
+        });
+
+        Blade::if('start', function () {
+            // Chama o método isPro() do modelo User
+            return auth()->user() && auth()->user()->isStart();
+        });
+        
+        Blade::if('premium', function () {
+            // Chama o método isPro() do modelo User
+            return auth()->user() && auth()->user()->isPremium();
         });
 
         Blade::if('admin', function () {

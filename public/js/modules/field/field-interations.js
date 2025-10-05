@@ -103,7 +103,7 @@ function updateLimitMessages() {
         if (!window.canAddMoreFields && window.fieldsLimit > 0) {
             message.innerHTML = `
                 Limite de campos atingido (${window.currentFieldsCount}/${window.fieldsLimit}). 
-                <a href="{{ route('landing.offers') }}" class="underline font-medium">Faça upgrade</a> 
+                <a href="{{ route('subscription.pricing') }}" class="underline font-medium">Faça upgrade</a> 
                 para adicionar mais campos.
             `;
             message.parentElement.style.display = 'block';

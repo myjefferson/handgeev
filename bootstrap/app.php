@@ -5,7 +5,10 @@ use App\Http\Middleware\AuthTokenApi;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\PlanRateLimitMiddleware;
 use App\Http\Middleware\CheckApiAccessMiddleware;
+use App\Http\Middleware\CheckPlanLimits;
+use App\Http\Middleware\LanguageMiddleware;
 use App\Http\Middleware\LogApiRequests;
+use App\Http\Middleware\CheckSubscription;
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -23,10 +26,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'auth' => Authenticate::class,
             'role' => RoleMiddleware::class,
-            'plan.rate_limit' => PlanRateLimitMiddleware::class,
+            'plan.rate_limit' => CheckPlanLimits::class,
             'api.auth_token' => AuthTokenApi::class,
             'api.access' => CheckApiAccessMiddleware::class,
             'api.log' => LogApiRequests::class,
+            'api.log' => LogApiRequests::class,
+            'languages' => LanguageMiddleware::class,
+            'subscribed' => CheckSubscription::class,
+            'plan.limits' => CheckPlanLimits::class,
+            'plan.rate_limit' => PlanRateLimitMiddleware::class,
             // 'permission' => PermissionMiddleware::class,
         ]);
     })

@@ -2,50 +2,67 @@
 
 namespace App\Providers;
 
-use View;
-use Illuminate\Support\Facades\Blade;
-use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
-use Illuminate\Support\Facades\Gate;
-use App\Policies\WorkspacePolicy;
-use App\Models\TypeWorkspace;
-use App\Models\Workspace;
-use App\Models\Role;
-use Auth;
+use Illuminate\Support\ServiceProvider;
+use Illuminate\Http\Request;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\RateLimiter;
+use Laravel\Cashier\Cashier;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
-    public function register(): void
+    public function boot()
     {
-        //
+        // Configurar Cashier SEM automatic tax
+        Cashier::calculateTaxes(false); // ← DESABILITA tax automático
+        
+        // Usar SUA model Subscription personalizada
+        Cashier::useSubscriptionModel(\App\Models\Subscription::class);
+        
+        // Definir preços dos planos
+        config(['services.stripe.prices' => [
+            'start' => env('STRIPE_START_PRICE_ID'),
+            'pro' => env('STRIPE_PRO_PRICE_ID'),
+            'premium' => env('STRIPE_PREMIUM_PRICE_ID'),
+        ]]);
+
+        // Configurar rate limiting personalizado
+        $this->configureRateLimiting();
     }
 
-    /**
-     * Bootstrap any application services.
-     */
-    public function boot(): void
+    protected function configureRateLimiting()
     {
-        $this->registerPolicies();
-
-        // ========== GATES ==========
-        Gate::policy(Workspace::class, WorkspacePolicy::class);
-
-        Gate::define('export-data', function ($user) {
-            return $user->canExportData();
+        RateLimiter::for('api', function (Request $request) {
+            // Este é o rate limiting padrão do Laravel
+            // Nosso middleware personalizado vai lidar com os limites baseados no plano
+            return Limit::none();
         });
 
-        Gate::define('use-api', function ($user) {
-            return $user->canUseApi();
+        // Rate limiting para web (proteção contra abuso)
+        RateLimiter::for('web', function (Request $request) {
+            return $request->user()?->isPro() 
+                ? Limit::none()
+                : Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
-        Gate::define('create-workspace', function ($user) {
-            return $user->canCreateWorkspace();
-        });
+        // Rate limiting específico para criação de recursos
+        RateLimiter::for('create-resources', function (Request $request) {
+            $user = $request->user();
+            
+            if (!$user) {
+                return Limit::perMinute(5)->by($request->ip());
+            }
 
-        Gate::define('view-admin', function ($user) {
-            return $user->isAdmin();
+            // Limites mais generosos para usuários Pro
+            if ($user->isPro()) {
+                return Limit::perMinute(30)->by($user->id);
+            }
+
+            // Limites para Free
+            if ($user->isFree()) {
+                return Limit::perMinute(10)->by($user->id);
+            }
+
+            return Limit::perMinute(5)->by($user->id);
         });
     }
 }

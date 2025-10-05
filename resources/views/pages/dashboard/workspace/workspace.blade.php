@@ -1,5 +1,8 @@
 @extends('template.template-dashboard')
 
+@section('title', $workspace->title)
+@section('description', 'Workspace do HandGeev - '.$workspace->title)
+
 @section('content_dashboard')
     <div class="max-w-full sm:max-w-6xl md:max-w-7xl xl:max-w-7xl mx-auto">
         <a href="{{ route('workspaces.index') }}" class="block w-max text-sm text-gray-300 hover:text-teal-400 transition-colors mb-8">
@@ -62,7 +65,7 @@
                             <div>
                                 <p class="text-purple-300 text-sm">
                                     Limite de campos atingido ({{ $currentFieldsCount }}/{{ $fieldsLimit }}). 
-                                    <a href="{{ route('landing.offers') }}" class="underline font-medium text-white">Faça upgrade</a> 
+                                    <a href="{{ route('subscription.pricing') }}" class="underline font-medium text-white">Faça upgrade</a> 
                                     para adicionar mais campos.
                                 </p>
                             </div>
@@ -170,7 +173,7 @@
                                             <div class="flex items-center justify-center">
                                                 <i class="fas fa-exclamation-circle mr-2"></i>
                                                 Limite de campos atingido. 
-                                                <a href="{{ route('landing.offers') }}" class="underline ml-1 text-white">Faça upgrade</a>
+                                                <a href="{{ route('subscription.pricing') }}" class="underline ml-1 text-white">Faça upgrade</a>
                                             </div>
                                         </td>
                                     </tr>

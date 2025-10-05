@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\HashService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -21,35 +22,99 @@ class SettingController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Update user language preference
      */
-    public function create()
+    public function updateLanguage(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'language' => 'required|in:pt_BR,en,es',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Idioma inválido',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $user = Auth::user();
+            $user->update(['language' => $request->language]);
+
+            // Atualiza a sessão imediatamente
+            session(['locale' => $request->language]);
+            app()->setLocale($request->language);
+
+            return response()->json([
+                'success' => true,
+                'message' => __('settings.language_updated'),
+                'data' => [
+                    'language' => $request->language,
+                    'language_name' => config("app.available_locales.{$request->language}")
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => __('settings.language_update_error'),
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Update user timezone
      */
-    public function store(Request $request)
+    public function updateTimezone(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'timezone' => 'required|in:America/Sao_Paulo,UTC,America/New_York,Europe/London,Asia/Tokyo',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Fuso horário inválido',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $user = Auth::user();
+            $user->update(['timezone' => $request->timezone]);
+
+            return response()->json([
+                'success' => true,
+                'message' => __('settings.timezone_updated'),
+                'data' => ['timezone' => $request->timezone]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => __('settings.timezone_update_error'),
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
-     * Display the specified resource.
+     * Get current user settings
      */
-    public function show(string $id)
+    public function getSettings()
     {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
+        $user = Auth::user();
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'language' => $user->language,
+                'timezone' => $user->timezone,
+                'global_hash_api' => $user->global_hash_api,
+            ]
+        ]);
     }
 
     /**

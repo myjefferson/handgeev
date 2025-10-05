@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Cashier\Billable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\QueryException;
 use Tymon\JWTAuth\Contracts\JWTSubject;
@@ -16,11 +17,21 @@ use DB;
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, Notifiable, HasRoles, Billable;
 
     const ROLE_FREE = 'free';
+    const ROLE_START = 'start';
     const ROLE_PRO = 'pro';
+    const ROLE_PREMIUM = 'premium';
     const ROLE_ADMIN = 'admin';
+
+    const STATUS_ACTIVE = 'active';
+    const STATUS_INACTIVE = 'inactive';
+    const STATUS_SUSPENDED = 'suspended';
+    const STATUS_PAST_DUE = 'past_due';
+    const STATUS_UNPAID = 'unpaid';
+    const STATUS_INCOMPLETE = 'incomplete';
+    const STATUS_TRIAL = 'trial';
 
     /**
      * The attributes that are mass assignable.
@@ -34,6 +45,7 @@ class User extends Authenticatable implements JWTSubject
         'password',
         'avatar',
         'email_verified_at',
+        'plan_expires_at',
         'timezone',
         'language',
         'phone',
@@ -65,6 +77,7 @@ class User extends Authenticatable implements JWTSubject
         return [
             'email_verified_at' => 'datetime',
             'email_verification_sent_at' => 'datetime',
+            'plan_expires_at' => 'datetime',
             'password' => 'hashed',
             'email_verified' => 'boolean',
         ];
@@ -107,20 +120,6 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasManyThrough(Topic::class, Workspace::class);
     }
 
-    // Método seguro para obter o plano
-    public function getPlan()
-    {
-        $roleName = $this->getRoleNames()->first();
-        
-        if (!$roleName) {
-            // Se não tem role, atribui free e retorna plano free
-            $this->assignRole(self::ROLE_FREE);
-            $roleName = self::ROLE_FREE;
-        }
-        
-        return Plan::where('name', $roleName)->first();
-    }
-
     public function planInfo()
     {
         $plan = $this->getPlan();
@@ -136,7 +135,9 @@ class User extends Authenticatable implements JWTSubject
                 'can_use_api' => $plan->can_use_api,
             ],
             'is_admin' => $this->isAdmin(),
+            'is_premium' => $this->isPremium(),
             'is_pro' => $this->isPro(),
+            'is_start' => $this->isStart(),
             'is_free' => $this->isFree()
         ];
     }
@@ -166,11 +167,27 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
+     * Verificar se usuário é PREMIUM
+     */
+    public function isPremium(): bool
+    {
+        return $this->hasRole(self::ROLE_PREMIUM);
+    }
+
+    /**
      * Verifica se usuário é PRO
      */
     public function isPro(): bool
     {
         return $this->hasRole(self::ROLE_PRO);
+    }
+
+    /**
+     * Verificar se usuário é START
+     */
+    public function isStart(): bool
+    {
+        return $this->hasRole(self::ROLE_START);
     }
 
     /**
@@ -241,7 +258,13 @@ class User extends Authenticatable implements JWTSubject
     // Verificar limites do plano COM SEGURANÇA
     public function canCreateWorkspace(): bool
     {
-        if ($this->isAdmin()) return true;
+        if ($this->isAdmin() || $this->isPremium()) return true;
+        
+        // Usuários com problemas de pagamento podem ter acesso restrito
+        if ($this->hasPaymentIssues()) {
+            // Permitir acesso básico mas mostrar alertas
+            return true;
+        }
         
         $plan = $this->getPlan();
         $currentWorkspaces = $this->workspaces()->count();
@@ -254,7 +277,13 @@ class User extends Authenticatable implements JWTSubject
     
     public function canAddMoreFields($workspaceId = null): bool
     {
-        if ($this->isAdmin()) return true;
+        if ($this->isAdmin() || $this->isPremium()) return true;
+        
+        // Usuários com problemas de pagamento podem ter acesso restrito
+        if ($this->hasPaymentIssues()) {
+            // Mostrar alerta mas permitir funcionalidade básica
+            return true;
+        }
         
         $plan = $this->getPlan();
         $currentCount = $this->getCurrentFieldsCount($workspaceId);
@@ -267,7 +296,7 @@ class User extends Authenticatable implements JWTSubject
         $plan = $this->getPlan();
         
         // Planos pro retornam 0 (ilimitado)
-        if ($this->isPro() || $this->isAdmin()) {
+        if ($this->isPro() || $this->isPremium() || $this->isAdmin()) {
             return 0;
         }
         
@@ -319,6 +348,7 @@ class User extends Authenticatable implements JWTSubject
             'can_export' => $plan->can_export,
             'can_use_api' => $plan->can_use_api,
             'current_workspaces' => $this->workspaces()->count(),
+            'current_topics' => $this->topics()->count(),
             'remaining_workspaces' => $this->getRemainingWorkspacesCount(),
             'current_fields' => $this->getCurrentFieldsCount(),
             'remaining_fields' => $this->getRemainingFieldsCount()
@@ -343,5 +373,334 @@ class User extends Authenticatable implements JWTSubject
         $currentCount = $this->getCurrentFieldsCount($workspaceId);
         
         return max(0, $plan->max_fields - $currentCount);
+    }
+
+    /**
+     * Get user's preferred language
+     */
+    public function getPreferredLanguage(): string
+    {
+        return $this->language ?? config('app.locale');
+    }
+
+    /**
+     * Set user's preferred language
+     */
+    public function setLanguage(string $language): bool
+    {
+        $availableLocales = array_keys(config('app.available_locales', ['pt_BR' => 'Português']));
+        
+        if (!in_array($language, $availableLocales)) {
+            return false;
+        }
+
+        $this->update(['language' => $language]);
+        return true;
+    }
+
+    /**
+     * Verificar se usuário tem assinatura ativa
+     */
+    public function hasActiveSubscription(): bool
+    {
+        return in_array($this->status, [self::STATUS_ACTIVE, self::STATUS_TRIAL]) && 
+               $this->plan_expires_at && 
+               $this->plan_expires_at->isFuture();
+    }
+
+    /**
+     * Verificar se está em trial
+     */
+    public function isOnTrial(): bool
+    {
+        return $this->status === self::STATUS_TRIAL && 
+               $this->plan_expires_at && 
+               $this->plan_expires_at->isFuture();
+    }
+
+    /**
+     * Verificar se está em período de cortesia (cancelado mas ainda ativo)
+     */
+    public function isOnGracePeriod(): bool
+    {
+        return $this->status === self::STATUS_INACTIVE && 
+               $this->plan_expires_at && 
+               $this->plan_expires_at->isFuture();
+    }
+
+    /**
+     * Verificar se assinatura está com pagamento pendente
+     */
+    public function hasPaymentIssues(): bool
+    {
+        return in_array($this->status, [self::STATUS_PAST_DUE, self::STATUS_UNPAID, self::STATUS_INCOMPLETE]);
+    }
+
+    /**
+     * Determinar role baseado no status (sem current_plan_id)
+     */
+    private function getRoleFromStatus(): string
+    {
+        $roleName = $this->getRoleNames()->first();
+        
+        if ($roleName) {
+            return $roleName;
+        }
+
+        // Mapear status para roles (sem current_plan_id)
+        switch ($this->status) {
+            case self::STATUS_ACTIVE:
+            case self::STATUS_TRIAL:
+                // Se tem status ativo mas não tem role, usar FREE
+                return self::ROLE_FREE;
+                        
+            case self::STATUS_PAST_DUE:
+            case self::STATUS_UNPAID:
+            case self::STATUS_INCOMPLETE:
+                // Usuários com problemas de pagamento mantêm role atual
+                return $this->getRoleNames()->first() ?: self::ROLE_FREE;
+                        
+            case self::STATUS_INACTIVE:
+            case self::STATUS_SUSPENDED:
+            default:
+                return self::ROLE_FREE;
+        }
+    }
+
+    /**
+     * Atualizar status do usuário (sem current_plan_id)
+     */
+    public function updateSubscriptionStatus(string $status, ?Plan $plan = null, ?\DateTime $expiresAt = null): void
+    {
+        $updates = ['status' => $status];
+        
+        if ($plan) {
+            // Apenas atualizar a role
+            if (in_array($status, [self::STATUS_ACTIVE, self::STATUS_TRIAL])) {
+                $this->syncRoles([$plan->name]);
+            }
+        }
+        
+        if ($expiresAt) {
+            $updates['plan_expires_at'] = $expiresAt;
+        }
+        
+        $this->update($updates);
+    }
+
+    /**
+     * Iniciar trial
+     */
+    public function startTrial(Plan $plan, int $trialDays = 14): void
+    {
+        $this->update([
+            'status' => self::STATUS_TRIAL,
+            'current_plan_id' => $plan->id,
+            'plan_expires_at' => now()->addDays($trialDays)
+        ]);
+        
+        $this->syncRoles([$plan->name]);
+    }
+
+    /**
+     * Ativar assinatura
+     */
+    public function activateSubscription(Plan $plan, \DateTime $expiresAt): void
+    {
+        $this->update([
+            'status' => self::STATUS_ACTIVE,
+            'current_plan_id' => $plan->id,
+            'plan_expires_at' => $expiresAt
+        ]);
+        
+        $this->syncRoles([$plan->name]);
+    }
+
+    /**
+     * Cancelar assinatura
+     */
+    public function cancelSubscription(bool $immediately = false): void
+    {
+        $freePlan = Plan::where('name', self::ROLE_FREE)->first();
+        
+        if ($immediately) {
+            $this->update([
+                'status' => self::STATUS_INACTIVE,
+                'current_plan_id' => $freePlan->id,
+                'plan_expires_at' => now(),
+                'stripe_subscription_id' => null
+            ]);
+        } else {
+            // Mantém features até o fim do período
+            $this->update([
+                'status' => self::STATUS_INACTIVE
+                // plan_expires_at mantém a data original
+            ]);
+        }
+        
+        $this->syncRoles([self::ROLE_FREE]);
+    }
+
+    /**
+     * Marcar como pendente de pagamento
+     */
+    public function markAsPastDue(): void
+    {
+        $this->update(['status' => self::STATUS_PAST_DUE]);
+    }
+
+    /**
+     * Verifica se usuário tem assinatura ativa no Stripe (com debug)
+     */
+    public function hasActiveStripeSubscription(): bool
+    {       
+        if (!$this->stripe_id) {
+            return false;
+        }
+        
+        try {
+            $isSubscribed = $this->subscribed('default');
+            
+            if ($isSubscribed) {
+                $subscription = $this->getStripeSubscription();
+            }
+            
+            return $isSubscribed;
+            
+        } catch (\Exception $e) {
+            \Log::error('Erro em hasActiveStripeSubscription: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Obter assinatura Stripe de forma robusta
+     */
+    public function getStripeSubscription()
+    {        
+        if (!$this->stripe_id) {
+            return null;
+        }
+        
+        try {
+            $subscription = $this->subscription('default');
+            
+            if ($subscription) {
+                \Log::info('✅ Subscription encontrada:', [
+                    'id' => $subscription->stripe_id,
+                    'status' => $subscription->stripe_status,
+                    'price' => $subscription->stripe_price
+                ]);
+            } else {                
+                // Tentar buscar manualmente
+                $manualSubscription = $this->subscriptions()
+                    ->whereIn('stripe_status', ['active', 'trialing'])
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+                    
+                if ($manualSubscription) {
+                    return $manualSubscription;
+                }
+            }
+            
+            return $subscription;
+            
+        } catch (\Exception $e) {
+            \Log::error('Erro em getStripeSubscription: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Obter plano atual baseado APENAS na role do usuário
+     */
+    public function getPlan()
+    {
+        // SEMPRE usar a role atual do sistema de permissions
+        $roleName = $this->getRoleNames()->first();
+        
+        // Se não tem role, definir como FREE
+        if (!$roleName) {
+            $this->syncRoles([self::ROLE_FREE]);
+            $roleName = self::ROLE_FREE;
+        }
+        
+        // Buscar plano baseado na role
+        $plan = Plan::where('name', $roleName)->first();
+        
+        // Fallback para FREE se plano não existir
+        if (!$plan) {
+            \Log::warning("Plano não encontrado para role: {$roleName}, usando FREE como fallback");
+            $this->syncRoles([self::ROLE_FREE]);
+            return Plan::where('name', self::ROLE_FREE)->first();
+        }
+        
+        return $plan;
+    }
+
+    /**
+     * Detectar plano baseado no Stripe Price ID
+     */
+    private function getPlanByStripePriceId($priceId)
+    {
+        $prices = config('services.stripe.prices');
+        
+        \Log::info('Buscando plano para price_id: ' . $priceId, [
+            'prices_config' => $prices
+        ]);
+        
+        foreach ($prices as $planName => $stripePriceId) {
+            if ($stripePriceId === $priceId) {
+                $plan = Plan::where('name', $planName)->first();
+                \Log::info('Plano encontrado: ' . $planName, ['plan_id' => $plan ? $plan->id : 'null']);
+                return $plan;
+            }
+        }
+        
+        // Fallback para Pro se não encontrar
+        $fallbackPlan = Plan::where('name', self::ROLE_PRO)->first();
+        \Log::warning('Plano não encontrado para price_id, usando fallback: ' . self::ROLE_PRO);
+        return $fallbackPlan;
+    }
+
+    /**
+     * Sincronizar status com assinatura Stripe (sem current_plan_id)
+     */
+    public function syncStripeSubscriptionStatus(): void
+    {
+        \Log::info('Sincronizando status do Stripe para usuário: ' . $this->email);
+
+        if (!$this->hasActiveStripeSubscription()) {
+            \Log::info('Usuário não tem assinatura ativa no Stripe - definindo como FREE');
+            
+            $this->update([
+                'status' => self::STATUS_INACTIVE,
+            ]);
+            
+            $this->syncRoles([self::ROLE_FREE]);
+            \Log::info('Usuário definido como FREE');
+            return;
+        }
+
+        $subscription = $this->getStripeSubscription();
+        $priceId = $subscription->stripe_price;
+        $plan = $this->getPlanByStripePriceId($priceId);
+        
+        if ($plan && $subscription->active()) {
+            \Log::info('Atualizando usuário para plano: ' . $plan->name);
+            
+            $this->update([
+                'status' => self::STATUS_ACTIVE,
+                'plan_expires_at' => $subscription->ends_at
+            ]);
+            
+            // APENAS SINCRONIZAR ROLE
+            $this->syncRoles([$plan->name]);
+            
+            \Log::info('Role atualizada para: ' . $plan->name);
+
+        } else {
+            \Log::warning('Plano não encontrado ou assinatura inativa');
+        }
     }
 }

@@ -1,5 +1,8 @@
 @extends('template.template-dashboard')
 
+@section('title', 'Início')
+@section('description', 'Início do HandGeev')
+
 @section('content_dashboard')
     <div class="max-w-7xl mx-auto min-h-screen p-6">
         <!-- Header com Saudação Personalizada -->

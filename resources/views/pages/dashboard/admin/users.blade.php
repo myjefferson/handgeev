@@ -1,6 +1,9 @@
 @extends('template.template-dashboard')
 
-@section('content_dashboard')
+@section('title', 'Usuários')
+@section('description', 'Usuários')
+
+@push('style')
     <style>
         
         body {
@@ -29,6 +32,9 @@
             box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.3);
         }
     </style>
+@endpush
+
+@section('content_dashboard')
     <div class="max-w-7xl mx-auto px-4 sm:px-4 lg:px-4 py-4">
         <!-- Header -->
         <div class="mb-8">
@@ -200,9 +206,10 @@
     
 @endsection
 
-<!-- Modal de Edição (exemplo) -->
-@include('components.modals.modal-editar-usuario-admin')
-
+@push('modals')
+    <!-- Modal de Edição (exemplo) -->
+    @include('components.modals.modal-editar-usuario-admin')
+@endpush
 
 @push('scripts')
     <script>

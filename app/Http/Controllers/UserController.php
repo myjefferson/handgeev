@@ -38,13 +38,22 @@ class UserController extends Controller
 
     public function storeProfile(Request $request)
     {
-        // Validar os dados
+        // Validar os dados com mensagens traduzidas
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'surname' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             'terms' => 'required|accepted',
+        ], [
+            'name.required' => __('register.validation.name_required'),
+            'surname.required' => __('register.validation.surname_required'),
+            'email.required' => __('register.validation.email_required'),
+            'email.email' => __('register.validation.email_email'),
+            'email.unique' => __('register.validation.email_unique'),
+            'password.required' => __('register.validation.password_required'),
+            'password.min' => __('register.validation.password_min'),
+            'terms.required' => __('register.validation.terms_required'),
         ]);
 
         try {
@@ -55,7 +64,7 @@ class UserController extends Controller
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'timezone' => 'UTC',
-                'language' => 'pt_BR',
+                'language' => app()->getLocale(), // Usar o idioma atual
                 'phone' => null,
                 'status' => 'active',
                 'email_verified' => false,
@@ -71,7 +80,7 @@ class UserController extends Controller
                 'global_hash_api' => HashService::generateUniqueHash()
             ]);
 
-            // Enviar código de verificação
+            // Gerar código de verificação
             $verificationCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
             
             $user->update([
@@ -79,7 +88,7 @@ class UserController extends Controller
                 'email_verification_sent_at' => now(),
             ]);
 
-            // Enviar email
+            // Enviar email de verificação
             Mail::to($user->email)->send(new VerificationEmail($user, $verificationCode));
 
             // Log para debug
@@ -91,7 +100,7 @@ class UserController extends Controller
             // Redirecionar para página de verificação
             return redirect()->route('verification.show')
                 ->with([
-                    'success' => 'Conta criada com sucesso! Enviamos um código de verificação para seu email.',
+                    'success' => __('register.messages.success'),
                     'email' => $user->email
                 ]);
 
@@ -99,7 +108,7 @@ class UserController extends Controller
             \Log::error("Erro ao criar usuário: " . $e->getMessage());
             
             return redirect()->back()
-                ->with(['error' => 'Ocorreu um erro ao criar a conta: ' . $e->getMessage()])
+                ->with(['error' => __('register.messages.error')])
                 ->withInput();
         }
     }

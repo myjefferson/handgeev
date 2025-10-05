@@ -25,34 +25,48 @@ class AccountController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if(!$user){
-            return redirect()->route('login.show')->withErrors(['error' => 'Email ou senha inválidos']);
+            return redirect()->route('login.show')->withErrors([
+                'error' => __('auth.messages.error')
+            ]);
         }
         
-        //check password
+        // Check password
         if(!Hash::check($request->password, $user->password)){
-            return redirect()->route('login.show')->withErrors(['error' => 'Email ou senha inválidos']);
+            return redirect()->route('login.show')->withErrors([
+                'error' => __('auth.messages.error')
+            ]);
         }
 
         // Verificar se o email foi confirmado
         if (!$user->email_verified) {
             Auth::login($user);
             return redirect()->route('verification.show')
-                ->withErrors(['error' => 'Por favor, verifique seu email antes de acessar o dashboard.']);
+                ->withErrors([
+                    'error' => __('auth.messages.email_not_verified')
+                ]);
         }
 
-        //redirect account inactive
+        // Redirect account inactive
         if($user->status === 'inactive'){
-            return redirect()->route('account.inactive');
+            return redirect()->route('account.inactive')
+                ->withErrors([
+                    'error' => __('auth.messages.account_inactive')
+                ]);
         }
         
-        //redirect account suspended
+        // Redirect account suspended
         if($user->status === 'suspended'){
-            return redirect()->route('account.suspended');
+            return redirect()->route('account.suspended')
+                ->withErrors([
+                    'error' => __('auth.messages.account_suspended')
+                ]);
         }
 
         Auth::login($user);
 
-        return redirect()->route('dashboard.home')->with(['success' => 'Você entrou!']);
+        return redirect()->route('dashboard.home')->with([
+            'success' => __('auth.messages.success')
+        ]);
     }
     
     public function indexRegister()

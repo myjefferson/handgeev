@@ -1,5 +1,8 @@
 @extends('template.template-dashboard')
 
+@section('title', 'Colaborações')
+@section('description', 'Colaborações')
+
 @section('content_dashboard')
     <div class="min-h-screen">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

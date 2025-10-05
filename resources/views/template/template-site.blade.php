@@ -4,7 +4,14 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
-        <title>Handgeev</title>
+        <title>@yield('title') - Handgeev</title>
+
+        <!-- Favicon -->
+        <link rel="icon" type="image/x-icon" href="{{ asset('assets/images/icon.png') }}">
+
+        <!-- Meta Tags -->
+        <meta name="description" content="@yield('description', 'HandGeev - Crie e gerencie suas APIs de forma simples')">
+        <meta name="keywords" content="api, workspace, json, handgeev, desenvolvimento">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -27,7 +34,12 @@
         <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js"></script>
     </head>
     <body class="font-sans antialiased text-white">
+        {{-- Stack para estilos --}}
         @stack('style')
+        
         @yield('content_site')
+
+        {{-- Stack para scripts --}}
+        @stack('scripts')
     </body>
 </html>

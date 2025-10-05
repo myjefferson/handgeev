@@ -164,5 +164,5 @@
     });
     </script>
 
-    @include('components.footer.footer_login')
+    @include('components.footer.footer')
 @endsection

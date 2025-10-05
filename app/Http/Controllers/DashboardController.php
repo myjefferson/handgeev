@@ -57,6 +57,7 @@ class DashboardController extends Controller
     }
 
     public function about(){
-        return view("pages.dashboard.about.index");
+        $api_count = auth()->user()->workspaces()->withCount('topics')->get()->sum('topics_count');
+        return view("pages.dashboard.about.index", ['api_count' => $api_count]);
     }
 }

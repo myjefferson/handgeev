@@ -82,7 +82,7 @@
         </div>
 
         <div class="text-center">
-            <a href="{{ route('landing.offers') }}" class="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-md transition-all duration-200 transform hover:scale-105">
+            <a href="{{ route('subscription.pricing') }}" class="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-md transition-all duration-200 transform hover:scale-105">
                 <i class="fas fa-crown mr-3"></i>
                 Upgrade para Pro - Comece Agora
             </a>
