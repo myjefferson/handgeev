@@ -39,9 +39,9 @@ class WorkspaceInviteNotification extends Notification
             'inviter_id' => $this->inviter->id,
             'inviter_name' => $this->inviter->name,
             'role' => $this->collaborator->role,
-            'invitation_id' => $this->collaborator->id,
+            'invitation_id' => $this->collaborator->invitation_token,
             'message' => "{$this->inviter->name} convidou você para colaborar no workspace '{$this->workspace->title}' como " . $this->getRoleText($this->collaborator->role),
-            'action_url' => route('workspace.invite.accept', $this->collaborator->invitation_token),
+            'action_url' => route('collaborations.index'),
             'created_at' => now()->toDateTimeString()
         ];
     }

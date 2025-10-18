@@ -64,7 +64,7 @@
             </div>
 
             
-            <!-- Meus Workspaces -->
+            <!-- Minhas colaborações -->
             <div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800" 
                 id="styled-collaborations">
                 @if($collaborations->count() > 0)

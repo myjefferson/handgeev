@@ -10,9 +10,11 @@ return [
         'apis_created' => 'APIs criadas',
         'member_since' => 'Membro desde',
         'badges' => [
-            'admin' => 'Administrador',
+            'admin' => 'Administrator',
+            'premium' => 'Premium',
             'pro' => 'Pro',
-            'free' => 'Gratuita',
+            'start' => 'Start',
+            'free' => 'Free',
         ],
     ],
     

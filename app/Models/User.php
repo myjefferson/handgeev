@@ -50,10 +50,12 @@ class User extends Authenticatable implements JWTSubject
         'language',
         'phone',
         'status',
-        'global_hash_api',
+        'global_key_api',
         'email_verification_code',
         'email_verification_sent_at',
         'email_verified',
+        'last_login_at',
+        'last_login_ip',
     ];
 
     /**
@@ -80,6 +82,9 @@ class User extends Authenticatable implements JWTSubject
             'plan_expires_at' => 'datetime',
             'password' => 'hashed',
             'email_verified' => 'boolean',
+            'last_login_at' => 'datetime',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
         ];
     }
 
@@ -98,10 +103,17 @@ class User extends Authenticatable implements JWTSubject
                     ->with('workspace');
     }
 
+    public function allCollaborations()
+    {
+        return $this->hasMany(Collaborator::class, 'user_id')
+                    ->with('workspace');
+    }
+
     public function pendingCollaborations()
     {
         return $this->hasMany(Collaborator::class, 'user_id')
-                    ->where('status', 'pending');
+                    ->where('status', 'pending')
+                    ->with('workspace');
     }
     
     public function workspaces(){
@@ -271,31 +283,34 @@ class User extends Authenticatable implements JWTSubject
         
         return $plan->max_workspaces === 0 || $currentWorkspaces < $plan->max_workspaces;
     }
-
-
-    // ========== NOVOS MÉTODOS PARA CONTROLE DE CAMPOS ==========
     
-    public function canAddMoreFields($workspaceId = null): bool
+    public function canAddMoreFields($workspaceId = null, $topicId = null): bool
     {
-        if ($this->isAdmin() || $this->isPremium()) return true;
-        
-        // Usuários com problemas de pagamento podem ter acesso restrito
-        if ($this->hasPaymentIssues()) {
-            // Mostrar alerta mas permitir funcionalidade básica
+        // Admin, Premium e Pro sempre podem (planos ilimitados)
+        if ($this->isAdmin() || $this->isPremium() || $this->isPro()) {
             return true;
         }
         
         $plan = $this->getPlan();
-        $currentCount = $this->getCurrentFieldsCount($workspaceId);
         
-        return $plan->max_fields === 0 || $currentCount < $plan->max_fields;
+        // Se for plano ilimitado, sempre pode adicionar
+        if ($plan->max_fields === 0) {
+            return true;
+        }
+        
+        $currentCount = $this->getCurrentFieldsCount($workspaceId, $topicId);
+        $canAdd = $currentCount < $plan->max_fields;
+        
+        return $canAdd;
     }
 
+    /**
+     * Obter limite de campos do plano
+     */
     public function getFieldsLimit(): int
     {
         $plan = $this->getPlan();
         
-        // Planos pro retornam 0 (ilimitado)
         if ($this->isPro() || $this->isPremium() || $this->isAdmin()) {
             return 0;
         }
@@ -303,26 +318,113 @@ class User extends Authenticatable implements JWTSubject
         return $plan->max_fields;
     }
 
-    public function getCurrentFieldsCount($workspaceId = null): int
+    /**
+     * Obter número atual de campos POR TÓPICO (MÉTODO ALTERNATIVO)
+     */
+    public function getTopicFieldsCount($topicId): int
     {
-        if ($workspaceId) {
-            // Contar campos por workspace específico
-            return Field::whereHas('topic', function($query) use ($workspaceId) {
-                $query->where('workspace_id', $workspaceId)
-                      ->whereHas('workspace', function($q) {
-                          $q->where('user_id', $this->id);
-                      });
-            })->count();
+        if (!$topicId) {
+            return 0;
         }
         
-        // Contar todos os campos do usuário
-        return $this->fields()->count();
+        try {
+            // Buscar o tópico e verificar se pertence ao usuário
+            $topic = Topic::with('workspace')->find($topicId);
+            
+            if (!$topic) {
+                \Log::warning("Tópico não encontrado", ['topic_id' => $topicId]);
+                return 0;
+            }
+            
+            // Verificar se o usuário é owner ou colaborador
+            $isOwner = $topic->workspace->user_id === $this->id;
+            $isCollaborator = $topic->workspace->collaborators()
+                ->where('user_id', $this->id)
+                ->where('status', 'accepted')
+                ->exists();
+                
+            if (!$isOwner && !$isCollaborator) {
+                \Log::warning("Usuário não tem acesso ao tópico", [
+                    'user_id' => $this->id,
+                    'topic_id' => $topicId,
+                    'workspace_owner' => $topic->workspace->user_id
+                ]);
+                return 0;
+            }
+            
+            // Contar apenas campos deste tópico específico
+            $count = Field::where('topic_id', $topicId)->count();
+            
+            return $count;
+        } catch (\Exception $e) {
+            \Log::error('Erro em getTopicFieldsCount: ' . $e->getMessage());
+            return 0;
+        }
     }
 
-    
+
+    /**
+     * Obter limite de campos POR TÓPICO
+     */
+    public function getFieldsLimitPerTopic(): int
+    {
+        $plan = $this->getPlan();
+        
+        // Planos pro, premium e admin têm limite ilimitado por tópico
+        if ($this->isPro() || $this->isPremium() || $this->isAdmin()) {
+            return 0;
+        }
+        
+        return $plan->max_fields; // Retorna o limite por tópico (ex: 10)
+    }
+
+    /**
+     * Verificar se o plano é ilimitado
+     */
+    public function hasUnlimitedFields(): bool
+    {
+        if ($this->isAdmin() || $this->isPremium() || $this->isPro()) {
+            return true;
+        }
+        
+        $plan = $this->getPlan();
+        return $plan->max_fields === 0;
+    }
 
 
-    // ========== FIM DOS NOVOS MÉTODOS ==========
+    public function getCurrentFieldsCount($workspaceId = null, $topicId = null): int
+    {
+        $query = Field::query();
+        
+        //Sempre filtrar pelo usuário dono do workspace
+        $query->whereHas('topic.workspace', function($q) {
+            $q->where('user_id', $this->id);
+        });
+
+        if ($topicId) {
+            //Contar APENAS campos do tópico específico
+            $query->where('topic_id', $topicId);
+        } elseif ($workspaceId) {
+            // Contar apenas campos do workspace específico
+            $query->whereHas('topic', function($q) use ($workspaceId) {
+                $q->where('workspace_id', $workspaceId);
+            });
+        }
+        
+        $count = $query->count();
+        
+        // Log para verificar exatamente o que está sendo contado
+        \Log::info("🔍 getCurrentFieldsCount", [
+            'user_id' => $this->id,
+            'workspace_id' => $workspaceId,
+            'topic_id' => $topicId,
+            'count' => $count,
+            'query_topic_id' => $topicId ? "FILTERED by topic_id: $topicId" : "NOT FILTERED by topic",
+            'actual_topic_fields' => $topicId ? Field::where('topic_id', $topicId)->count() : 'N/A'
+        ]);
+        
+        return $count;
+    }
 
     public function canExportData(): bool
     {
@@ -365,15 +467,23 @@ class User extends Authenticatable implements JWTSubject
         return max(0, $plan->max_workspaces - $currentWorkspaces);
     }
 
-    public function getRemainingFieldsCount($workspaceId = null): int
+    public function getRemainingFieldsCount($workspaceId = null, $topicId = null): int
     {
-        if ($this->isAdmin()) return PHP_INT_MAX;
+        if ($this->isAdmin() || $this->isPremium() || $this->isPro()) {
+            return PHP_INT_MAX;
+        }
         
         $plan = $this->getPlan();
-        $currentCount = $this->getCurrentFieldsCount($workspaceId);
         
+        // Se for plano ilimitado, retornar um número grande
+        if ($plan->max_fields === 0) {
+            return PHP_INT_MAX;
+        }
+        
+        $currentCount = $this->getCurrentFieldsCount($workspaceId, $topicId);
         return max(0, $plan->max_fields - $currentCount);
     }
+
 
     /**
      * Get user's preferred language
@@ -702,5 +812,67 @@ class User extends Authenticatable implements JWTSubject
         } else {
             \Log::warning('Plano não encontrado ou assinatura inativa');
         }
+    }
+
+    /**
+     * Histórico de atividades do usuário
+     */
+    public function activities()
+    {
+        return $this->hasMany(UserActivity::class);
+    }
+
+    /**
+     * Bloquear/desbloquear conta
+     */
+    public function suspend(): void
+    {
+        $this->update(['status' => self::STATUS_SUSPENDED]);
+    }
+
+    public function activate(): void
+    {
+        $this->update(['status' => self::STATUS_ACTIVE]);
+    }
+
+    /**
+     * Accessor para último login formatado
+     */
+    public function getLastLoginFormattedAttribute(): string
+    {
+        if (!$this->last_login_at) {
+            return 'Nunca';
+        }
+        
+        return $this->last_login_at->timezone($this->timezone ?? 'UTC')
+            ->format('d/m/Y H:i');
+    }
+
+    /**
+     * Verificar se usuário está online (últimos 5 minutos)
+     */
+    public function getIsOnlineAttribute(): bool
+    {
+        if (!$this->last_login_at) {
+            return false;
+        }
+        
+        return $this->last_login_at->diffInMinutes(now()) <= 5;
+    }
+
+    /**
+     * Scope para usuários online
+     */
+    public function scopeOnline($query)
+    {
+        return $query->where('last_login_at', '>=', now()->subMinutes(5));
+    }
+
+    /**
+     * Scope para usuários com atividade recente
+     */
+    public function scopeRecentlyActive($query, $minutes = 60)
+    {
+        return $query->where('last_login_at', '>=', now()->subMinutes($minutes));
     }
 }

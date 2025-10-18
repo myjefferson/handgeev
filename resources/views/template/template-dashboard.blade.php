@@ -43,10 +43,10 @@
                 <!-- User profile dropdown -->
                 <div class="relative">
                     <div class="flex space-x-3">
-                        @include('components.dropdown.notifications-dropdown', [
+                        {{-- @include('components.dropdown.notifications-dropdown', [
                             'notifications' => auth()->user()->notifications()->limit(5)->get(),
                             'unreadCount' => auth()->user()->unreadNotifications()->count()
-                        ])
+                        ]) --}}
                         <button id="userDropdownButton" data-dropdown-toggle="userDropdown" class="flex items-center space-x-2 pl-4 text-sm rounded-full focus:ring-2 bg-slate-700 focus:ring-teal-400">
                             <span class="md:block text-gray-300">{{ Auth::user()->name ?? __('dashboard.user.welcome') }}</span>
                             <div class="user-avatar w-10 h-10 rounded-full bg-teal-400/10 flex items-center justify-center border border-teal-400/20">
@@ -178,7 +178,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{route('collaborations.index')}}" class="nav-item button-item flex items-center justify-between p-3 text-gray-300 rounded-lg group {{ request()->routeIs('collaborations.index') ? 'active' : '' }}">
+                        {{-- <a href="{{route('collaborations.index')}}" class="nav-item button-item flex items-center justify-between p-3 text-gray-300 rounded-lg group {{ request()->routeIs('collaborations.index') ? 'active' : '' }}">
                             <div class="flex items-center">
                                 <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
                                     <i class="fas fa-users text-teal-400"></i>
@@ -186,9 +186,18 @@
                                 <span class="font-medium">{{ __('dashboard.navigation.collaborations') }}</span>
                             </div>
                             <div class="bg-teal-800 h-5 w-5 flex justify-center items-center rounded-full">
-                                <span class="text-sm font-semibold">{{ auth()->user()->collaborations()->count() }}</span>
+                                <!-- Mostra contagem de PENDENTES se houver, senão mostra ativas -->
+                                @if(auth()->user()->pendingCollaborations()->count() > 0)
+                                    <div class="bg-orange-500 h-5 w-5 flex justify-center items-center rounded-full animate-pulse" title="{{ auth()->user()->pendingCollaborations()->count() }} convite(s) pendente(s)">
+                                        <span class="text-sm font-semibold text-white">{{ auth()->user()->pendingCollaborations()->count() }}</span>
+                                    </div>
+                                @else
+                                    <div class="bg-teal-800 h-5 w-5 flex justify-center items-center rounded-full" title="{{ auth()->user()->collaborations()->count() }} colaboração(ões) ativa(s)">
+                                        <span class="text-sm font-semibold">{{ auth()->user()->collaborations()->count() }}</span>
+                                    </div>
+                                @endif
                             </div>
-                        </a>
+                        </a> --}}
                     </li>
 
                     <!-- Apenas Admin -->
@@ -219,7 +228,7 @@
                 
                 <!-- Beta Banner -->
                 <div id="dropdown-cta" class="p-4 mt-8 rounded-lg bg-teal-400/10 border border-teal-400/20" role="alert">
-                    <div class="flex items-center mb-2">
+                    {{-- <div class="flex items-center mb-2">
                         <span class="bg-teal-400 text-slate-900 text-xs font-bold me-2 px-2.5 py-0.5 rounded">{{ __('dashboard.beta.banner') }}</span>
                         <button type="button" class="ms-auto -mx-1.5 -my-1.5 inline-flex justify-center items-center w-6 h-6 text-teal-400 rounded-lg focus:ring-2 focus:ring-teal-400 p-1 hover:bg-teal-400/20" data-dismiss-target="#dropdown-cta" aria-label="Close">
                             <i class="fas fa-times text-xs"></i>
@@ -227,7 +236,7 @@
                     </div>
                     <p class="text-xs text-teal-300 mb-3">
                         {{ __('dashboard.beta.title') }}
-                    </p>
+                    </p> --}}
                     <div class="flex items-center justify-between text-xs">
                         <span class="text-gray-400">{{ env('APP_VERSION') }}</span>
                         <a href="{{route('dashboard.about')}}" class="text-teal-400 hover:text-teal-300 transition-colors">{{ __('dashboard.beta.about') }}</a>

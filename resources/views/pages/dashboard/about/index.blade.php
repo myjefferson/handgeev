@@ -25,12 +25,18 @@
                     <div class="ml-3">
                         <p class="text-sm text-slate-400">{{ __('about.account.account_type') }}</p>
                         <span class="account-badge px-3 py-1 rounded-full text-sm font-medium">
-                            @if(auth()->user()->account_type == 'admin')
+                            @if(auth()->user()->getPlan()->name == 'admin')
                                 <i class="fas fa-crown mr-1" aria-label="{{ __('about.icons.crown') }}"></i> 
                                 {{ __('about.account.badges.admin') }}
-                            @elseif(auth()->user()->account_type == 'pro')
+                            @elseif(auth()->user()->getPlan()->name == 'start')
                                 <i class="fas fa-star mr-1" aria-label="{{ __('about.icons.star') }}"></i> 
+                                {{ __('about.account.badges.start') }}
+                            @elseif(auth()->user()->getPlan()->name == 'pro')
+                                <i class="fas fa-star mr-1" aria-label="{{ __('about.icons.pro') }}"></i> 
                                 {{ __('about.account.badges.pro') }}
+                            @elseif(auth()->user()->getPlan()->name == 'premium')
+                                <i class="fas fa-star mr-1" aria-label="{{ __('about.icons.premium') }}"></i> 
+                                {{ __('about.account.badges.premium') }}
                             @else
                                 <i class="fas fa-user mr-1" aria-label="{{ __('about.icons.user') }}"></i> 
                                 {{ __('about.account.badges.free') }}
@@ -39,7 +45,7 @@
                     </div>
                 </div>
                 
-                <div class="flex items-center">
+                {{-- <div class="flex items-center">
                     <div class="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center">
                         <i class="fas fa-code text-cyan-400" aria-label="{{ __('about.icons.code') }}"></i>
                     </div>
@@ -47,9 +53,9 @@
                         <p class="text-sm text-slate-400">{{ __('about.account.apis_created') }}</p>
                         <p class="font-semibold text-slate-100">{{ $api_count ?? '0' }}</p>
                     </div>
-                </div>
+                </div> --}}
                 
-                <div class="flex items-center">
+                {{-- <div class="flex items-center">
                     <div class="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center">
                         <i class="fas fa-calendar-alt text-cyan-400" aria-label="{{ __('about.icons.calendar') }}"></i>
                     </div>
@@ -57,7 +63,7 @@
                         <p class="text-sm text-slate-400">{{ __('about.account.member_since') }}</p>
                         <p class="font-semibold text-slate-100">{{ auth()->user()->created_at->format('M Y') }}</p>
                     </div>
-                </div>
+                </div> --}}
             </div>
         </div>
 
@@ -94,7 +100,7 @@
                 
                 <div class="text-center text-left md:text-center">
                     <p class="text-slate-400 mb-1">{{ __('about.version.developed_by') }}</p>
-                    <p class="text-xl font-semibold text-slate-100">{{ __('about.version.developer_name') }}</p>
+                    <p class="text-xl font-semibold text-slate-100">HandGeev Group</p>
                 </div>
                 
                 <div class="text-center md:text-left">
@@ -103,10 +109,10 @@
                         {{-- <a href="#" class="text-cyan-400 hover:text-cyan-300" aria-label="GitHub">
                             <i class="fab fa-github text-xl"></i>
                         </a> --}}
-                        <a href="#" class="text-cyan-400 hover:text-cyan-300" aria-label="LinkedIn">
+                        <a href="https://www.linkedin.com/company/handgeev" target="_blank" class="text-cyan-400 hover:text-cyan-300" aria-label="LinkedIn">
                             <i class="fab fa-linkedin text-xl"></i>
                         </a>
-                        <a href="#" class="text-cyan-400 hover:text-cyan-300" aria-label="Email">
+                        <a href="mailto:handgeev@gmail.com" class="text-cyan-400 hover:text-cyan-300" aria-label="Email">
                             <i class="fas fa-envelope text-xl"></i>
                         </a>
                     </div>
@@ -115,7 +121,7 @@
         </div>
 
         <!-- Chamada para contribuição -->
-        <div class="bg-slate-800 rounded-xl p-6 text-center card-hover border border-slate-700">
+        {{-- <div class="bg-slate-800 rounded-xl p-6 text-center card-hover border border-slate-700">
             <h3 class="text-2xl font-semibold text-slate-100 mb-3">{{ __('about.contribution.title') }}</h3>
             <p class="text-slate-400 mb-5">{{ __('about.contribution.description') }}</p>
             <div class="flex justify-center space-x-4">
@@ -123,12 +129,8 @@
                     <i class="fas fa-bug mr-2" aria-label="{{ __('about.icons.bug') }}"></i> 
                     {{ __('about.contribution.report_issue') }}
                 </button>
-                {{-- <button class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-5 py-2 rounded-lg font-medium transition-colors">
-                    <i class="fab fa-github mr-2"></i> 
-                    {{ __('about.contribution.contribute') }}
-                </button> --}}
             </div>
-        </div>
+        </div> --}}
     </div>
 @endsection
 

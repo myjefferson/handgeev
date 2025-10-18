@@ -15,9 +15,14 @@ class Plan extends Model
         'max_workspaces',
         'max_topics',
         'max_fields',
+        'max_domains',
         'can_export',
         'can_use_api',
-        'is_active'
+        'is_active',
+        'api_requests_per_minute',
+        'api_requests_per_hour',
+        'api_requests_per_day',
+        'burst_requests'
     ];
 
     protected $casts = [
@@ -25,9 +30,14 @@ class Plan extends Model
         'max_workspaces' => 'integer',
         'max_topics' => 'integer',
         'max_fields' => 'integer',
+        'max_domains' => 'integer',
         'can_export' => 'boolean',
         'can_use_api' => 'boolean',
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
+        'api_requests_per_minute' => 'integer',
+        'api_requests_per_hour' => 'integer',
+        'api_requests_per_day' => 'integer',
+        'burst_requests' => 'integer'
     ];
 
     // Escopos úteis

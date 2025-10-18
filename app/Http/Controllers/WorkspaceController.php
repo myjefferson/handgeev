@@ -12,6 +12,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 use App\Services\HashService;
 use DB;
+use Log;
 
 class WorkspaceController extends Controller
 {
@@ -20,10 +21,10 @@ class WorkspaceController extends Controller
      */
     public function indexWorkspaces()
     {
-        // $workspaces = Workspace::where('user_id', Auth::id())->get();
-        // if (!$workspaces) {
-        //     abort(404, 'Workspace não encontrado ou você não tem permissão para acessá-lo');
-        // }
+        $workspaces = Workspace::where('user_id', Auth::id())->get();
+        if (!$workspaces) {
+            abort(404, 'Workspace não encontrado ou você não tem permissão para acessá-lo');
+        }
 
         $user = auth()->user();
     
@@ -32,15 +33,16 @@ class WorkspaceController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Agora usando o relacionamento correto
         $collaborations = $user->collaborations()
             ->with(['workspace' => function($query) {
                 $query->withCount('topics');
             }])
             ->orderBy('joined_at', 'desc')
             ->get();
+            
         return view('pages.dashboard.workspace.my-workspaces', compact('workspaces', 'collaborations'));
     }
+    
     /**
      * Exibe a lista de todos os workspaces do usuário autenticado.
      */
@@ -56,24 +58,46 @@ class WorkspaceController extends Controller
             ->where('user_id', Auth::id())
             ->first();
 
-        // Se não encontrou o workspace, retorna 404
         if (!$workspace) {
             abort(404, 'Workspace não encontrado ou você não tem permissão para acessá-lo');
         }
 
-        // Obter informações de limite de campos
+        // Obter informações de limite POR TÓPICO usando métodos corrigidos
         $user = Auth::user();
-        $canAddMoreFields = $user->canAddMoreFields($workspace->id);
-        $fieldsLimit = $user->getFieldsLimit();
-        $currentFieldsCount = $user->getCurrentFieldsCount($workspace->id);
-        $remainingFields = $user->getRemainingFieldsCount($workspace->id);
+        $topicsWithLimits = [];
+        
+        foreach ($workspace->topics as $topic) {
+            $topicId = $topic->id;
+            $currentFieldsCount = $user->getCurrentFieldsCount($workspace->id, $topicId);
+            $fieldsLimit = $user->getFieldsLimit();
+            $isUnlimited = $user->hasUnlimitedFields();
+            $canAddMoreFields = $isUnlimited || $currentFieldsCount < $fieldsLimit;
+            $remainingFields = $user->getRemainingFieldsCount($workspace->id, $topicId);
+            
+            $topicsWithLimits[$topicId] = [
+                'canAddMoreFields' => $canAddMoreFields,
+                'fieldsLimit' => $fieldsLimit,
+                'currentFieldsCount' => $currentFieldsCount,
+                'remainingFields' => $remainingFields,
+                'isUnlimited' => $isUnlimited
+            ];
+        }
+
+        // Variáveis globais para compatibilidade (podem ser removidas posteriormente)
+        $globalCanAddMoreFields = $user->canAddMoreFields($workspace->id);
+        $globalFieldsLimit = $user->getFieldsLimit();
+        $globalCurrentFieldsCount = $user->getCurrentFieldsCount($workspace->id);
+        $globalRemainingFields = $user->getRemainingFieldsCount($workspace->id);
+        $globalIsUnlimited = $user->hasUnlimitedFields();
         
         return view('pages.dashboard.workspace.workspace', compact(
             'workspace',
-            'canAddMoreFields',
-            'fieldsLimit',
-            'currentFieldsCount',
-            'remainingFields'
+            'topicsWithLimits',
+            'globalCanAddMoreFields',
+            'globalFieldsLimit',
+            'globalCurrentFieldsCount',
+            'globalRemainingFields',
+            'globalIsUnlimited'
         ));
     }
 
@@ -86,7 +110,7 @@ class WorkspaceController extends Controller
             $workspaceData = $request->all();
             // Converte o checkbox para boolean
             $workspaceData['is_published'] = $request->has('is_published');
-            $workspaceData['workspace_hash_api'] = HashService::generateUniqueHash();            
+            $workspaceData['workspace_key_api'] = HashService::generateUniqueHash();            
             
             $validatedData = Validator::make($workspaceData, Workspace::$rules)->validate();
             $workspace = auth()->user()->workspaces()->create($validatedData);
@@ -107,21 +131,105 @@ class WorkspaceController extends Controller
      */
     public function update(Request $request, string $id)
     {        
+        DB::beginTransaction();
+        
         try {
             $workspace = Workspace::with(['topics.fields'])->findOrFail($id);
             
+            // Verificar permissão
             if($workspace->user_id !== Auth::id()) {
-                return response()->json([
-                    'error' => 'Você não tem permissão para alterar este workspace'
-                ], 403);
+                return redirect()->back()->with('error', 'Você não tem permissão para alterar este workspace.');
             }
-            $validatedData = Validator::make($request->all(), Workspace::$rules)->validate();
-            $workspace = $workspace->update($validatedData);
 
-            return redirect()->route('workspace.show', ['id' => $id])->with('success', 'Workspace atualizado com sucesso!');
+            // Validação
+            $validator = Validator::make($request->all(), [
+                'title' => 'required|string|max:100',
+                'type_workspace_id' => 'required|integer|exists:type_workspaces,id',
+                'is_published' => 'sometimes|boolean',
+                'description' => 'nullable|string|max:250',
+            ]);
+
+            if ($validator->fails()) {
+                return redirect()->back()
+                    ->withErrors($validator)
+                    ->with('error', 'Por favor, corrija os erros abaixo.')
+                    ->withInput();
+            }
+
+            $validatedData = $validator->validated();
+
+            // Se description estiver vazio, definir como null
+            if (empty($validatedData['description'])) {
+                $validatedData['description'] = null;
+            }
+
+            // Verificar se houve mudança no tipo do workspace
+            $oldType = $workspace->type_workspace_id;
+            $newType = $validatedData['type_workspace_id'];
+            $typeChanged = $oldType != $newType;
+
+            // // Se mudou para Tópico Único e tinha múltiplos tópicos
+            // if ($typeChanged && $newType == 1 && $workspace->topics->count() > 1) {
+            //     // Se for requisição AJAX, retornar info para o modal
+            //     if ($request->ajax()) {
+            //         DB::rollBack();
+            //         return response()->json([
+            //             'needs_merge_confirmation' => true,
+            //             'topics_count' => $workspace->topics->count(),
+            //             'fields_count' => $workspace->getFieldsCountAttribute(),
+            //             'workspace_id' => $workspace->id,
+            //             'new_type' => $newType
+            //         ]);
+            //     }
+                
+            //     $this->mergeTopicsIntoSingle($workspace);
+            // }
+
+            // Atualizar workspace
+            $workspace->update($validatedData);
+
+            DB::commit();
+
+            // Se for requisição AJAX
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Workspace atualizado com sucesso!',
+                    'data' => [
+                        'title' => $workspace->title,
+                        'type_workspace_id' => $workspace->type_workspace_id,
+                        'description' => $workspace->description,
+                        'updated_at' => $workspace->updated_at->format('d/m/Y H:i')
+                    ]
+                ]);
+            }
+
+            return redirect()->route('workspace.setting', ['id' => $id])
+                ->with('success', 'Workspace atualizado com sucesso!');
+
         } catch (ValidationException $e) {
-            // return $e->errors();
-            return redirect()->back()->withErrors($e->errors())->withInput();
+            DB::rollBack();
+            
+            $errorMessage = $this->formatValidationErrors($e->errors());
+            if ($request->ajax()) {
+                return response()->json(['error' => $errorMessage], 422);
+            }
+            
+            return redirect()->back()
+                ->with('error', $errorMessage)
+                ->withInput();
+                
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Erro ao atualizar workspace: ' . $e->getMessage());
+            
+            if ($request->ajax()) {
+                return response()->json(['error' => 'Erro interno: ' . $e->getMessage()], 500);
+            }
+            
+            return redirect()->back()
+                ->with('error', 'Erro ao atualizar workspace: ' . $e->getMessage())
+                ->withInput();
         }
     }
 
@@ -251,6 +359,7 @@ class WorkspaceController extends Controller
                                 // Adiciona key_name como chave principal apenas se não estiver vazia
                                 if (!empty($field->key_name)) {
                                     $fieldData[$field->key_name] = $field->value;
+                                    $fieldData['type'] = $field->type;
                                 }
                                 
                                 return $fieldData;
@@ -398,7 +507,7 @@ class WorkspaceController extends Controller
                     'type_workspace_id' => $workspaceData['type_workspace_id'] ?? 1,
                     'is_published' => $workspaceData['is_published'] ?? false,
                     'api_enabled' => $workspaceData['api_enabled'] ?? false,
-                    'workspace_hash_api' => HashService::generateUniqueHash()
+                    'workspace_key_api' => HashService::generateUniqueHash()
                 ]);
 
                 // Importar tópicos e campos

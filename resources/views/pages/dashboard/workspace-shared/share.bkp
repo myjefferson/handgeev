@@ -526,7 +526,7 @@
             <div class="tab-pane" id="security">
                 <div class="security-card">
                     <h3 class="card-title"><i class="fas fa-lock"></i> Chaves de Acesso</h3>
-                    <p>Gerencie as chaves de acesso para este workspace. A global_hash é compartilhada entre todos os seus workspaces, enquanto a workspace_hash é específica para este workspace.</p>
+                    <p>Gerencie as chaves de acesso para este workspace. A global_hash é compartilhada entre todos os seus workspaces, enquanto a workspace_key é específica para este workspace.</p>
                     
                     <div class="form-group">
                         <label>Global Hash</label>
@@ -538,7 +538,7 @@
                     </div>
                     
                     <div class="form-group">
-                        <label>Workspace Hash</label>
+                        <label>Workspace Key</label>
                         <div class="input-group">
                             <input type="text" id="workspace-hash" value="5p6q7r4s8x3j9k2m5p6q7r4s8x3j9k2m" readonly>
                             <button class="btn-secondary" id="copy-workspace"><i class="fas fa-copy"></i> Copiar</button>
@@ -631,7 +631,7 @@
                             <tr>
                                 <td>05/05/2025 16:40</td>
                                 <td>user@example.com</td>
-                                <td>Workspace hash alterado</td>
+                                <td>Workspace Key alterado</td>
                                 <td><span class="status-indicator status-active"></span> Ativo</td>
                                 <td>
                                     <button class="action-btn" title="Detalhes"><i class="fas fa-info-circle"></i></button>
@@ -702,7 +702,7 @@
             
             $('#copy-workspace').click(function() {
                 copyToClipboard('#workspace-hash');
-                showNotification('Workspace Hash copiada para a área de transferência!');
+                showNotification('Workspace Key copiada para a área de transferência!');
             });
             
             // Regenerate buttons
@@ -725,8 +725,8 @@
             });
             
             $('#regenerate-workspace').click(function() {
-                if (confirm('Tem certeza que deseja alterar a Workspace Hash? O link atual será invalidado.')) {
-                    showNotification('Workspace Hash alterada com sucesso!');
+                if (confirm('Tem certeza que deseja alterar a Workspace Key? O link atual será invalidado.')) {
+                    showNotification('Workspace Key alterada com sucesso!');
                 }
             });
             

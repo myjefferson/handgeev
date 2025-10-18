@@ -17,7 +17,7 @@ class SettingController extends Controller
      */
     public function index()
     {
-        $settings = User::select('global_hash_api')->where(['id' => Auth::user()->id])->first();
+        $settings = User::select('global_key_api')->where(['id' => Auth::user()->id])->first();
         return view('pages.dashboard.settings.index', compact('settings'));
     }
 
@@ -112,7 +112,7 @@ class SettingController extends Controller
             'data' => [
                 'language' => $user->language,
                 'timezone' => $user->timezone,
-                'global_hash_api' => $user->global_hash_api,
+                'global_key_api' => $user->global_key_api,
             ]
         ]);
     }
@@ -134,7 +134,7 @@ class SettingController extends Controller
             // Atualiza o usuário autenticado
             $user = User::find(auth()->user()->id);
             $user->update([
-                'global_hash_api' => $globalHash
+                'global_key_api' => $globalHash
             ]);
             
             // Retorna os hashes atualizados no JSON
@@ -142,7 +142,7 @@ class SettingController extends Controller
                 'success' => true,
                 'message' => 'Código global API gerado com sucesso!',
                 'data' => [
-                    'global_hash_api' => $globalHash
+                    'global_key_api' => $globalHash
                 ],
             ]);
         } catch (\Exception $e) {

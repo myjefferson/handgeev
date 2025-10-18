@@ -8,6 +8,7 @@ return [
         'welcome' => 'Bienvenido',
         'profile' => 'Perfil',
         'settings' => 'Configuración',
+        'billing' => 'Mi Plan',
         'logout' => 'Cerrar Sesión',
         'notifications' => 'Notificaciones',
     ],

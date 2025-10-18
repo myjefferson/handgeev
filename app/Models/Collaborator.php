@@ -75,7 +75,7 @@ class Collaborator extends Model
     }
 
     /**
-     * Verificar se pode editar
+     * Verificar se pode editar (ATUALIZADO)
      */
     public function canEdit(): bool
     {

@@ -15,7 +15,7 @@ export function createTopic(workspace_id, title, route_create) {
         data: data,
         headers: { 'X-CSRF-TOKEN': csrfToken },
         success: function(response) {
-            // window.location.reload();
+            window.location.reload();
         },
         error: function(xhr) {
             alert('Erro ao criar tópico: ' + (xhr.responseJSON?.error || 'Erro desconhecido'));
@@ -48,7 +48,7 @@ export function deleteTopic(route_create) {
         method: 'DELETE',
         headers: { 'X-CSRF-TOKEN': csrfToken },
         success: function(response) {
-            // window.location.reload();
+            window.location.reload();
         },
         error: function(xhr) {
             alert('Erro ao excluir tópico: ' + (xhr.responseJSON?.error || 'Erro desconhecido'));

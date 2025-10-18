@@ -34,7 +34,7 @@
             @forelse($notifications as $notification)
                 <div class="flex px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
                     <div class="flex-shrink-0 mr-3">
-                        @if($notification->type === 'workspace_invite')
+                        @if($notification->type === 'App\Notifications\WorkspaceInviteNotification')
                             <div class="w-8 h-8 bg-teal-100 dark:bg-teal-900/30 rounded-full flex items-center justify-center">
                                 <svg class="w-4 h-4 text-teal-600 dark:text-teal-400" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
@@ -57,15 +57,15 @@
                             {{ \Carbon\Carbon::parse($notification->created_at)->diffForHumans() }}
                         </p>
                         
-                        @if($notification->type === 'workspace_invite' && !$notification->read())
+                        @if($notification->type === 'App\Notifications\WorkspaceInviteNotification' && !$notification->read())
                             <div class="mt-2 flex space-x-2">
-                                <form action="{{ route('workspace.invite.accept', $notification->data['invitation_id']) }}" method="POST">
+                                <form action="{{ route('collaboration.invite.accept', $notification->data['invitation_id']) }}" method="POST">
                                     @csrf
                                     <button type="submit" class="text-xs bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors duration-200">
                                         Aceitar
                                     </button>
                                 </form>
-                                <form action="{{ route('workspace.invite.reject', $notification->data['invitation_id']) }}" method="POST">
+                                <form action="{{ route('collaboration.invite.reject', $notification->data['invitation_id']) }}" method="POST">
                                     @csrf
                                     <button type="submit" class="text-xs bg-gray-500 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg font-medium transition-colors duration-200">
                                         Recusar

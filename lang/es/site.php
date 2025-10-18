@@ -33,18 +33,18 @@ return [
     
     'features' => [
         'title' => 'Características Poderosas',
-        'subtitle' => 'Todo lo que necesitas para crear y gestionar APIs eficientemente',
+        'subtitle' => 'Todo lo que necesitas para crear y gestionar APIs de manera eficiente',
         'organized_workspaces' => [
             'title' => 'Espacios de Trabajo Organizados',
             'description' => 'Crea espacios de trabajo para diferentes proyectos y mantén tus APIs perfectamente organizadas.',
         ],
         'hierarchical_topics' => [
-            'title' => 'Tópicos Jerárquicos',
-            'description' => 'Organiza tus datos en tópicos y subtópicos para una estructuración lógica de la información.',
+            'title' => 'Temas Jerárquicos',
+            'description' => 'Organiza tus datos en temas para una estructuración lógica de la información.',
         ],
         'dynamic_fields' => [
             'title' => 'Campos Dinámicos',
-            'description' => 'Añade campos personalizados con varios tipos y validaciones específicas.',
+            'description' => 'Agrega campos personalizados con diversos tipos y validaciones específicas.',
         ],
         'automatic_api' => [
             'title' => 'API Automática',
@@ -52,7 +52,7 @@ return [
         ],
         'robust_security' => [
             'title' => 'Seguridad Robusta',
-            'description' => 'Autenticación por API keys, limitación de tasa y control granular de permisos.',
+            'description' => 'Autenticación por API keys, JWT y control granular de permisos.',
         ],
         'low_latency' => [
             'title' => 'Baja Latencia',

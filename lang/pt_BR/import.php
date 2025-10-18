@@ -27,7 +27,7 @@ return [
         ],
         'file_upload' => [
             'label' => 'Arquivo JSON *',
-            'drag_drop' => 'Clique para upload ou arraste o arquivo',
+            'drag_drop' => 'Clique para fazer upload do arquivo',
             'file_info' => 'JSON (MAX. 10MB)',
             'file_selected' => 'Arquivo selecionado:',
         ],

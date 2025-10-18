@@ -1,5 +1,16 @@
-<div id="export-dropdown-menu" 
-    class="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow w-64 dark:bg-gray-800 dark:divide-gray-600">
+
+<button id="export-dropdown-button"
+        data-dropdown-toggle="export-dropdown-menu"
+        class="flex items-center px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 focus:ring-4 focus:ring-teal-300 transition-colors teal-glow-hover"
+        type="button" aria-expanded="false" aria-controls="export-dropdown-menu">
+    <i class="fas fa-file-export mr-2"></i>
+    Exportar
+    <svg class="w-3 h-3 ms-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/>
+    </svg>
+</button>
+
+<div id="export-dropdown-menu" class="z-20 hidden bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-56 dark:bg-gray-700" role="menu" aria-labelledby="export-dropdown-button">
     <!-- Header do Dropdown -->
     <div class="px-4 py-3 text-sm text-gray-900 dark:text-white bg-teal-50 dark:bg-teal-900/20 rounded-t-lg">
         <div class="font-medium">Exportar Workspace</div>

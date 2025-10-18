@@ -99,24 +99,32 @@ class CheckPlanLimits
     {
         if (!isset($limits['remaining_fields'])) return;
         
-        if ($limits['remaining_fields'] <= 5) {
-            $workspaceId = $request->route('workspace') ?? $request->route('workspace_id');
-            $currentFields = $user->getCurrentFieldsCount($workspaceId);
-            $fieldLimit = $user->getFieldsLimit();
+        $topicId = $request->route('topic') ?? $request->route('topic_id') ?? $request->input('topic_id');
+        $workspaceId = $request->route('workspace') ?? $request->route('workspace_id');
+        
+        $currentFields = $user->getCurrentFieldsCount($workspaceId, $topicId);
+        $fieldLimit = $user->getFieldsLimitPerTopic();
+        
+        \Log::info("🔍 Middleware Field Limits", [
+            'topic_id' => $topicId,
+            'workspace_id' => $workspaceId,
+            'current_fields' => $currentFields,
+            'field_limit' => $fieldLimit,
+            'remaining' => $fieldLimit - $currentFields
+        ]);
 
-            if ($currentFields >= $fieldLimit && $this->isWorkspaceRoute($request)) {
-                session()->flash('error', [
-                    'title' => 'Limite de Campos Atingido',
-                    'message' => "Você atingiu o limite de {$fieldLimit} campos. Faça upgrade para campos ilimitados.",
-                    'action' => ['text' => 'Fazer Upgrade', 'url' => route('subscription.pricing')]
-                ]);
-            } elseif (($fieldLimit - $currentFields) <= 5 && $this->isWorkspaceRoute($request)) {
-                session()->flash('info', [
-                    'title' => 'Limite de Campos Próximo',
-                    'message' => "Você tem apenas " . ($fieldLimit - $currentFields) . " campos restantes.",
-                    'action' => ['text' => 'Fazer Upgrade', 'url' => route('subscription.pricing')]
-                ]);
-            }
+        if ($currentFields >= $fieldLimit && $this->isWorkspaceRoute($request)) {
+            session()->flash('error', [
+                'title' => 'Limite de Campos Atingido',
+                'message' => "Você atingiu o limite de {$fieldLimit} campos por tópico. Faça upgrade para campos ilimitados.",
+                'action' => ['text' => 'Fazer Upgrade', 'url' => route('subscription.pricing')]
+            ]);
+        } elseif (($fieldLimit - $currentFields) <= 5 && $this->isWorkspaceRoute($request)) {
+            session()->flash('info', [
+                'title' => 'Limite de Campos Próximo',
+                'message' => "Você tem apenas " . ($fieldLimit - $currentFields) . " campos restantes neste tópico.",
+                'action' => ['text' => 'Fazer Upgrade', 'url' => route('subscription.pricing')]
+            ]);
         }
     }
 

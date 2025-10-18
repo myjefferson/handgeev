@@ -28,11 +28,11 @@
                         <div class="flex items-center justify-between">
                             <div class="flex items-center">
                                 <code class="font-mono text-teal-400 bg-slate-800 px-3 py-2 rounded-lg text-sm">
-                                    {{ $settings->global_hash_api ? $settings->global_hash_api : __('settings.not_generated') }}
+                                    {{ $settings->global_key_api ? $settings->global_key_api : __('settings.not_generated') }}
                                 </code>
                             </div>
                             <button class="copy-btn text-slate-400 hover:text-teal-400 transition-colors" 
-                                    data-text="{{ $settings->global_hash_api }}"
+                                    data-text="{{ $settings->global_key_api }}"
                                     title="{{ __('settings.copy') }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
@@ -197,8 +197,8 @@
                     },
                     success: function (response) {
                         if (response.success) {
-                            $('.bg-slate-900:first-child code').text(response.data.global_hash_api);
-                            $('.copy-btn').data('text', response.data.global_hash_api);
+                            $('.bg-slate-900:first-child code').text(response.data.global_key_api);
+                            $('.copy-btn').data('text', response.data.global_key_api);
                             alert('{{ __("settings.generate_success") }}');
                         } else {
                             alert('{{ __("settings.generate_error") }}');

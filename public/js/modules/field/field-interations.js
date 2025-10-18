@@ -1,3 +1,4 @@
+// public/js/modules/field/field-interations.js
 let hasUnsavedChanges = false;
 
 // Função para verificar se o plano é ilimitado
@@ -29,15 +30,21 @@ export function updateSaveIndicator(saving, saved) {
     }
 }
 
-// Função para verificar se pode adicionar mais campos (ATUALIZADA)
-export function canAddMoreFields() {
-    // Se for plano ilimitado, sempre pode adicionar
-    if (isUnlimitedPlan()) {
-        return true;
+// Função para verificar se pode adicionar mais campos
+export function canAddMoreFields(topicId = null) {
+    if (!topicId) {
+        return typeof window.globalCanAddMoreFields !== 'undefined' ? window.globalCanAddMoreFields : true;
     }
     
-    // Para planos limitados, verificar o contador
-    return typeof window.canAddMoreFields !== 'undefined' ? window.canAddMoreFields : true;
+    // Verificar limites específicos do tópico
+    const topicLimits = window.getTopicLimits(topicId);
+    
+    if (!topicLimits) {
+        return true; // Fallback seguro
+    }
+    
+    const canAdd = topicLimits.isUnlimited || topicLimits.canAddMoreFields;    
+    return canAdd;
 }
 
 // Função para mostrar alerta de limite atingido
@@ -46,27 +53,75 @@ export function showLimitAlert() {
 }
 
 // Função para atualizar a UI dos botões de adicionar campo (ATUALIZADA)
-export function updateAddFieldButtons() {
-    const topicContents = document.querySelectorAll('.topic-content');
-    
-    topicContents.forEach(topicContent => {
-        const topicId = topicContent.dataset.topicId;
-        const addTrigger = topicContent.querySelector('.add-field-trigger');
-        const limitRow = topicContent.querySelector('.limit-reached-row');
+export function updateAddFieldButtons() {    
+    $('.topic-content').each(function() {
+        const topicId = $(this).data('topic-id');
+        const addTrigger = $(this).find('.add-field-trigger');
+        const limitRow = $(this).find('.limit-reached-row');
         
-        if (canAddMoreFields()) {
-            // Mostrar botão de adicionar e esconder mensagem de limite
-            if (addTrigger) addTrigger.style.display = 'table-row';
-            if (limitRow) limitRow.style.display = 'none';
+        if (!topicId) {
+            return;
+        }
+        
+        const topicLimits = window.getTopicLimits(topicId);
+        
+        if (!topicLimits) {
+            return;
+        }
+        
+        const canAdd = topicLimits.isUnlimited || topicLimits.canAddMoreFields;        
+        if (canAdd) {
+            // Pode adicionar - mostrar botão, esconder mensagem de limite
+            if (addTrigger.length) {
+                addTrigger.show();
+                const addFieldText = window.translations?.workspace?.table?.add_field?.trigger || 'Adicionar campo';
+                addTrigger.find('td').html(`
+                    <div class="flex items-center justify-center">
+                        <i class="fas fa-plus-circle mr-2"></i>
+                        ${addFieldText}
+                    </div>
+                `);
+            }
+            if (limitRow.length) {
+                limitRow.hide();
+            }
         } else {
-            // Esconder botão de adicionar e mostrar mensagem de limite
-            if (addTrigger) addTrigger.style.display = 'none';
-            if (limitRow) limitRow.style.display = 'table-row';
+            // Não pode adicionar - esconder botão, mostrar mensagem de limite
+            if (addTrigger.length) {
+                addTrigger.hide();
+            }
+            if (limitRow.length) {
+                limitRow.show();
+                limitRow.find('td').html(`
+                    <div class="flex items-center justify-center">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        Limite de ${topicLimits.fieldsLimit} campos por tópico atingido.
+                        <a href="/subscription/pricing" class="underline ml-1 text-white">
+                            Faça upgrade
+                        </a>
+                    </div>
+                `);
+            }
         }
     });
 }
 
-// Função para atualizar contador de campos (ATUALIZADA)
+//Atualizar contadores no sidebar
+export function updateSidebarCounters() {
+    $('.topic-item').each(function() {
+        const topicId = $(this).data('topic-id');
+        const counter = $(this).find('.text-xs');
+        
+        if (topicId && counter.length) {
+            const topicLimits = window.getTopicLimits(topicId);
+            if (topicLimits) {
+                counter.text(`${topicLimits.currentFieldsCount}`);
+            }
+        }
+    });
+}
+
+// Função para atualizar contador de campos
 export function updateFieldsCounter(change = 1) {
     if (typeof window.currentFieldsCount !== 'undefined' && 
         typeof window.fieldsLimit !== 'undefined') {
@@ -83,8 +138,6 @@ export function updateFieldsCounter(change = 1) {
         
         // Atualizar a UI dos botões
         updateAddFieldButtons();
-        
-        // Atualizar mensagens de limite se existirem
         updateLimitMessages();
     }
 }
@@ -94,7 +147,7 @@ function updateLimitMessages() {
     const limitMessages = document.querySelectorAll('.fields-limit-message');
     
     limitMessages.forEach(message => {
-        // Esconder mensagem se for plano ilimitado
+        // Esconder mensagem se for plano ilimitado ou admin
         if (isUnlimitedPlan()) {
             message.parentElement.style.display = 'none';
             return;
@@ -108,9 +161,14 @@ function updateLimitMessages() {
             `;
             message.parentElement.style.display = 'block';
         } else if (window.fieldsLimit > 0) {
+            // Usar remainingFields se disponível, senão calcular
+            const remaining = typeof window.remainingFields !== 'undefined' 
+                ? window.remainingFields 
+                : (window.fieldsLimit - window.currentFieldsCount);
+                
             message.innerHTML = `
-                📊 Campos utilizados: ${window.currentFieldsCount}/${window.fieldsLimit} 
-                (${window.fieldsLimit - window.currentFieldsCount} restantes)
+                Campos utilizados: ${window.currentFieldsCount}/${window.fieldsLimit} 
+                (${remaining} restantes)
             `;
             message.parentElement.style.display = 'block';
         } else {
@@ -119,22 +177,63 @@ function updateLimitMessages() {
     });
 }
 
-// Função para adicionar novo campo (JÁ CORRETA)
-export function addNewField(topicId) {
-    const topic_id = $(this).data('topic-id') || window.currentTopicId;
+// Função para criar input baseado no tipo (NOVA FUNÇÃO)
+export function createValueInputByType(type, currentValue = '') {
+    switch(type) {
+        case 'boolean':
+            return `
+                <select name="key_value" class="value-input w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-colors">
+                    <option value="true" ${currentValue === 'true' ? 'selected' : ''}>Verdadeiro</option>
+                    <option value="false" ${currentValue === 'false' ? 'selected' : ''}>Falso</option>
+                </select>
+            `;
+        case 'number':
+            return `
+                <input type="number" name="key_value" value="${currentValue}" 
+                    class="value-input w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-colors" 
+                    placeholder="Digite um número" step="any">
+            `;
+        case 'text':
+        default:
+            return `
+                <input type="text" name="key_value" value="${currentValue}" 
+                    class="value-input w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-colors" 
+                    placeholder="Digite o valor">
+            `;
+    }
+}
 
-    if (!canAddMoreFields()) {
-        showLimitAlert();
+// Função para atualizar input quando tipo muda (NOVA FUNÇÃO)
+export function updateFieldInputType(row, type) {
+    const valueCell = row.find('td').eq(2);
+    const currentValue = valueCell.find('.value-input').val() || '';
+    
+    // Remove o input atual
+    valueCell.find('.value-input').remove();
+    
+    // Cria o novo input baseado no tipo
+    const newInput = createValueInputByType(type, currentValue);
+    valueCell.append(newInput);
+}
+
+// Função para adicionar novo campo (ATUALIZADA COM TIPAGEM)
+export function addNewField(topicId) {
+    if (!canAddMoreFields(topicId)) {
+        const topicLimits = window.getTopicLimits(topicId);
+        const message = `Limite de ${topicLimits.fieldsLimit} campos por tópico atingido. Este tópico já tem ${topicLimits.currentFieldsCount} campos.`;
+        
+        alertManager.warning(message);
         return null;
     }
     
-    if (!window.canAddMoreFields) {
-        alert('Limite de campos atingido. Faça upgrade para adicionar mais campos.');
-        return;
-    }
+    const topicContent = $(`.topic-content[data-topic-id="${topicId}"]`);
+    const tbody = topicContent.find('tbody');
+    
+    // Remover linha de "nenhum campo" se existir
+    tbody.find('tr:has(td[colspan="5"]):not(.add-field-trigger):not(.limit-reached-row)').remove();
     
     const newRow = `
-        <tr class="border-b border-slate-700 hover:bg-slate-750 transition-colors duration-200" 
+        <tr class="border-b border-slate-700 hover:bg-slate-750 transition-colors duration-200 new-field" 
             data-topic-id="${topicId}">
             <td class="px-6 py-4">
                 <label class="inline-flex items-center cursor-pointer">
@@ -149,6 +248,13 @@ export function addNewField(topicId) {
                 <input type="text" name="key_value" class="value-input w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-colors" placeholder="Valor">
             </td>
             <td class="px-6 py-4">
+                <select name="field_type" class="type-select w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-colors">
+                    <option value="text" selected>Texto</option>
+                    <option value="number">Número</option>
+                    <option value="boolean">Booleano</option>
+                </select>
+            </td>
+            <td class="px-6 py-4">
                 <div class="flex space-x-2">
                     <button type="button" class="save-row p-2 text-teal-400 hover:text-teal-300 rounded-lg transition-colors duration-200" title="Salvar">
                         <i class="fas fa-save"></i>
@@ -161,13 +267,17 @@ export function addNewField(topicId) {
         </tr>
     `;
 
-    const trigger = $(`.add-field-trigger[data-topic-id="${topicId}"]`);
-    trigger.before(newRow);
+    const trigger = tbody.find('.add-field-trigger, .limit-reached-row');
+    if (trigger.length) {
+        trigger.before(newRow);
+    } else {
+        tbody.append(newRow);
+    }
     
-    // Atualiza o contador (assume que será salvo)
-    updateFieldsCounter(1);
-    
-    return trigger.prev();
+    const newRowElement = trigger.prev();
+    newRowElement.find('.key-input').focus();
+
+    return newRowElement;
 }
 
 // Função para remover campo (atualiza contador) - JÁ CORRETA
@@ -177,7 +287,11 @@ export function removeFieldCounter() {
         
         window.currentFieldsCount = Math.max(0, window.currentFieldsCount - 1);
         
-        // Para planos ilimitados, sempre pode adicionar mais campos
+        // Atualizar campos restantes se a variável existir
+        if (typeof window.remainingFields !== 'undefined') {
+            window.remainingFields = window.remainingFields + 1;
+        }
+        
         if (isUnlimitedPlan()) {
             window.canAddMoreFields = true;
         } else {
@@ -185,11 +299,9 @@ export function removeFieldCounter() {
             window.canAddMoreFields = window.currentFieldsCount < window.fieldsLimit;
         }
         
-        // Atualizar a UI dos botões
         updateAddFieldButtons();
-        
-        // Atualizar mensagens de limite se existirem
         updateLimitMessages();
+        checkAndShowAddFieldOption();
     }
 }
 
@@ -197,8 +309,17 @@ export function removeFieldCounter() {
 export function showSaveFeedback(row) {
     row.addClass('bg-green-50 dark:bg-green-900/20');
     setTimeout(() => {
-        row.removeClass('bg-green极速赛车开奖直播-50 dark:bg-green-900/20');
+        row.removeClass('bg-green-50 dark:bg-green-900/20');
     }, 1000);
+}
+
+// Event listener para mudança de tipo (NOVA FUNÇÃO)
+export function initializeTypeChangeListeners() {
+    $(document).on('change', '.type-select', function() {
+        const row = $(this).closest('tr');
+        const selectedType = $(this).val();
+        updateFieldInputType(row, selectedType);
+    });
 }
 
 // Adicionar novo campo com verificação de limite
@@ -222,6 +343,9 @@ $(document).ready(function() {
         updateAddFieldButtons();
         updateLimitMessages();
     }
+    
+    // Inicializar listeners de mudança de tipo
+    initializeTypeChangeListeners();
 });
 
 export function handleFieldCreationError(xhr) {
@@ -230,15 +354,71 @@ export function handleFieldCreationError(xhr) {
         if (typeof window.fieldsLimit !== 'undefined') {
             window.currentFieldsCount = window.fieldsLimit;
             window.canAddMoreFields = false;
-            refreshFieldsUI();
         }
-        return true; // Indicar que foi tratado
+        return true;
     }
     return false;
 }
 
-// Função para forçar atualização da UI (pode ser chamada de outros arquivos)
-export function refreshFieldsUI() {
-    updateAddFieldButtons();
-    updateLimitMessages();
+export function checkAndShowAddFieldOption() {    
+    $('.topic-content').each(function() {
+        const topicId = $(this).data('topic-id');
+        const tbody = $(this).find('tbody');
+        const addTrigger = tbody.find('.add-field-trigger');
+        const limitRow = tbody.find('.limit-reached-row');
+        
+        if (!topicId) return;
+        
+        const topicLimits = window.getTopicLimits(topicId);
+        if (!topicLimits) return;
+        
+        const canAdd = topicLimits.isUnlimited || topicLimits.canAddMoreFields;
+        const hasExistingFields = tbody.find('tr[data-id]').length > 0;
+        
+        // Se pode adicionar e não tem botão de adicionar, criar um
+        if (canAdd && addTrigger.length === 0) {
+            // Remover mensagem de limite se existir
+            if (limitRow.length > 0) {
+                limitRow.remove();
+            }
+            
+            // Criar botão de adicionar
+            const addFieldText = window.translations?.workspace?.table?.add_field?.trigger || 'Adicionar campo';
+            const newAddRow = `
+                <tr class="add-field-trigger bg-slate-750 cursor-pointer hover:bg-slate-700 transition-colors duration-200" data-topic-id="${topicId}">
+                    <td colspan="5" class="px-6 py-4 text-center text-teal-400">
+                        <div class="flex items-center justify-center">
+                            <i class="fas fa-plus-circle mr-2"></i>
+                            ${addFieldText}
+                        </div>
+                    </td>
+                </tr>
+            `;
+            tbody.append(newAddRow);
+        }
+        
+        // Se não pode adicionar e não tem mensagem de limite, criar uma
+        if (!canAdd && limitRow.length === 0) {
+            // Remover botão de adicionar se existir
+            if (addTrigger.length > 0) {
+                addTrigger.remove();
+            }
+            
+            // Criar mensagem de limite
+            const newLimitRow = `
+                <tr class="limit-reached-row bg-slate-750" data-topic-id="${topicId}">
+                    <td colspan="5" class="px-6 py-4 text-center text-purple-400">
+                        <div class="flex items-center justify-center">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            Limite de ${topicLimits.fieldsLimit} campos por tópico atingido.
+                            <a href="/subscription/pricing" class="underline ml-1 text-white">
+                                Faça upgrade
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            tbody.append(newLimitRow);
+        }
+    });
 }

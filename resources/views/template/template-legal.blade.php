@@ -71,7 +71,7 @@
                 <div class="flex justify-between items-center py-4">
                     <!-- Logo -->
                     <div class="flex items-center">
-                        <a href="{{ route('landing.portfoline' )}}">
+                        <a href="{{ route('landing.handgeev' )}}">
                             <img class="w-44" src="{{ asset('assets/images/logo.png') }}" alt="Handgeev Logo">
                         </a>
                     </div>

@@ -18,26 +18,8 @@ class SubscriptionController extends Controller
 
     public function pricing()
     {
-        $user = Auth::user();
-        $currentPlan = $user->planInfo();
-        
-        $plans = [
-            'free' => [
-                'name' => 'Free',
-                'price' => 0,
-                'features' => ['3 Workspaces', '3 Tópicos', '10 Campos', '1.000 req/dia'],
-                'current' => $user->isFree()
-            ],
-            'pro' => [
-                'name' => 'Pro',
-                'stripe_price_id' => config('services.stripe.pro_price_id'),
-                'price' => 29.90,
-                'features' => ['Workspaces Ilimitados', 'Tópicos Ilimitados', 'Campos Ilimitados', '100.000 req/dia', 'API Access', 'Export'],
-                'current' => $user->isPro()
-            ]
-        ];
-
-        return view('subscription.pricing', compact('plans', 'currentPlan'));
+        $currentPlan = auth()->user()->getPlan();
+        return view('subscription.pricing', compact('currentPlan'));
     }
 
     public function checkout(Request $request)
@@ -226,5 +208,32 @@ class SubscriptionController extends Controller
             return redirect()->route('dashboard')
                 ->with('error', 'Não foi possível baixar a fatura.');
         }
+    }
+
+    public function checkoutRedirect(Request $request)
+    {
+        $priceId = $request->get('price_id');
+        
+        \Log::info('Checkout redirect acessado', [
+            'price_id' => $priceId,
+            'user' => auth()->user()->email
+        ]);
+
+        if (!$priceId) {
+            return redirect()->route('subscription.pricing')
+                ->with('error', 'Plano não especificado.');
+        }
+
+        // Verificar se o price_id é válido
+        if (!$this->subscriptionService->isValidPriceId($priceId)) {
+            \Log::error('Price ID inválido no redirect', ['price_id' => $priceId]);
+            return redirect()->route('subscription.pricing')
+                ->with('error', 'Plano selecionado é inválido.');
+        }
+
+        return view('subscription.checkout-redirect', [
+            'priceId' => $priceId,
+            'planName' => $this->subscriptionService->getFriendlyPlanName($priceId)
+        ]);
     }
 }

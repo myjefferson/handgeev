@@ -1,1 +1,0 @@
-<span class="pro-badge text-xs text-white bg-purple-700 font-bold ml-2 px-2 py-1 rounded-full">PRO</span>

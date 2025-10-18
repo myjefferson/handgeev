@@ -40,7 +40,7 @@ return [
         ],
         'hierarchical_topics' => [
             'title' => 'Hierarchical Topics',
-            'description' => 'Organize your data into topics and subtopics for logical information structuring.',
+            'description' => 'Organize your data in topics for logical information structuring.',
         ],
         'dynamic_fields' => [
             'title' => 'Dynamic Fields',
@@ -48,11 +48,11 @@ return [
         ],
         'automatic_api' => [
             'title' => 'Automatic API',
-            'description' => 'RESTful endpoints automatically generated for all your data.',
+            'description' => 'Automatically generated RESTful endpoints for all your data.',
         ],
         'robust_security' => [
             'title' => 'Robust Security',
-            'description' => 'API key authentication, rate limiting, and granular permission control.',
+            'description' => 'API key authentication, JWT and granular permission control.',
         ],
         'low_latency' => [
             'title' => 'Low Latency',

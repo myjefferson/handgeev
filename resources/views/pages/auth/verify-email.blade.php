@@ -1,5 +1,7 @@
 @extends('template.template-site')
 
+@section('title', __('verification_email.title'))
+
 @section('content_site')
 <style>
     body {
@@ -45,9 +47,9 @@
                 <div class="flex justify-center mb-4">
                     <img class="w-52" src="{{ asset('assets/images/logo.png') }}" alt="Handgeev Logo">
                 </div>
-                <div class="text-6xl mb-4">📧</div>
-                <h2 class="text-2xl font-bold text-slate-100 mb-2">Verifique seu Email</h2>
-                <p class="text-slate-300">Enviamos um código de verificação para:</p>
+                <div class="text-6xl mb-4">{{ __('verification_email.icons.email') }}</div>
+                <h2 class="text-2xl font-bold text-slate-100 mb-2">{{ __('verification_email.header.title') }}</h2>
+                <p class="text-slate-300">{{ __('verification_email.header.sent_to') }}</p>
                 <p class="text-teal-400 font-semibold">{{ Auth::user()->email }}</p>
             </div>
 
@@ -68,18 +70,18 @@
                 
                 <div>
                     <label class="block text-sm font-medium text-slate-300 mb-3 text-center">
-                        Digite o código de 6 dígitos:
+                        {{ __('verification_email.form.code_label') }}
                     </label>
-                    <input type="text" name="code" maxlength="6" pattern="[0-9]{6}" 
+                    <input type="text" name="code" maxlength="6" autocomplete="off" pattern="[0-9]{6}" 
                         class="code-input w-full py-4 px-3 rounded-lg focus:outline-none focus:ring-0"
-                        placeholder="000000" required autofocus>
+                        placeholder="{{ __('verification_email.form.code_placeholder') }}" required autofocus>
                     @error('code')
                         <p class="mt-2 text-sm text-red-400 text-center">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <button type="submit" class="btn-primary w-full py-3 px-4 rounded-lg text-slate-900 font-medium text-lg">
-                    <i class="fas fa-check-circle mr-2"></i> Verificar Código
+                    <i class="{{ __('verification_email.icons.check') }} mr-2"></i> {{ __('verification_email.form.submit_button') }}
                 </button>
             </form>
 
@@ -88,12 +90,12 @@
                     <form action="{{ route('verification.resend') }}" method="POST" class="inline">
                         @csrf
                         <button type="submit" class="text-teal-400 hover:text-teal-300 text-sm">
-                            <i class="fas fa-redo mr-1"></i> Reenviar código
+                            <i class="{{ __('verification_email.icons.redo') }} mr-1"></i> {{ __('verification_email.form.resend_code') }}
                         </button>
                     </form>
                     <span class="text-slate-500 mx-2">•</span>
                     <button onclick="showEmailModal()" class="text-slate-400 hover:text-slate-300 text-sm">
-                        <i class="fas fa-edit mr-1"></i> Alterar email
+                        <i class="{{ __('verification_email.icons.edit') }} mr-1"></i> {{ __('verification_email.form.change_email') }}
                     </button>
                 </div>
 
@@ -101,14 +103,14 @@
                     <form action="{{ route('logout') }}" method="GET" class="inline">
                         @csrf
                         <button type="submit" class="text-slate-500 hover:text-slate-400 text-sm">
-                            <i class="fas fa-sign-out-alt mr-1"></i> Sair
+                            <i class="{{ __('verification_email.icons.logout') }} mr-1"></i> {{ __('verification_email.form.logout') }}
                         </button>
                     </form>
                 </div>
             </div>
 
             <div class="mt-6 text-center text-xs text-slate-500">
-                <p>O código expira em 30 minutos</p>
+                <p>{{ __('verification_email.messages.code_expires') }}</p>
             </div>
         </div>
     </div>
@@ -116,20 +118,20 @@
     <!-- Modal para alterar email -->
     <div id="emailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
         <div class="verify-container p-6 w-full max-w-md">
-            <h3 class="text-lg font-semibold text-slate-100 mb-4">Alterar Email</h3>
+            <h3 class="text-lg font-semibold text-slate-100 mb-4">{{ __('verification_email.modal.title') }}</h3>
             <form action="{{ route('verification.update-email') }}" method="POST">
                 @csrf
                 <div class="mb-4">
-                    <label class="block text-sm text-slate-300 mb-2">Novo email:</label>
+                    <label class="block text-sm text-slate-300 mb-2">{{ __('verification_email.modal.email_label') }}</label>
                     <input type="email" name="email" value="{{ Auth::user()->email }}" 
                         class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-teal-400" required>
                 </div>
                 <div class="flex gap-3">
                     <button type="button" onclick="hideEmailModal()" class="flex-1 bg-slate-600 text-white py-2 rounded-lg hover:bg-slate-500">
-                        Cancelar
+                        {{ __('verification_email.modal.cancel_button') }}
                     </button>
                     <button type="submit" class="flex-1 bg-teal-500 text-slate-900 py-2 rounded-lg hover:bg-teal-400 font-semibold">
-                        Alterar
+                        {{ __('verification_email.modal.change_button') }}
                     </button>
                 </div>
             </form>

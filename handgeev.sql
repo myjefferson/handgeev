@@ -13,7 +13,7 @@ CREATE TABLE users (
     language VARCHAR(10) DEFAULT 'pt_BR',
     password TEXT NOT NULL,
     phone VARCHAR(20),
-    global_hash_api TEXT,
+    global_key_api TEXT,
     email_verification_code VARCHAR(255) NULL,
     email_verification_sent_at TIMESTAMP NULL,
     email_verified TINYINT(1) NOT NULL DEFAULT 0,
@@ -26,6 +26,9 @@ CREATE TABLE users (
 	 stripe_subscription_id VARCHAR(255) NULL,
     plan_expires_at TIMESTAMP TINYINT(1) NOT NULL DEFAULT 0,
 	 status ENUM('active', 'inactive', 'suspended', 'past_due', 'unpaid', 'incomplete', 'trial') DEFAULT 'active',
+	 
+	 last_login_at TIMESTAMP NULL AFTER,
+	 last_login_ip VARCHAR(45) NULL AFTER,
     
 	 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -34,9 +37,34 @@ CREATE TABLE users (
     INDEX idx_status (STATUS),
     INDEX `users_stripe_id_index` (`stripe_id`)
 ) ENGINE=INNODB;
-
 SELECT * FROM users;
 -- DROP TABLE users;
+
+
+-- Criar tabela user_activities
+CREATE TABLE user_activities (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    action VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    ip_address VARCHAR(45) NULL,
+    user_agent TEXT NULL,
+    metadata JSON NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    
+    -- Foreign key constraint
+    CONSTRAINT user_activities_user_id_foreign 
+        FOREIGN KEY (user_id) REFERENCES users(id) 
+        ON DELETE CASCADE,
+    
+    -- Índices
+    INDEX user_activities_user_id_created_at_index (user_id, created_at),
+    INDEX user_activities_action_index (ACTION),
+    INDEX user_activities_created_at_index (created_at)
+) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+
 
 
 CREATE TABLE type_workspaces (
@@ -67,15 +95,40 @@ CREATE TABLE workspaces (
 	 type_workspace_id INTEGER REFERENCES type_workspaces(id),
 	 type_view_workspace_id INTEGER DEFAULT 1 REFERENCES type_views_workspaces(id),
 	 title VARCHAR(100) NOT NULL,
+	 description VARCHAR(250) NULL,
 	 is_published BOOLEAN DEFAULT FALSE,
 	 password TEXT DEFAULT NULL,
-	 workspace_hash_api TEXT,
+	 workspace_key_api TEXT,
 	 api_enabled TINYINT(1) NOT NULL DEFAULT 0,
+	 api_domain_restriction TINYINT(1) NOT NULL DEFAULT 0,
+	 api_jwt_required TINYINT(1) NOT NULL DEFAULT 0,
 	 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 -- DROP TABLE workspaces
 SELECT * FROM workspaces;
+
+
+-- Criação da tabela workspace_api_permissions
+CREATE TABLE workspace_api_permissions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    workspace_id BIGINT UNSIGNED NOT NULL,
+    endpoint VARCHAR(255) NOT NULL,
+    allowed_methods JSON NOT NULL,
+    created_at TIMESTAMP NULL DEFAULT NULL,
+    updated_at TIMESTAMP NULL DEFAULT NULL,
+    
+    -- Chave estrangeira
+    CONSTRAINT workspace_api_permissions_workspace_id_foreign 
+    FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+    
+    -- Índice único
+    UNIQUE KEY workspace_api_permissions_workspace_id_endpoint_unique (workspace_id, endpoint)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Índices adicionais para melhor performance
+CREATE INDEX workspace_api_permissions_workspace_id_index ON workspace_api_permissions (workspace_id);
+CREATE INDEX workspace_api_permissions_endpoint_index ON workspace_api_permissions (ENDPOINT);
+
 
 
 
@@ -95,7 +148,6 @@ CREATE INDEX idx_domain ON workspace_allowed_domains(domain);
 SELECT * FROM workspace_allowed_domains;
 
 
-
 -- Tabela workspace_collaborators
 CREATE TABLE `workspace_collaborators` (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -108,6 +160,11 @@ CREATE TABLE `workspace_collaborators` (
   `invited_at` timestamp NULL DEFAULT NULL,
   `joined_at` timestamp NULL DEFAULT NULL,
   `status` enum('pending','accepted','rejected') NOT NULL DEFAULT 'pending',
+  `request_message` TEXT NULL,
+  `requested_at` TIMESTAMP NULL,
+  `responded_at` TIMESTAMP NULL,
+  `response_reason` TEXT NULL,
+  `request_type` ENUM('invitation', 'edit_request') NOT NULL DEFAULT 'invitation',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -121,7 +178,9 @@ CREATE TABLE `workspace_collaborators` (
   CONSTRAINT `workspace_collaborators_invited_by_foreign` FOREIGN KEY (`invited_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `workspace_collaborators_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `workspace_collaborators_workspace_id_foreign` FOREIGN KEY (`workspace_id`) REFERENCES `workspaces` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=UTF8MB4_UNICODE_CI;
+SELECT * FROM workspace_collaborators;
+
 
 
 
@@ -143,7 +202,7 @@ CREATE TABLE fields (
 	topic_id INTEGER REFERENCES topics(id) ON DELETE CASCADE,
 	key_name VARCHAR(200),
 	value TEXT,
-	field_type ENUM('text', 'number', 'email', 'url', 'date', 'boolean', 'json') DEFAULT 'text',
+	type ENUM('text', 'number', 'email', 'url', 'date', 'boolean', 'json') DEFAULT 'text',
 	is_visible BOOLEAN DEFAULT TRUE,
 	`order` INTEGER NOT NULL,
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -171,6 +230,7 @@ CREATE TABLE plans (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=UTF8MB4_UNICODE_CI;
+SELECT * FROM plans;
 
 
 -- Inserir planos básicos
@@ -190,11 +250,11 @@ INSERT INTO plans (
 -- Plano Free: para teste básico
 ('free', 0.00, 1, 3, 10, FALSE, FALSE, 30, 500, 2000, 5),
 -- Plano Start: pequenos negócios
-('start', 29.90, 3, 10, 50, TRUE, TRUE, 60, 2000, 10000, 15),
+('start', 10.00, 3, 10, 50, TRUE, TRUE, 60, 2000, 10000, 15),
 -- Plano Pro: negócios estabelecidos  
-('pro', 79.90, 10, 30, 200, TRUE, TRUE, 120, 5000, 50000, 25),
+('pro', 32.00, 10, 30, 200, TRUE, TRUE, 120, 5000, 50000, 25),
 -- Plano Premium: empresas
-('premium', 249.90, NULL, NULL, NULL, TRUE, TRUE, 250, 25000, 250000, 50),
+('premium', 70.90, NULL, NULL, NULL, TRUE, TRUE, 250, 25000, 250000, 50),
 -- Admin: uso interno
 ('admin', 0.00, NULL, NULL, NULL, TRUE, TRUE, 1000, NULL, NULL, 200);
 
@@ -236,6 +296,7 @@ CREATE TABLE `notifications` (
   PRIMARY KEY (`id`),
   KEY `notifications_notifiable_type_notifiable_id_index` (`notifiable_type`,`notifiable_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=UTF8MB4_UNICODE_CI;
+SELECT * FROM notifications;
 
 
 CREATE TABLE `password_reset_tokens` (

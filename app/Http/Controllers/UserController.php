@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Plan;
 use App\Services\HashService;
+use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -17,6 +18,13 @@ use Validator;
 class UserController extends Controller
 {
     use AuthorizesRequests;
+
+    protected $subscriptionService;
+
+    public function __construct(SubscriptionService $subscriptionService)
+    {
+        $this->subscriptionService = $subscriptionService;
+    }
 
     /**
      * Display a listing of the resource.
@@ -57,14 +65,13 @@ class UserController extends Controller
         ]);
 
         try {
-            // Criar o usuário com email não verificado
             $user = User::create([
                 'name' => $validated['name'],
                 'surname' => $validated['surname'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'timezone' => 'UTC',
-                'language' => app()->getLocale(), // Usar o idioma atual
+                'language' => app()->getLocale(),
                 'phone' => null,
                 'status' => 'active',
                 'email_verified' => false,
@@ -77,7 +84,7 @@ class UserController extends Controller
 
             // Gerar hashes API
             $user->update([
-                'global_hash_api' => HashService::generateUniqueHash()
+                'global_key_api' => HashService::generateUniqueHash()
             ]);
 
             // Gerar código de verificação
@@ -88,11 +95,19 @@ class UserController extends Controller
                 'email_verification_sent_at' => now(),
             ]);
 
+            // VERIFICAR SE TEM PLANO PENDENTE NA SESSÃO
+            $pendingPlan = session('pending_subscription_plan');
+            if ($pendingPlan) {
+                session(['pending_verification_user' => $user->id]);
+                \Log::info("Usuário associado ao plano pendente:", [
+                    'user_id' => $user->id,
+                    'plan' => $pendingPlan,
+                    'session_id' => session()->getId()
+                ]);
+            }
+
             // Enviar email de verificação
             Mail::to($user->email)->send(new VerificationEmail($user, $verificationCode));
-
-            // Log para debug
-            \Log::info("Novo usuário registrado: {$user->email} - Código: {$verificationCode}");
 
             // Logar o usuário
             Auth::login($user);
@@ -348,5 +363,33 @@ class UserController extends Controller
         $user->syncRoles([$validated['plan']]);
         
         return back()->with('success', 'Plano atualizado!');
+    }
+
+    /**
+     * Redirecionar para assinatura após verificação de email
+     */
+    public function redirectToSubscription(Request $request)
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return redirect()->route('login.show');
+        }
+
+        // Verificar se o email foi verificado
+        if (!$user->hasVerifiedEmail()) {
+            return redirect()->route('verification.show')
+                ->with('error', 'Por favor, verifique seu email antes de escolher um plano.');
+        }
+
+        // Se já tem assinatura ativa, redirecionar para dashboard
+        if ($user->hasActiveStripeSubscription()) {
+            return redirect()->route('dashboard.home')
+                ->with('success', 'Você já possui uma assinatura ativa.');
+        }
+
+        // Redirecionar para página de planos
+        return redirect()->route('subscription.pricing')
+            ->with('info', 'Escolha o plano que melhor atende suas necessidades.');
     }
 }

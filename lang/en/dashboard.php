@@ -8,6 +8,7 @@ return [
         'welcome' => 'Welcome',
         'profile' => 'Profile',
         'settings' => 'Settings',
+        'billing' => 'My Plan',
         'logout' => 'Logout',
         'notifications' => 'Notifications',
     ],

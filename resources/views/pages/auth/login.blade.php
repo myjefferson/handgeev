@@ -6,35 +6,22 @@
 @section('content_site')
     <div class="flex flex-col min-h-screen">
         <div class="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-            <div class="login-container w-full max-w-md p-8 border border-teal-500">
+            <div class=" w-full max-w-md bg-slate-800/90 backdrop-blur-sm rounded-xl border border-slate-700 p-8 shadow-2xl">
                 <div class="text-center mb-8">
                     <div class="flex justify-center mb-4">
                         <img class="w-52" src="{{ asset('assets/images/logo.png') }}" alt="Handgeev Logo">
                     </div>
-                    <p class="text-slate-300">{{ __('auth.login.title') }}</p>
+                    <p class="text-slate-300">{{ __('login.login.title') }}</p>
                 </div>
 
-                <!-- Mensagens de Sucesso -->
-                @if(session('success'))
-                    <div class="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-green-400 text-sm">
-                        <i class="fas fa-check-circle mr-2"></i>
-                        {{ session('success') }}
-                    </div>
-                @endif
-
-                <!-- Mensagens de Erro -->
-                @if($errors->any())
-                    <div class="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
-                        <i class="fas fa-exclamation-circle mr-2"></i>
-                        {{ $errors->first('error') }}
-                    </div>
-                @endif
+                {{-- Mensagens --}}
+                @include('components.alerts.alert')
 
                 <form class="space-y-6" action="{{ route('login.auth') }}" method="POST">
                     @csrf
                     <div>
                         <label for="email" class="block text-sm font-medium text-slate-300 mb-2">
-                            {{ __('auth.login.email') }}
+                            {{ __('login.login.email') }}
                         </label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -42,8 +29,8 @@
                             </div>
                             <input id="email" name="email" type="email" autocomplete="email" required 
                                 value="{{ old('email') }}"
-                                class="input-field appearance-none relative block w-full pl-10 pr-3 py-3 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-0 sm:text-sm" 
-                                placeholder="{{ __('auth.login.email_placeholder') }}">
+                                class="input-field appearance-none relative block bg-slate-700/50 w-full pl-10 pr-3 py-3 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-0 sm:text-sm" 
+                                placeholder="{{ __('login.login.email_placeholder') }}">
                         </div>
                         @error('email')
                             <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
@@ -52,16 +39,16 @@
 
                     <div>
                         <label for="password" class="block text-sm font-medium text-slate-300 mb-2">
-                            {{ __('auth.login.password') }}
+                            {{ __('login.login.password') }}
                         </label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <i class="fas fa-lock text-slate-500"></i>
                             </div>
                             <input id="password" name="password" type="password" autocomplete="current-password" required 
-                                class="input-field appearance-none relative block w-full pl-10 pr-10 py-3 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-0 sm:text-sm" 
-                                placeholder="{{ __('auth.login.password_placeholder') }}">
-                            <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-400">
+                                class="input-field appearance-none relative block bg-slate-700/50 w-full pl-10 pr-10 py-3 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-0 sm:text-sm" 
+                                placeholder="{{ __('login.login.password_placeholder') }}">
+                            <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200">
                                 <i class="fas fa-eye" id="eye-icon"></i>
                             </button>
                         </div>
@@ -74,13 +61,13 @@
                         <div class="flex items-center">
                             <input id="remember-me" name="remember" type="checkbox" class="h-4 w-4 text-primary-500 focus:ring-primary-500 border-slate-600 rounded bg-slate-700">
                             <label for="remember-me" class="ml-2 block text-sm text-slate-400">
-                                {{ __('auth.login.remember_me') }}
+                                {{ __('login.login.remember_me') }}
                             </label>
                         </div>
 
                         <div class="text-sm">
                             <a href="{{ route('recovery.account.show') }}" class="font-medium text-primary-500 hover:text-primary-400 transition-colors">
-                                {{ __('auth.login.forgot_password') }}
+                                {{ __('login.login.forgot_password') }}
                             </a>
                         </div>
                     </div>
@@ -90,16 +77,16 @@
                             <span class="absolute left-0 inset-y-0 flex items-center pl-3">
                                 <i class="fas fa-sign-in-alt"></i>
                             </span>
-                            {{ __('auth.login.submit_button') }}
+                            {{ __('login.login.submit_button') }}
                         </button>
                     </div>
                 </form>
 
                 <div class="mt-6 text-center">
                     <p class="text-sm text-slate-400">
-                        {{ __('auth.login.no_account') }}
+                        {{ __('login.login.no_account') }}
                         <a href="{{ route('register.index') }}" class="font-medium text-primary-500 hover:text-primary-400 transition-colors ml-1">
-                            {{ __('auth.login.signup_link') }}
+                            {{ __('login.login.signup_link') }}
                         </a>
                     </p>
                 </div>
@@ -150,13 +137,11 @@
         }
         .input-field {
             transition: all 0.3s ease;
-            background: rgba(30, 41, 59, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .input-field:focus {
             border-color: #08fff0;
             box-shadow: 0 0 0 3px rgba(8, 255, 240, 0.2);
-            background: rgba(30, 41, 59, 0.8);
         }
         .btn-primary {
             background: linear-gradient(135deg, #08fff0 0%, #00b3a8 100%);

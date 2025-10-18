@@ -20,11 +20,14 @@ class Workspace extends Model
         'user_id',
         'type_workspace_id',
         'title',
+        'description',
         'is_published',
         'password',
         'type_view_workspace_id',
-        'workspace_hash_api',
+        'workspace_key_api',
+        'api_domain_restriction',
         'api_enabled',
+        'api_jwt_required',
     ];
 
 
@@ -32,7 +35,22 @@ class Workspace extends Model
         'title' => 'required|string|max:100',
         'type_workspace_id' => 'required|integer|exists:type_workspaces,id',
         'is_published' => 'sometimes|boolean',
-        'workspace_hash_api' => 'required|string',
+        'workspace_key_api' => 'required|string',
+        'description' => 'nullable|string|max:250',
+        'password' => 'nullable|string|max:250',
+    ];
+
+    protected $casts = [
+        'api_enabled' => 'boolean',
+        'api_domain_restriction' => 'boolean',
+        'api_jwt_required' => 'boolean',
+    ];
+
+    // Valor padrão
+    protected $attributes = [
+        'api_enabled' => false,
+        'api_domain_restriction' => false,
+        'api_jwt_required' => false,
     ];
 
     
@@ -45,6 +63,9 @@ class Workspace extends Model
         ];
     }
     
+    /**
+     * Boot method para criar permissões padrão
+     */
     protected static function booted()
     {
         static::created(function ($workspace) {
@@ -57,6 +78,18 @@ class Workspace extends Model
                 'joined_at' => now(),
                 'status' => 'accepted'
             ]);
+
+            // Criar permissões padrão baseadas no plano
+            $userPlan = $workspace->user->getPlan()->name;
+            $defaultMethods = WorkspaceApiPermission::getDefaultMethods($userPlan);
+
+            foreach ($defaultMethods as $endpoint => $methods) {
+                WorkspaceApiPermission::create([
+                    'workspace_id' => $workspace->id,
+                    'endpoint' => $endpoint,
+                    'allowed_methods' => $methods
+                ]);
+            }
         });
     }
 
@@ -147,10 +180,43 @@ class Workspace extends Model
             return false;
         }
 
-        return $this->allowedDomains()
-            ->where('domain', $domain)
+        if (!$this->api_domain_restriction) {
+            return true;
+        }
+
+        $allowedDomains = $this->allowedDomains()
             ->where('is_active', true)
-            ->exists();
+            ->pluck('domain');
+
+        foreach ($allowedDomains as $allowedDomain) {
+            if ($this->matchesDomain($domain, $allowedDomain)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Verifica se o domínio corresponde ao padrão permitido
+     */
+    private function matchesDomain($requestDomain, $allowedDomain)
+    {
+        $requestDomain = strtolower(trim($requestDomain));
+        $allowedDomain = strtolower(trim($allowedDomain));
+
+        // Se for exatamente igual
+        if ($requestDomain === $allowedDomain) {
+            return true;
+        }
+
+        // Se o domínio permitido tem wildcard
+        if (strpos($allowedDomain, '*') === 0) {
+            $pattern = '/^' . str_replace('\*', '.*', preg_quote($allowedDomain, '/')) . '$/';
+            return preg_match($pattern, $requestDomain) === 1;
+        }
+
+        return false;
     }
 
     /**
@@ -162,6 +228,22 @@ class Workspace extends Model
             ->where('is_active', true)
             ->pluck('domain')
             ->toArray();
+    }
+
+    /**
+     * Scope para workspaces com API habilitada
+     */
+    public function scopeWithApiEnabled($query)
+    {
+        return $query->where('api_enabled', true);
+    }
+
+    /**
+     * Scope para workspaces com restrição de domínio ativa
+     */
+    public function scopeWithDomainRestriction($query)
+    {
+        return $query->where('api_domain_restriction', true);
     }
 
     /**
@@ -196,5 +278,85 @@ class Workspace extends Model
         return $this->allowedDomains()
             ->where('domain', $domain)
             ->update(['is_active' => true]);
+    }
+
+    // No Workspace.php
+    public function fieldsCount()
+    {
+        return $this->hasManyThrough(
+            Field::class,
+            Topic::class,
+            'workspace_id', // Foreign key on topics table
+            'topic_id',      // Foreign key on fields table
+            'id',           // Local key on workspaces table
+            'id'            // Local key on topics table
+        )->count();
+    }
+
+    // Ou este método alternativo usando withCount:
+    public function loadFieldsCount()
+    {
+        return $this->loadCount(['topics' => function($query) {
+            $query->select(DB::raw('SUM(
+                (SELECT COUNT(*) FROM fields WHERE fields.topic_id = topics.id)
+            ) as fields_count'));
+        }]);
+    }
+
+    // Método mais simples usando withCount nos relacionamentos
+    public function getFieldsCountAttribute()
+    {
+        if (!$this->relationLoaded('topics.fields')) {
+            $this->load(['topics.fields']);
+        }
+        
+        return $this->topics->sum(function($topic) {
+            return $topic->fields->count();
+        });
+    }
+
+    /**
+     * Relacionamento com permissões da API
+     */
+    public function apiPermissions(): HasMany
+    {
+        return $this->hasMany(WorkspaceApiPermission::class);
+    }
+
+     /**
+     * Obter métodos permitidos para um endpoint
+     */
+    public function getAllowedMethods($endpoint): array
+    {
+        $permission = $this->apiPermissions()
+            ->where('endpoint', $endpoint)
+            ->first();
+
+        if ($permission) {
+            return $permission->allowed_methods;
+        }
+
+        // Retornar padrão baseado no plano
+        $userPlan = $this->user->getPlan()->name;
+        return WorkspaceApiPermission::getDefaultMethods($userPlan)[$endpoint] ?? ['GET'];
+    }
+
+    /**
+     * Verificar se método é permitido para endpoint
+     */
+    public function isMethodAllowed($endpoint, $method): bool
+    {
+        return in_array(strtoupper($method), $this->getAllowedMethods($endpoint));
+    }
+
+    /**
+     * Atualizar permissões
+     */
+    public function updatePermissions($endpoint, $methods): void
+    {
+        $this->apiPermissions()->updateOrCreate(
+            ['endpoint' => $endpoint],
+            ['allowed_methods' => $methods]
+        );
     }
 }

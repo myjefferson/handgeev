@@ -17,13 +17,18 @@ class CollaboratorController extends Controller
     public function indexCollaborations()
     {
         $user = auth()->user();
-        // Agora usando o relacionamento correto
-        $collaborations = $user->collaborations()
+        
+        // Busca TODAS as colaborações (incluindo pendentes) onde você NÃO é o proprietário
+        $collaborations = $user->allCollaborations() // ← USA A NOVA RELAÇÃO
+            ->whereHas('workspace', function($query) use ($user) {
+                $query->where('user_id', '!=', $user->id); // Exclui workspaces que você é dono
+            })
             ->with(['workspace' => function($query) {
                 $query->withCount('topics');
             }])
             ->orderBy('joined_at', 'desc')
             ->get();
+            
         return view('pages.dashboard.collaborations.my-collaborations', compact('collaborations'));
     }
 
@@ -39,27 +44,25 @@ class CollaboratorController extends Controller
             ->where('user_id', $user->id)
             ->exists();
 
-        // Se não é dono, verifica se é colaborador ACEITO através da tabela workspace_collaborators
-        $collaborator = Collaborator::where('workspace_id', $id)
-            ->where('user_id', $user->id)
-            ->where('status', 'accepted')
-            ->first();
-
-        if (!$collaborator) {
-            abort(404, 'Workspace não encontrado ou você não tem permissão para acessá-lo');
+        // Se não é dono, verifica se é colaborador ACEITO
+        if (!$isOwner) {
+            $collaborator = Collaborator::where('workspace_id', $id)
+                ->where('user_id', $user->id)
+                ->where('status', 'accepted')
+                ->firstOrFail();
         }
 
-        // Carrega o workspace usando o ID da colaboração (mais seguro)
+        // Carrega o workspace
         $workspace = Workspace::with(['topics' => function($query) {
                 $query->orderBy('order')->with(['fields' => function($query) {
                     $query->orderBy('order');
                 }]);
             }])
-            ->where('id', $collaborator->workspace_id) // ← AQUI É A CHAVE: usa o ID da colaboração
+            ->where('id', $id)
             ->firstOrFail();
         
         // Obter informações de limite de campos (apenas para dono)
-        $canAddMoreFields = $isOwner ? $user->canAddMoreFields($workspace->id) : false;
+        $canAddMoreFields = $isOwner ? $user->canAddMoreFields($workspace->id) : true; // Colaboradores sempre podem adicionar
         $fieldsLimit = $isOwner ? $user->getFieldsLimit() : null;
         $currentFieldsCount = $isOwner ? $user->getCurrentFieldsCount($workspace->id) : null;
         $remainingFields = $isOwner ? $user->getRemainingFieldsCount($workspace->id) : null;
@@ -240,11 +243,11 @@ class CollaboratorController extends Controller
                 'status' => 'accepted'
             ]);
 
-            return redirect()->route('workspace.show', $collaborator->workspace_id)
+            return redirect()->route('collaboration.show', $collaborator->workspace_id)
                 ->with('success', 'Convite aceito com sucesso!');
 
         } catch (\Exception $e) {
-            return redirect()->route('workspaces.index')
+            return redirect()->route('collaborations.index')
                 ->with('error', 'Convite inválido ou expirado.');
         }
     }

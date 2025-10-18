@@ -20,8 +20,8 @@ return [
     ],
     
     'code_example' => [
-        'api_endpoint' => '// API Endpoint criado automaticamente',
-        'response_json' => '// Response JSON estruturado',
+        'api_endpoint' => 'API Endpoint criado automaticamente',
+        'response_json' => 'Response JSON estruturado',
     ],
     
     'stats' => [
@@ -40,7 +40,7 @@ return [
         ],
         'hierarchical_topics' => [
             'title' => 'Tópicos Hierárquicos',
-            'description' => 'Organize seus dados em tópicos e subtópicos para estruturação lógica da informação.',
+            'description' => 'Organize seus dados em tópicos para estruturação lógica da informação.',
         ],
         'dynamic_fields' => [
             'title' => 'Campos Dinâmicos',
@@ -52,7 +52,7 @@ return [
         ],
         'robust_security' => [
             'title' => 'Segurança Robusta',
-            'description' => 'Autenticação por API keys, rate limiting e controle de permissões granular.',
+            'description' => 'Autenticação por API keys, JWT e controle de permissões granular.',
         ],
         'low_latency' => [
             'title' => 'Baixa Latência',

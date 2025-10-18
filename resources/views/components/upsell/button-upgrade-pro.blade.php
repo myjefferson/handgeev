@@ -5,7 +5,9 @@
         </div>
     @endif
     <div class="flex-1 pr-1">
-        {!! isset($iconLeft) ? $iconLeft : '' !!} <span class="font-semibold text-white">{{ $title }}</span> @include('components.badges.pro-badge')
+        {!! isset($iconLeft) ? $iconLeft : '' !!} 
+        <span class="font-semibold text-white">{{ $title ?? __('upsell.buttons.upgrade') }}</span> 
+        @include('components.badges.upgrade-badge')
     </div>
 </a>
 

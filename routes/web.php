@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\ApiController;
+use App\Http\Controllers\ApiDomainController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AccountController;
@@ -12,9 +12,9 @@ use App\Http\Controllers\FieldController;
 use App\Http\Controllers\TopicController;
 use App\Http\Controllers\WorkspaceSettingController;
 use App\Http\Controllers\WorkspaceSharedController;
-use App\Http\Controllers\WorkspaceDomainController;
 use App\Http\Controllers\CollaboratorController;
 use App\Http\Controllers\PlanController;
+use App\Http\Controllers\EditRequestController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\NotificationController;
@@ -26,19 +26,13 @@ use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['languages'])->group(function(){
-    Route::get('/', function (){ return view('landing.portfoline'); } )->name('landing.portfoline');
-    Route::get('/offers', function (){ return view('subscription.pricing'); } )->name('subscription.pricing');
+    Route::get('/', function (){ return view('landing.handgeev'); } )->name('landing.handgeev');
     
     // Termos e Privacidade
     Route::get('/terms', function () { return view('legal.terms'); })->name('legal.terms');
     Route::get('/privacy', function () { return view('legal.privacy'); })->name('legal.privacy');
     
-    // Rotas para visualização compartilhada
-    Route::controller(WorkspaceSharedController::class)->group(function(){
-        Route::get('/api/interface/{global_hash_api?}/{workspace_hash_api?}', 'showInterfaceApi')->name('workspace.shared.interface.api');
-    });
-    
-    Route::get('/teste', function (){ return view('pages.dashboard.teste'); })->name('teste.page');
+    // Route::get('/teste', function (){ return view('pages.dashboard.teste'); })->name('teste.page');
     
     Route::controller(UserController::class)->group(function(){
         Route::post('/register/store', 'storeProfile')->name('register.store');
@@ -51,7 +45,7 @@ Route::middleware(['languages'])->group(function(){
         Route::get('/login', 'indexLogin')->name('login.show');
         Route::post('/login/auth', 'authLogin')->name('login.auth');
         Route::get('/logout', 'logout')->name('logout');
-        Route::get('/account/register', 'indexRegister')->name('register.index');
+        Route::get('/signup', 'indexRegister')->name('register.index');
         Route::get('/support/recovery-account', 'showRecovery')->name('recovery.account.show');
         Route::get('/support/recovery-password/{token}','showResetForm')->name('recovery.password.show');
         Route::post('/support/recovery-password','updatePasswordRecovery')->name('recovery.password.update');
@@ -66,19 +60,29 @@ Route::middleware(['languages'])->group(function(){
     });
 
     // Webhook Stripe (sem CSRF protection)
-    Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])
-        ->withoutMiddleware([ValidateCsrfToken::class]);
+    Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])->withoutMiddleware([ValidateCsrfToken::class]);
+
+
+    // Formulário de senha
+    Route::controller(WorkspaceSharedController::class)->group(function(){
+        Route::get('/shared/workspace/{global_key_api}/{workspace_key_api}/password','showPasswordForm')->name('workspace.shared.password');
+        Route::post('/shared/workspace/{global_key_api}/{workspace_key_api}/verify-password','verifyPassword')->name('workspace.shared.verify-password');
+        Route::get('/shared/workspace/{global_key_api}/{workspace_key_api}/api','sharedApi')->name('workspace.shared.api');
+        Route::get('/shared/{workspace}/permissions', 'getPermissions')->name('api.get.permissions');
+        Route::put('/shared/{workspace}/permissions', 'updatePermissions')->name('api.put.permissions');
+        //Statistics
+        Route::get('/shared/workspace/{global_key_api}/{workspace_key_api}/statistics', 'getApiStatistics')->name('api.get.statistics');
+        Route::get('/shared/workspace/{global_key_api}/{workspace_key_api}/endpoint-statistics', 'getEndpointStatistics')->name('api.get.endpoint-statistics');
+        // Rotas para visualização compartilhada
+        Route::middleware(['workspace.api.password'])->group(function(){
+            Route::get('/api/interface/workspace/{global_key_api}/{workspace_key_api}', 'showInterfaceApi')->name('workspace.shared-interface-api.show');
+            Route::get('/api/rest/workspace/{global_key_api}/{workspace_key_api}', 'showApiRest')->name('workspace.api-rest.show');
+        });
+    }); 
 });
 
 
-Route::middleware(['auth:web', 'languages', 'plan.limits'])->group(function(){
-    
-    // Alertas de limites serão mostrados automaticamente pelo middleware plan.limits
-    
-    Route::controller(WorkspaceSharedController::class)->group(function(){
-        Route::get('/api/rest/workspace/{id}', 'showApiRest')->name('workspace.api-rest');
-    });
-
+Route::middleware(['auth:web', 'languages', 'plan.limits', 'record.last.login'])->group(function(){
     Route::controller(WorkspaceController::class)->group(function(){
         Route::get('/workspaces', 'indexWorkspaces')->name('workspaces.index');
         Route::get('/workspace/{id}', 'index')->name('workspace.show');
@@ -91,18 +95,23 @@ Route::middleware(['auth:web', 'languages', 'plan.limits'])->group(function(){
         Route::post('/workspace/import/process', 'import')->name('workspace.import');
         
         // Exportação (apenas para planos que permitem)
-        Route::middleware(['check.plan:can_export'])->group(function () {
-            Route::get('/workspace/{id}/export', 'export')->name('workspace.export');
-            Route::get('/workspace/{id}/export/quick', 'exportQuick')->name('workspace.export.quick');
-        });
+        Route::get('/workspace/{id}/export', 'export')->name('workspace.export');
+        Route::get('/workspace/{id}/export/quick', 'exportQuick')->name('workspace.export.quick');
     });
     
     Route::controller(WorkspaceSettingController::class)->group(function(){
         Route::get('/workspace/setting/{id}', 'index')->name('workspace.setting');
         Route::put('/workspace/setting/hash/{id}/update', 'generateNewHashApi')->name('workspace.update.generateNewHashApi');
-        Route::put('/workspace/setting/password/{id}/update', 'passwordWorkspace')->name('workspace.update.passwordWorkspace');
         Route::put('/workspace/setting/view-workspace/{id}/update', 'viewWorkspace')->name('workspace.update.viewWorkspace');
         Route::post('/workspace/setting/{id}/duplicate', 'duplicate')->name('workspace.duplicate');
+        Route::put('/workspace/setting/{id}/access-settings', 'updateAccessSettings')->name('workspace.update.access-settings');
+    });
+
+    Route::controller(EditRequestController::class)->group(function(){
+        Route::post('/edit-requests/{id}/approve', 'approveRequest')->name('edit-requests.approve');
+        Route::post('/edit-requests/{id}/reject', 'rejectRequest')->name('edit-requests.reject');
+        Route::get('/workspace/{id}/edit-requests', 'listPendingRequests')->name('workspace.edit-requests');
+        Route::get('/workspace/{id}/edit-requests/history', 'listAllRequests')->name('workspace.edit-requests.history');
     });
 
     Route::controller(CollaboratorController::class)->group(function () {
@@ -115,6 +124,7 @@ Route::middleware(['auth:web', 'languages', 'plan.limits'])->group(function(){
 
         Route::post('/collaboration/accept/{token}', 'acceptInvite')->name('collaboration.invite.accept');
         Route::post('/collaboration/reject/{token}', 'rejectInvite')->name('collaboration.invite.reject');
+        
         Route::post('/{id}/accept', 'acceptInviteById')->name('workspace.invite.accept.id');
         Route::post('/{id}/reject', 'rejectInviteById')->name('workspace.invite.reject.id');
     });
@@ -124,12 +134,15 @@ Route::middleware(['auth:web', 'languages', 'plan.limits'])->group(function(){
         Route::put('/field/{id}/update', 'update')->name('field.update');
         Route::delete('/field/{id}/destroy', 'destroy')->name('field.destroy');
         Route::post('/field/check-limit', 'checkLimit')->name('fields.checkLimit');
+        Route::get('/fields/check-type', 'checkTypeAllowed')->name('fields.check-type');
+        Route::get('/fields/allowed-types', 'getAllowedTypes')->name('fields.allowed-types');
     });
 
     Route::controller(TopicController::class)->group(function(){
         Route::post('/topic/store', 'store')->name('topic.store')->middleware('throttle:create-resources');
         Route::put('/topic/{id}/update', 'update')->name('topic.update');
         Route::delete('/topic/{id}/destroy', 'destroy')->name('topic.destroy');
+        Route::post('/topic/{workspaceid}/merge-topics', 'mergeTopics')->name('workspace.merge-topics');
     });
 
     Route::controller(DashboardController::class)->group(function(){
@@ -158,18 +171,9 @@ Route::middleware(['auth:web', 'languages', 'plan.limits'])->group(function(){
         Route::get('/count','count')->name('notifications.count');
     });
 
-    Route::controller(WorkspaceDomainController::class)->group(function () {
-        // Apenas planos Pro podem usar domínios personalizados
-        Route::middleware(['check.plan:can_use_api'])->group(function () {
-            Route::post('workspaces/{workspace}/api/domains', 'addDomain')->name('workspace.api.domains.add');
-            Route::delete('workspaces/{workspace}/api/domains', 'removeDomain')->name('workspace.api.domains.remove');
-            Route::put('workspaces/{workspace}/api/domains/activate', 'activateDomain')->name('workspace.api.domains.activate');
-            Route::put('workspaces/{workspace}/api/toggle', 'toggleApi')->name('workspace.api.toggle');
-        });
-    });
-
     // Rotas de Assinatura
     Route::controller(SubscriptionController::class)->group(function () {
+        Route::get('/checkout/redirect', 'checkoutRedirect')->name('subscription.checkout.redirect');
         Route::get('/pricing', 'pricing')->name('subscription.pricing');
         Route::post('/checkout', 'checkout')->name('subscription.checkout');
         Route::get('/success', 'success')->name('subscription.success');
@@ -192,37 +196,33 @@ Route::middleware(['auth:web', 'languages', 'plan.limits'])->group(function(){
     });
 
     // Rotas de Administração
-    Route::middleware(['role:admin'])->group(function () {
+    Route::prefix('admin')->middleware(['role:admin'])->group(function () {
         Route::controller(AdminController::class)->group(function () {
-            Route::get('/admin/users', 'users')->name('admin.users');
-            Route::put('/admin/users/{id}/update', 'updateUser')->name('admin.users.update');
-            Route::delete('/admin/users/{id}/delete', 'deleteUser')->name('admin.users.delete');
-            Route::put('/admin/plans', 'plans')->name('admin.plans');
+            // Gestão de usuários
+            Route::get('/users', 'users')->name('admin.users');
+            Route::put('/users/{id}', 'updateUser')->name('admin.users.update');
+            Route::delete('/users/{id}', 'deleteUser')->name('admin.users.delete');
+            Route::post('/users/{id}/reset-password', 'resetPassword')->name('admin.users.reset-password');
+            Route::post('/users/{id}/toggle-status', 'toggleUserStatus')->name('admin.users.toggle-status');
+            Route::get('/users/{id}/activities', 'getUserActivities')->name('admin.users.activities');
+            Route::get('/users/{id}/stats', 'getUserStats')->name('admin.users.stats');
+            
+            // Planos
+            Route::get('/plans', 'plans')->name('admin.plans');
+        });
+    });
+    
+    Route::prefix('api/{workspace}')->group(function () {
+        Route::controller(ApiDomainController::class)->group(function () {
+            Route::post('/generate-api-key', 'generateApiKey')->name('workspace.generate-api-key');
+            Route::post('/domains/add', 'addDomain')->name('workspace.api.domains.add');
+            Route::delete('/domains/remove', 'removeDomain')->name('workspace.api.domains.remove');
+            Route::put('/domain-restriction/toggle', 'toggleDomainRestriction')->name('workspace.api.domain-restriction.toggle');
+            Route::put('/domains/activate', 'activateDomain')->name('workspace.api.domains.activate');
+            Route::put('/access/toggle', 'toggleAccessApi')->name('workspace.api.access.toggle');
+            Route::put('/jwt-requirement/toggle', 'toggleJwtRequirement')->name('workspace.api.jwt-requirement.toggle');
         });
     });
 });
-
-// Rota pública para GUI Mode
-Route::get('/guimode', function (){ 
-    return view('pages.dashboard.mode-api.interface-api'); 
-})->name('guimode');
-
-// Rotas de API com rate limiting baseado no plano
-Route::middleware(['api.auth_token', 'api.log', 'plan.rate_limit'])->group(function(){
-    Route::controller(ApiController::class)->group(function(){
-        Route::post('/api/token/auth', 'getTokenByHashes')->name('api.token-auth');
-        Route::get('/api/{id}/workspace', 'getWorkspaceData')->name('api.workspace');
-        Route::get('/api/workspace/{id}/visible', 'getVisibleWorkspaceData')->name('api.workspace.visible');
-        Route::get('/api/rate-limit-status', 'getRateLimitStatus')->name('api.rate-limit.status');
-        
-        // Novas rotas para informações do plano
-        Route::get('/api/plan/limits', 'getPlanLimits')->name('api.plan.limits');
-        Route::get('/api/subscription/status', 'getSubscriptionStatus')->name('api.subscription.status');
-    });
-});
-
-// Rota pública para autenticação (com rate limiting)
-Route::middleware(['api.log', 'plan.rate_limit'])->post('/api/token/auth', [ApiController::class, 'getTokenByHashes']);
-
-// Rotas de localização
+//Lang
 Route::get('/lang/{locale}', [LanguageController::class, 'switchLang'])->name('lang.switch');

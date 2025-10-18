@@ -68,13 +68,13 @@ class BillingController extends Controller
         try {
             $this->subscriptionService->addPaymentMethod($user, $request->payment_method);
             
-            return redirect()->route('billing.index')
+            return redirect()->route('billing.show')
                 ->with('success', 'Método de pagamento adicionado com sucesso!');
                 
         } catch (\Exception $e) {
             \Log::error('Erro ao adicionar método de pagamento: ' . $e->getMessage());
             
-            return redirect()->route('billing.index')
+            return redirect()->route('billing.show')
                 ->with('error', 'Erro ao adicionar método de pagamento. Tente novamente.');
         }
     }
@@ -90,13 +90,13 @@ class BillingController extends Controller
         try {
             $this->subscriptionService->removePaymentMethod($user, $request->payment_method_id);
             
-            return redirect()->route('billing.index')
+            return redirect()->route('billing.show')
                 ->with('success', 'Método de pagamento removido com sucesso!');
                 
         } catch (\Exception $e) {
             \Log::error('Erro ao remover método de pagamento: ' . $e->getMessage());
             
-            return redirect()->route('billing.index')
+            return redirect()->route('billing.show')
                 ->with('error', 'Erro ao remover método de pagamento. Tente novamente.');
         }
     }
@@ -112,13 +112,13 @@ class BillingController extends Controller
         try {
             $this->subscriptionService->setDefaultPaymentMethod($user, $request->payment_method_id);
             
-            return redirect()->route('billing.index')
+            return redirect()->route('billing.show')
                 ->with('success', 'Método de pagamento definido como padrão!');
                 
         } catch (\Exception $e) {
             \Log::error('Erro ao definir método de pagamento padrão: ' . $e->getMessage());
             
-            return redirect()->route('billing.index')
+            return redirect()->route('billing.show')
                 ->with('error', 'Erro ao definir método de pagamento padrão. Tente novamente.');
         }
     }
@@ -134,13 +134,13 @@ class BillingController extends Controller
         try {
             $newPlan = $this->subscriptionService->changePlan($user, $request->price_id);
             
-            return redirect()->route('billing.index')
+            return redirect()->route('billing.show')
                 ->with('success', "Plano alterado para {$newPlan->name} com sucesso!");
                 
         } catch (\Exception $e) {
             \Log::error('Erro ao alterar plano: ' . $e->getMessage());
             
-            return redirect()->route('billing.index')
+            return redirect()->route('billing.show')
                 ->with('error', 'Erro ao alterar plano. Tente novamente.');
         }
     }
@@ -155,7 +155,7 @@ class BillingController extends Controller
                 'product' => 'Assinatura',
             ]);
         } catch (\Exception $e) {
-            return redirect()->route('billing.index')
+            return redirect()->route('billing.show')
                 ->with('error', 'Não foi possível baixar a fatura.');
         }
     }
@@ -167,25 +167,25 @@ class BillingController extends Controller
         $planInfo = $this->subscriptionService->getUserPlanInfo($user);
         
         if (!$planInfo['has_subscription']) {
-            return redirect()->route('billing.index')
+            return redirect()->route('billing.show')
                 ->with('error', 'Você não possui uma assinatura ativa para cancelar.');
         }
 
         if ($planInfo['cancel_at_period_end']) {
-            return redirect()->route('billing.index')
+            return redirect()->route('billing.show')
                 ->with('error', 'Sua assinatura já está programada para cancelamento.');
         }
 
         try {
             $this->subscriptionService->cancelSubscription($user);
             
-            return redirect()->route('billing.index')
+            return redirect()->route('billing.show')
                 ->with('success', 'Assinatura cancelada com sucesso. Você terá acesso até ' . $planInfo['current_period_end']->format('d/m/Y'));
                 
         } catch (\Exception $e) {
             \Log::error('Erro ao cancelar assinatura: ' . $e->getMessage());
             
-            return redirect()->route('billing.index')
+            return redirect()->route('billing.show')
                 ->with('error', 'Erro ao cancelar assinatura. Tente novamente.');
         }
     }
@@ -195,20 +195,20 @@ class BillingController extends Controller
         $user = Auth::user();
         
         if (!$this->subscriptionService->canResumeSubscription($user)) {
-            return redirect()->route('billing.index')
+            return redirect()->route('billing.show')
                 ->with('error', 'Não é possível reativar a assinatura. O período de cortesia já expirou.');
         }
 
         try {
             $this->subscriptionService->resumeSubscription($user);
             
-            return redirect()->route('billing.index')
+            return redirect()->route('billing.show')
                 ->with('success', 'Assinatura reativada com sucesso!');
                 
         } catch (\Exception $e) {
             \Log::error('Erro ao reativar assinatura: ' . $e->getMessage());
             
-            return redirect()->route('billing.index')
+            return redirect()->route('billing.show')
                 ->with('error', 'Erro ao reativar assinatura. Tente novamente.');
         }
     }

@@ -7,18 +7,21 @@ return [
     'login_link' => 'Fazer login',
     
     'hero' => [
-        'title_line1' => 'Apresente-se como :highlight.',
-        'title_line2' => 'Mostre :highlight.',
-        'highlight' => 'quiser',
-        'highlight2' => 'porque veio',
-        'testimonial' => '"O Handgeev transformou completamente como apresento meu trabalho aos clientes."',
-        'testimonial_author' => '— Ana Silva, Designer',
+        'title_line1' => 'Crie APIs poderosas em :highlight',
+        'title_line2' => 'Sem complicação, sem código desnecessário',
+        'highlight' => 'minutos',
+        'testimonial' => '"O HandGeev revolucionou como criamos protótipos de API. Em uma tarde conseguimos fazer o que antes levava semanas."',
+        'testimonial_author' => '— Desenvolvedor Full Stack',
+        'platform_description' => 'Sua plataforma completa para APIs',
     ],
     
     'features' => [
-        'custom_designs' => 'Designs personalizáveis',
-        'intuitive_interface' => 'Interface intuitiva e rápida',
-        'privacy_security' => 'Privacidade e segurança',
+        'instant_setup' => 'Configuração Instantânea',
+        'instant_setup_desc' => 'API REST automática em segundos',
+        'total_flexibility' => 'Flexibilidade Total',
+        'total_flexibility_desc' => 'Campos dinâmicos e tópicos hierárquicos',
+        'robust_security' => 'Segurança Robusta',
+        'robust_security_desc' => 'API keys, JWT e controle granular',
     ],
     
     'form' => [
@@ -35,12 +38,19 @@ return [
         'terms_link' => 'Termos',
         'privacy_link' => 'Política de Privacidade',
         'submit_button' => 'Criar minha conta',
+        'submit_button_payment' => 'Continuar para Pagamento',
     ],
     
     'social' => [
         'divider' => 'Ou continue com',
         'google' => 'Google',
         'github' => 'GitHub',
+    ],
+    
+    'plan' => [
+        'selected' => 'Plano :plan Selecionado',
+        'payment_redirect' => 'Após confirmar seu email, você será redirecionado para o pagamento seguro.',
+        'create_account' => 'Criar conta - :plan',
     ],
     
     'validation' => [
@@ -58,5 +68,9 @@ return [
         'success' => 'Conta criada com sucesso! Enviamos um código de verificação para seu email.',
         'error' => 'Erro ao criar conta. Tente novamente.',
         'email_verification_sent' => 'E-mail de verificação enviado com sucesso!',
+    ],
+    
+    'javascript' => [
+        'password_validation' => 'A senha deve ter pelo menos 8 caracteres.',
     ],
 ];

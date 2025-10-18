@@ -11,7 +11,9 @@ return [
         'member_since' => 'Member since',
         'badges' => [
             'admin' => 'Administrator',
+            'premium' => 'Premium',
             'pro' => 'Pro',
+            'start' => 'Start',
             'free' => 'Free',
         ],
     ],

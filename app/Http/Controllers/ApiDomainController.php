@@ -7,7 +7,7 @@ use App\Models\WorkspaceAllowedDomain;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
-class WorkspaceDomainController extends Controller
+class ApiDomainController extends Controller
 {
     /**
      * Adicionar domínio permitido
@@ -25,7 +25,7 @@ class WorkspaceDomainController extends Controller
         $validated = $request->validate([
             'domain' => [
                 'required',
-                'regex:/^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$/i',
+                'regex:/^(\*\.)?([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$|^(\*\.)?([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}:\d+$|^localhost$|^localhost:\d+$|^[a-z0-9.-]+$|^[a-z0-9.-]+:\d+$/i',
                 Rule::unique('workspace_allowed_domains')
                     ->where('workspace_id', $workspace->id)
                     ->where(function($query) {
@@ -33,7 +33,7 @@ class WorkspaceDomainController extends Controller
                     })
             ]
         ], [
-            'domain.regex' => 'Formato de domínio inválido.',
+            'domain.regex' => 'Formato de domínio inválido. Use: exemplo.com ou *.exemplo.com',
             'domain.unique' => 'Este domínio já está na lista de permitidos.'
         ]);
 
@@ -92,7 +92,7 @@ class WorkspaceDomainController extends Controller
     /**
      * Ativar/desativar API
      */
-    public function toggleApi(Workspace $workspace)
+    public function toggleAccessApi(Workspace $workspace)
     {
         try {
             $workspace->update(['api_enabled' => !$workspace->api_enabled]);
@@ -101,6 +101,50 @@ class WorkspaceDomainController extends Controller
             return back()->with('success', "API {$status} com sucesso!");
         } catch (\Exception $e) {
             return back()->with('error', 'Erro ao alterar status da API.');
+        }
+    }
+
+    /**
+     * Toggle para controle de restrição por domínio
+     */
+    public function toggleDomainRestriction(Request $request, Workspace $workspace)
+    {
+        try {
+            $newStatus = !$workspace->api_domain_restriction;
+            
+            // Permitir ativar mesmo sem domínios, a interface mostrará os campos
+            $workspace->update(['api_domain_restriction' => $newStatus]);
+            
+            $status = $newStatus ? 'ativada' : 'desativada';
+            $message = $newStatus 
+                ? 'Restrição por domínio ativada. Adicione os domínios permitidos abaixo.'
+                : 'Restrição por domínio desativada. A API aceitará requisições de qualquer domínio.';
+            
+            return back()->with('success', $message);
+            
+        } catch (\Exception $e) {
+            \Log::error('Erro ao alternar restrição de domínio: ' . $e->getMessage());
+            return back()->with('error', 'Erro ao alterar configuração de domínios.');
+        }
+    }
+
+    public function toggleJwtRequirement(Request $request, Workspace $workspace)
+    {
+        try {
+            $newStatus = !$workspace->api_jwt_required;
+            
+            $workspace->update(['api_jwt_required' => $newStatus]);
+            
+            $status = $newStatus ? 'ativada' : 'desativada';
+            $message = $newStatus 
+                ? 'Autenticação JWT obrigatória ativada. Todas as requisições precisarão de token válido da rota /api/auth/login/token.'
+                : 'Autenticação JWT obrigatória desativada. Tokens fixos do workspace serão aceitos.';
+            
+            return back()->with('success', $message);
+            
+        } catch (\Exception $e) {
+            \Log::error('Erro ao alternar exigência de JWT: ' . $e->getMessage());
+            return back()->with('error', 'Erro ao alterar configuração de autenticação.');
         }
     }
 }

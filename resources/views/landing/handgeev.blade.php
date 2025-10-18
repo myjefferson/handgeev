@@ -3,6 +3,111 @@
 @section('title', 'Handgeev - Crie e Gerencie APIs de Forma Intuitiva')
 @section('description', 'Boas-vindas ao HandGeev')
 
+@push('style')
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #f1f5f9;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #00e6d8 0%, #00b3a8 100%);
+        }
+        .teal-glow {
+            box-shadow: 0 0 25px rgba(0, 230, 216, 0.3);
+        }
+        .teal-glow-hover:hover {
+            box-shadow: 0 0 35px rgba(0, 230, 216, 0.4);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 230, 216, 0.15), 0 10px 10px -5px rgba(0, 230, 216, 0.1);
+        }
+        .pricing-card.popular {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .popular-tag {
+            color: #0f172a;
+            padding: 5px 40px;
+        }
+        .recommended-tag{
+            padding: 5px 40px;
+        }
+        .recommended-tag, .popular-tag {
+            position: absolute;
+            top: 32px;
+            right: -40px;
+            font-size: 12px;
+            font-weight: 600;
+            transform: rotate(45deg);
+        }
+        .nav-link {
+            position: relative;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -4px;
+            left: 0;
+            background-color: #00e6d8;
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        .code-block {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .feature-icon {
+            background: rgba(0, 230, 216, 0.1);
+            border: 1px solid rgba(0, 230, 216, 0.2);
+        }
+        .teal-badge {
+            background: rgba(8, 255, 240, 0.1);
+            color: #08fff0;
+        }
+        .purple-badge {
+            background: #a855f7;
+            color: white;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+        .blue-badge {
+            background: #2B68FF;
+            color: white;
+        }
+        .popular-tag {
+            position: absolute;
+            top: 20px;
+            right: -34px;
+            background: #8b5cf6;
+            color: white;
+            padding: 5px 40px;
+            font-size: 12px;
+            font-weight: 600;
+            transform: rotate(45deg);
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
+@endpush
+
 @section('content_site')
     <!-- Header/Navigation -->
     <header class="fixed w-full bg-slate-900 bg-opacity-90 backdrop-blur-sm z-50 border-b border-slate-700">
@@ -80,7 +185,7 @@
                                 <div class="text-sm font-mono text-slate-300">
                                     <div class="text-teal-400">{{ __('site.code_example.api_endpoint') }}</div>
                                     <div class="text-purple-400">GET</div> 
-                                    <span class="text-green-400">https://api.handgeev.com/workspace/</span>
+                                    <span class="text-green-400">https://www.handgeev.com/workspace/</span>
                                     <span class="text-yellow-400">:id</span>
                                     <span class="text-blue-400">/data</span>
                                     
@@ -109,7 +214,7 @@
         <div class="container mx-auto max-w-6xl px-4">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
                 <div>
-                    <div class="text-3xl font-bold text-teal-400 mb-2">10K+</div>
+                    <div class="text-3xl font-bold text-teal-400 mb-2">8K+</div>
                     <div class="text-slate-400">{{ __('site.stats.apis_created') }}</div>
                 </div>
                 <div>
@@ -117,7 +222,7 @@
                     <div class="text-slate-400">{{ __('site.stats.uptime') }}</div>
                 </div>
                 <div>
-                    <div class="text-3xl font-bold text-teal-400 mb-2">2.5M</div>
+                    <div class="text-3xl font-bold text-teal-400 mb-2">1.5M</div>
                     <div class="text-slate-400">{{ __('site.stats.requests_day') }}</div>
                 </div>
                 <div>
@@ -277,7 +382,7 @@
                             </div>
                             <div class="p-4">
                                 <div class="text-sm font-mono text-slate-300">
-                                    <div class="text-purple-400">fetch</div>(<span class="text-green-400">'https://api.handgeev.com/workspace/123/data'</span>)
+                                    <div class="text-purple-400">fetch</div>(<span class="text-green-400">'https://wwww.handgeev.com/workspace/123/data'</span>)
                                     <div>  .then(<span class="text-blue-400">response</span> => response.<span class="text-purple-400">json</span>())</div>
                                     <div>  .then(<span class="text-blue-400">data</span> => {</div>
                                     <div>    <span class="text-gray-500">// {{ __('site.how_it_works.endpoint_ready.json_responses') }}</span></div>
@@ -392,7 +497,7 @@
                         <span class="teal-badge text-xs font-semibold px-3 py-1 rounded-full">FREE</span>
                         <h3 class="font-semibold text-lg mb-2 text-white mt-3">{{ __('site.pricing.free.name') }}</h3>
                         <div class="mb-4">
-                            <span class="text-4xl font-bold text-white">{{ __('site.pricing.free.price') }}</span>
+                            <span class="text-4xl font-bold text-white">$0</span>
                             <span class="text-slate-400">{{ __('site.pricing.free.period') }}</span>
                         </div>
                     </div>
@@ -408,22 +513,27 @@
                         </li>
                         <li class="flex items-center">
                             <i class="fas fa-check text-teal-400 mr-2"></i>
-                            <span class="text-sm">Máximo 10 campos</span>
+                            <span class="text-sm">Máximo 10 campos por tópico</span>
                         </li>
                         <li class="flex items-center">
                             <i class="fas fa-check text-teal-400 mr-2"></i>
                             <span class="text-sm">API: 30 req/min</span>
                         </li>
-                        <li class="flex items-center text-gray-500">
-                            <i class="fas fa-times mr-2"></i>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-teal-400 mr-2"></i>
                             <span class="text-sm">Exportação de dados</span>
                         </li>
                         <li class="flex items-center text-gray-500">
                             <i class="fas fa-times mr-2"></i>
-                            <span class="text-sm">Acesso à API</span>
+                            <span class="text-sm">Importação de dados</span>
+                        </li>
+                        <li class="flex items-center text-gray-500">
+                            <i class="fas fa-times mr-2"></i>
+                            <span class="text-sm">Acesso à Interface API REST</span>
                         </li>
                     </ul>
-                    <a href="{{ route('register.index') }}" class="block w-full bg-slate-700 hover:bg-slate-600 text-white text-center py-3 rounded-lg font-medium transition-colors">
+                    <a href="{{ route('register.index') }}" 
+                        class="block w-full bg-slate-700 hover:bg-slate-600 text-white text-center py-3 rounded-lg font-medium transition-colors">
                         {{ __('site.pricing.free.button') }}
                     </a>
                 </div>
@@ -434,7 +544,7 @@
                         <span class="teal-badge text-xs font-semibold px-3 py-1 rounded-full">START</span>
                         <h3 class="font-semibold text-lg mb-2 text-white mt-3">{{ __('site.pricing.start.name') }}</h3>
                         <div class="mb-4">
-                            <span class="text-4xl font-bold text-white">R$ 29,90</span>
+                            <span class="text-4xl font-bold text-white">$10</span>
                             <span class="text-slate-400">{{ __('site.pricing.start.period') }}</span>
                         </div>
                     </div>
@@ -450,7 +560,7 @@
                         </li>
                         <li class="flex items-center">
                             <i class="fas fa-check text-teal-400 mr-2"></i>
-                            <span class="text-sm">Máximo 50 campos</span>
+                            <span class="text-sm">Máximo 50 campos por tópico</span>
                         </li>
                         <li class="flex items-center">
                             <i class="fas fa-check text-teal-400 mr-2"></i>
@@ -465,7 +575,8 @@
                             <span class="text-sm">Acesso à API</span>
                         </li>
                     </ul>
-                    <a href="{{ route('register.index') }}" class="block w-full bg-teal-500 hover:bg-teal-400 text-slate-900 text-center py-3 rounded-lg font-medium transition-colors">
+                    <a href="{{ route('register.index', ['plan' => 'start']) }}" 
+                        class="block w-full bg-teal-500 hover:bg-teal-400 text-slate-900 text-center py-3 rounded-lg font-medium transition-colors">
                         {{ __('site.pricing.start.button') }}
                     </a>
                 </div>
@@ -477,7 +588,7 @@
                         <span class="purple-badge text-xs font-semibold px-3 py-1 rounded-full">PRO</span>
                         <h3 class="font-semibold text-lg mb-2 text-white mt-3">{{ __('site.pricing.pro.name') }}</h3>
                         <div class="mb-4">
-                            <span class="text-4xl font-bold text-white">R$ 149,00</span>
+                            <span class="text-4xl font-bold text-white">$32</span>
                             <span class="text-slate-400">{{ __('site.pricing.pro.period') }}</span>
                         </div>
                     </div>
@@ -493,7 +604,7 @@
                         </li>
                         <li class="flex items-center">
                             <i class="fas fa-check text-purple-400 mr-2"></i>
-                            <span class="text-sm">Máximo 200 campos</span>
+                            <span class="text-sm">Máximo 200 campos por tópico</span>
                         </li>
                         <li class="flex items-center">
                             <i class="fas fa-check text-purple-400 mr-2"></i>
@@ -512,54 +623,56 @@
                             <span class="text-sm">Suporte prioritário</span>
                         </li>
                     </ul>
-                    <a href="{{ route('register.index') }}" class="block w-full bg-purple-600 hover:bg-purple-500 text-white text-center py-3 rounded-lg font-medium transition-colors pulse">
+                    <a href="{{ route('register.index', ['plan' => 'pro']) }}" 
+                        class="block w-full bg-purple-600 hover:bg-purple-500 text-white text-center py-3 rounded-lg font-medium transition-colors pulse">
                         {{ __('site.pricing.pro.button') }}
                     </a>
                 </div>
                 
                 <!-- Plano Premium -->
-                <div class="relative overflow-hidden bg-slate-900 rounded-xl p-6 shadow-md border border-orange-500 card-hover popular">
+                <div class="relative overflow-hidden bg-slate-900 rounded-xl p-6 shadow-md border border-blue-600 card-hover popular">
                     {{-- <div class="popular-tag">POPULAR</div> --}}
                     <div class="mb-4">
-                        <span class="orange-badge text-xs font-semibold px-3 py-1 rounded-full">PREMIUM</span>
+                        <span class="blue-badge text-xs font-semibold px-3 py-1 rounded-full">PREMIUM</span>
                         <h3 class="font-semibold text-lg mb-2 text-white mt-3">{{ __('site.pricing.premium.name') }}</h3>
                         <div class="mb-4">
-                            <span class="text-4xl font-bold text-white">R$ 220</span>
+                            <span class="text-4xl font-bold text-white">$70</span>
                             <span class="text-slate-400">{{ __('site.pricing.premium.period') }}</span>
                         </div>
                     </div>
                     <p class="text-slate-400 mb-6 text-sm">{{ __('site.pricing.premium.description') }}</p>
                     <ul class="space-y-3 mb-8">
                         <li class="flex items-center">
-                            <i class="fas fa-check text-orange-400 mr-2"></i>
+                            <i class="fas fa-check text-blue-500 mr-2"></i>
                             <span class="text-sm">Workspaces Ilimitados</span>
                         </li>
                         <li class="flex items-center">
-                            <i class="fas fa-check text-orange-400 mr-2"></i>
+                            <i class="fas fa-check text-blue-500 mr-2"></i>
                             <span class="text-sm">Tópicos Ilimitados</span>
                         </li>
                         <li class="flex items-center">
-                            <i class="fas fa-check text-orange-400 mr-2"></i>
+                            <i class="fas fa-check text-blue-500 mr-2"></i>
                             <span class="text-sm">Campos Ilimitados</span>
                         </li>
                         <li class="flex items-center">
-                            <i class="fas fa-check text-orange-400 mr-2"></i>
+                            <i class="fas fa-check text-blue-500 mr-2"></i>
                             <span class="text-sm">Exportação de dados</span>
                         </li>
                         <li class="flex items-center">
-                            <i class="fas fa-check text-orange-400 mr-2"></i>
+                            <i class="fas fa-check text-blue-500 mr-2"></i>
                             <span class="text-sm">API: 300 req/min</span>
                         </li>
                         <li class="flex items-center">
-                            <i class="fas fa-check text-orange-400 mr-2"></i>
+                            <i class="fas fa-check text-blue-500 mr-2"></i>
                             <span class="text-sm">Burst: 100 req</span>
                         </li>
                         <li class="flex items-center">
-                            <i class="fas fa-check text-orange-400 mr-2"></i>
+                            <i class="fas fa-check text-blue-500 mr-2"></i>
                             <span class="text-sm">Suporte 24/7</span>
                         </li>
                     </ul>
-                    <a href="{{ route('register.index') }}" class="block w-full bg-orange-500 hover:bg-orange-400 text-white text-center py-3 rounded-lg font-medium transition-colors">
+                    <a href="{{ route('register.index', ['plan' => 'premium']) }}" 
+                        class="block w-full bg-blue-600 hover:bg-blue-500 text-white text-center py-3 rounded-lg font-medium transition-colors">
                         {{ __('site.pricing.premium.button') }}
                     </a>
                 </div>
@@ -596,7 +709,7 @@
                                 <td class="py-4 text-center">Ilimitados</td>
                             </tr>
                             <tr class="border-b border-slate-700">
-                                <td class="py-4">Campos</td>
+                                <td class="py-4">Campos por tópico</td>
                                 <td class="py-4 text-center">10</td>
                                 <td class="py-4 text-center">50</td>
                                 <td class="py-4 text-center">200</td>
@@ -604,13 +717,20 @@
                             </tr>
                             <tr class="border-b border-slate-700">
                                 <td class="py-4">Exportação de Dados</td>
+                                <td class="py-4 text-center"><i class="fas fa-check text-teal-400"></i></td>
+                                <td class="py-4 text-center"><i class="fas fa-check text-teal-400"></i></td>
+                                <td class="py-4 text-center"><i class="fas fa-check text-teal-400"></i></td>
+                                <td class="py-4 text-center"><i class="fas fa-check text-teal-400"></i></td>
+                            </tr>
+                            <tr class="border-b border-slate-700">
+                                <td class="py-4">Importação de Dados</td>
                                 <td class="py-4 text-center"><i class="fas fa-times text-red-400"></i></td>
                                 <td class="py-4 text-center"><i class="fas fa-check text-teal-400"></i></td>
                                 <td class="py-4 text-center"><i class="fas fa-check text-teal-400"></i></td>
                                 <td class="py-4 text-center"><i class="fas fa-check text-teal-400"></i></td>
                             </tr>
                             <tr class="border-b border-slate-700">
-                                <td class="py-4">Acesso à API</td>
+                                <td class="py-4">Acesso à Interface API REST</td>
                                 <td class="py-4 text-center"><i class="fas fa-times text-red-400"></i></td>
                                 <td class="py-4 text-center"><i class="fas fa-check text-teal-400"></i></td>
                                 <td class="py-4 text-center"><i class="fas fa-check text-teal-400"></i></td>
@@ -658,110 +778,3 @@
 
     @include('components.footer.footer')
 @endsection
-
-@push('style')
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            scroll-behavior: smooth;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #f1f5f9;
-        }
-        .gradient-bg {
-            background: linear-gradient(135deg, #00e6d8 0%, #00b3a8 100%);
-        }
-        .teal-glow {
-            box-shadow: 0 0 25px rgba(0, 230, 216, 0.3);
-        }
-        .teal-glow-hover:hover {
-            box-shadow: 0 0 35px rgba(0, 230, 216, 0.4);
-        }
-        .card-hover {
-            transition: all 0.3s ease;
-        }
-        .card-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 230, 216, 0.15), 0 10px 10px -5px rgba(0, 230, 216, 0.1);
-        }
-        .pricing-card.popular {
-            position: relative;
-            overflow: hidden;
-        }
-
-        .popular-tag {
-            color: #0f172a;
-            padding: 5px 40px;
-        }
-        .recommended-tag{
-            padding: 5px 40px;
-        }
-        .recommended-tag, .popular-tag {
-            position: absolute;
-            top: 32px;
-            right: -40px;
-            font-size: 12px;
-            font-weight: 600;
-            transform: rotate(45deg);
-        }
-        .nav-link {
-            position: relative;
-        }
-        .nav-link::after {
-            content: '';
-            position: absolute;
-            width: 0;
-            height: 2px;
-            bottom: -4px;
-            left: 0;
-            background-color: #00e6d8;
-            transition: width 0.3s ease;
-        }
-        .nav-link:hover::after {
-            width: 100%;
-        }
-        .code-block {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .feature-icon {
-            background: rgba(0, 230, 216, 0.1);
-            border: 1px solid rgba(0, 230, 216, 0.2);
-        }
-        .teal-badge {
-            background: rgba(8, 255, 240, 0.1);
-            color: #08fff0;
-            border: 1px solid rgba(8, 255, 240, 0.3);
-        }
-        .purple-badge {
-            background: rgba(139, 92, 246, 0.1);
-            color: #8b5cf6;
-            border: 1px solid rgba(139, 92, 246, 0.3);
-        }
-        .orange-badge {
-            background: rgba(249, 115, 22, 0.1);
-            color: #f97316;
-            border: 1px solid rgba(249, 115, 22, 0.3);
-        }
-        .popular-tag {
-            position: absolute;
-            top: 20px;
-            right: -34px;
-            background: #8b5cf6;
-            color: white;
-            padding: 5px 40px;
-            font-size: 12px;
-            font-weight: 600;
-            transform: rotate(45deg);
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-    </style>
-@endpush

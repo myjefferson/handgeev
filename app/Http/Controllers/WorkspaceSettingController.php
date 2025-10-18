@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use App\Services\HashService;
 use Illuminate\Http\Request;
 use App\Models\Collaborator;
 use App\Models\Workspace;
 use App\Models\Topic;
 use App\Models\Field;
-use DB;
 
 class WorkspaceSettingController extends Controller
 {
@@ -19,27 +21,6 @@ class WorkspaceSettingController extends Controller
      */
     public function index($id)
     {
-        // Carrega o workspace com os tópicos e fields aninhados
-        // $workspace = Workspace::with(['topics' => function($query) {
-        //         $query->orderBy('order')->with(['fields' => function($query) {
-        //             $query->orderBy('order');
-        //         }]);
-        //     }])
-        //     ->where('id', $id)
-        //     ->where('user_id', Auth::id())
-        //     ->first();
-
-        // // Se não encontrou o workspace, retorna 404
-        // if (!$workspace) {
-        //     abort(404, 'Workspace não encontrado ou você não tem permissão para acessá-lo');
-        // }
-
-        // // Obter informações de limite de campos
-        // $user = Auth::user();
-        // $canAddMoreFields = $user->canAddMoreFields($workspace->id);
-        // $fieldsLimit = $user->getFieldsLimit();
-        // $currentFieldsCount = $user->getCurrentFieldsCount($workspace->id);
-        // $remainingFields = $user->getRemainingFieldsCount($workspace->id);
         $workspace = Workspace::find($id);
         $hasPasswordWorkspace = !is_null($workspace->password);
         if ($workspace->password) {
@@ -50,7 +31,7 @@ class WorkspaceSettingController extends Controller
             }
         }
         
-        return view('pages.dashboard.workspace.workspace-settings', compact('workspace', 'hasPasswordWorkspace'));
+        return view('pages.dashboard.workspace.settings', compact('workspace', 'hasPasswordWorkspace'));
     }
 
     public function generateNewHashApi($id)
@@ -62,7 +43,7 @@ class WorkspaceSettingController extends Controller
             // Atualiza o usuário autenticado
             $user = Workspace::findOrFail($id);
             $user->update([
-                'workspace_hash_api' => $workspaceHash
+                'workspace_key_api' => $workspaceHash
             ]);
 
             // Retorna os hashes atualizados no JSON
@@ -70,7 +51,7 @@ class WorkspaceSettingController extends Controller
                 'success' => true,
                 'message' => 'Código API Workspace gerado com sucesso!',
                 'data' => [
-                    'workspace_hash_api' => $workspaceHash
+                    'workspace_key_api' => $workspaceHash
                 ],
             ]);
         } catch (\Exception $e) {
@@ -83,41 +64,79 @@ class WorkspaceSettingController extends Controller
         }
     }
 
-    public function passwordWorkspace(Request $request, $id)
+    /**
+     * Atualiza configurações de acesso do workspace
+     */
+    public function updateAccessSettings(Request $request, string $id)
     {
+        DB::beginTransaction();
+        
         try {
-            $workspace = Workspace::where('id', $id)
-                ->where('user_id', Auth::id())
-                ->firstOrFail();
-
-            $checkbox = filter_var($request->checkbox, FILTER_VALIDATE_BOOLEAN);
-            if (!$checkbox) {
-                $workspace->update([
-                    'password' => null,
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Senha removida do workspace!',
-                    'password' => ''
-                ], 200);
+            $workspace = Workspace::findOrFail($id);
+            
+            // Verificar permissão
+            if($workspace->user_id !== Auth::id()) {
+                return response()->json(['error' => 'Você não tem permissão para alterar este workspace.'], 403);
             }
 
-            $workspace->update([
-                'password' => Crypt::encryptString($request->password),
+            // Validação - apenas campos que existem no model
+            $validator = Validator::make($request->all(), [
+                'is_published' => 'required|boolean',
+                'password' => 'nullable|string|min:8|max:255',
             ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $validator->errors()->first()
+                ], 422);
+            }
+
+            $validatedData = $validator->validated();
+
+            // Preparar dados para atualização
+            $updateData = [
+                'is_published' => $validatedData['is_published']
+            ];
+
+            // Gerenciar senha baseado no switch password_enabled
+            $passwordEnabled = filter_var($request->input('password_enabled'), FILTER_VALIDATE_BOOLEAN);
+            
+            if ($passwordEnabled && !empty($validatedData['password'])) {
+                // Ativar/atualizar senha
+                $updateData['password'] = Crypt::encryptString($validatedData['password']);
+            } elseif (!$passwordEnabled) {
+                // Desativar senha
+                $updateData['password'] = null;
+            }
+            // Se password_enabled=true mas senha vazia, mantém a senha atual
+
+            // Atualizar workspace
+            $workspace->update($updateData);
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Senha para o workspace aplicada!',
-                'password' => $request->password
-            ], 200);
+                'message' => 'Configurações de acesso atualizadas com sucesso!',
+                'data' => [
+                    'is_published' => $workspace->is_published,
+                    'has_password' => !is_null($workspace->password),
+                    'access_type' => $workspace->is_published ? 'public' : 'private'
+                ]
+            ]);
 
+        } catch (ModelNotFoundException $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Workspace não encontrado.'], 404);
+                
         } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Erro ao atualizar configurações de acesso: ' . $e->getMessage());
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Ocorreu um erro ao criar a senha para o Workspace.',
-                'error' => $e->getMessage(),
+                'error' => 'Erro interno ao atualizar configurações.'
             ], 500);
         }
     }
@@ -208,7 +227,7 @@ class WorkspaceSettingController extends Controller
                 'title' => $request->new_title,
                 'is_published' => false,
                 'password' => $originalWorkspace->password,
-                'workspace_hash_api' => HashService::generateUniqueHash(),
+                'workspace_key_api' => HashService::generateUniqueHash(),
             ]);
 
             // Duplicar tópicos e campos
