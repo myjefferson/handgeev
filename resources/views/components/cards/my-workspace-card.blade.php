@@ -79,7 +79,7 @@
     </div>
 
     <!-- Stats do Workspace -->
-    <div class="grid grid-cols-3 gap-4 mb-4">
+    {{-- <div class="grid grid-cols-3 gap-4 mb-4">
         <div class="text-center">
             <div class="text-lg font-bold text-white">{{ $workspace->topics_count ?? 0 }}</div>
             <div class="text-xs text-slate-400">Tópicos</div>
@@ -92,7 +92,7 @@
             <div class="text-lg font-bold text-white">{{ $workspace->collaborators_count ?? 0 }}</div>
             <div class="text-xs text-slate-400">Colabs</div>
         </div>
-    </div>
+    </div> --}}
 
     <!-- Status Badges -->
     <div class="flex flex-wrap gap-2 mb-4">

@@ -23,12 +23,26 @@
                             @endif
                         </div>
 
-                        <!-- Botão Adicionar Tópico -->
-                        @if($workspace->type_workspace_id == 2)
-                            <button id="addTopicBtn" class="w-full mb-6 px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-900 font-medium rounded-xl transition-colors duration-300 teal-glow-hover">
-                                <i class="fas fa-plus mr-2"></i> {{ __('workspace.sidebar.new_topic') }}
+                        <!-- Botões de Ação -->
+                        <div class="flex flex-col space-y-3 mb-6">
+                            @if($workspace->type_workspace_id == 2)
+                                <button id="addTopicBtn" class="w-full px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-900 font-medium rounded-xl transition-colors duration-300 teal-glow-hover">
+                                    <i class="fas fa-plus mr-2"></i> {{ __('workspace.sidebar.new_topic') }}
+                                </button>
+                            @endif
+                            <button id="dropdownImportExportButton" 
+                                    data-dropdown-toggle="dropdownImportExport"
+                                    class="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium rounded-lg transition-colors duration-300 flex items-center justify-center border border-slate-600 hover:border-slate-500"
+                                    type="button">
+                                <i class="fas fa-exchange-alt mr-2"></i>
+                                <span class="hidden sm:inline">{{ __('workspace.import_export.actions') }}</span>
+                                <svg class="w-2.5 h-2.5 ml-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/>
+                                </svg>
                             </button>
-                        @endif
+                            <!-- Botões de Importação/Exportação -->
+                            @include('components.dropdown.options-topics-dropdown', $workspace)
+                        </div>
 
                         <!-- Lista de Tópicos -->
                         <div class="space-y-1">
@@ -43,15 +57,33 @@
                                 @endphp
                                 <div class="topic-item group relative" data-topic-id="{{ $topic->id }}">
                                     <button class="w-full text-left p-3 rounded-xl transition-colors duration-200 flex items-center justify-between
-                                        {{ $index === 0 ? 'bg-teal-400/20 text-teal-400 border border-teal-400/30' : 'text-gray-400 hover:text-teal-300 hover:bg-slate-750' }}">
+                                        {{ $index === 0 ? 'bg-teal-400/20 text-teal-400 border border-teal-400/30' : 'text-gray-400 hover:text-teal-300 hover:bg-slate-750' }} topic-select-btn">
                                         <div class="flex items-center truncate">
                                             <i class="fas fa-folder mr-3 text-sm"></i>
                                             <span class="truncate topic-title">{{ $topic->title }}</span>
                                         </div>
                                         <span class="text-xs bg-slate-700 px-2 py-1 rounded-full group-hover:bg-slate-600 text-teal-300">
-                                            {{ __('workspace.sidebar.fields_count', ['count' => count($topic->fields)]) }}
+                                            {{ trans_choice('workspace.sidebar.fields_count', count($topic->fields), ['count' => count($topic->fields)]) }}
                                         </span>
                                     </button>
+                                    
+                                    <!-- Menu de Ações do Tópico -->
+                                    <div class="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                        <div class="flex rounded-full">
+                                            {{-- <button class="export-topic-btn p-1 text-green-400 hover:text-green-300 transition-colors" 
+                                                    data-topic-id="{{ $topic->id }}"
+                                                    data-topic-title="{{ $topic->title }}"
+                                                    title="{{ __('workspace.sidebar.export_topic') }}">
+                                                <i class="fas fa-file-export text-sm"></i>
+                                            </button> --}}
+                                            <button class="download-topic-btn flex items-center rounded-full justify-center h-8 w-8 bg-gray-800 text-blue-400 hover:text-blue-300 transition-colors"
+                                                    data-topic-id="{{ $topic->id }}"
+                                                    data-topic-title="{{ $topic->title }}"
+                                                    title="{{ __('workspace.sidebar.download_topic') }}">
+                                                <i class="fas fa-download text-sm"></i>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             @endforeach
                         </div>
@@ -250,6 +282,8 @@
 
 @push('modals')
     @include('components.modals.modal-share-api-interface', ['workspace' => $workspace])
+    @include('components.modals.modal-import-topic')
+    @include('components.modals.modal-export-topic')
 @endpush
 
 @push('scripts')
@@ -424,5 +458,271 @@
                 deleteTopic(routes.delete_topic.replace(':id', topic_id));
             }
         });
+    </script>
+
+    <script>
+        // Variáveis globais
+        let currentWorkspaceId = {{ $workspace->id }};
+        let selectedTopicId = null;
+        let selectedTopicTitle = null;
+        let currentImportMethod = 'file';
+
+        // Modal de Importação
+        function openImportModal() {
+            document.getElementById('importModal').classList.remove('hidden');
+            loadImportableTopics();
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').classList.add('hidden');
+        }
+
+        // Modal de Exportação
+        function openExportModal(topicId, topicTitle) {
+            selectedTopicId = topicId;
+            selectedTopicTitle = topicTitle;
+            document.getElementById('exportModal').classList.remove('hidden');
+        }
+
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.add('hidden');
+        }
+
+        // Sistema de Abas
+        document.querySelectorAll('.import-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Atualizar abas
+                document.querySelectorAll('.import-tab').forEach(t => {
+                    t.classList.remove('border-blue-500', 'text-white');
+                    t.classList.add('border-transparent', 'text-slate-400');
+                });
+                this.classList.add('border-blue-500', 'text-white');
+                this.classList.remove('border-transparent', 'text-slate-400');
+                
+                // Atualizar conteúdo
+                const tabName = this.id.replace('tab', '').toLowerCase();
+                document.querySelectorAll('.import-tab-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                document.getElementById(`tab${tabName.charAt(0).toUpperCase() + tabName.slice(1)}Content`).classList.remove('hidden');
+                
+                currentImportMethod = tabName;
+            });
+        });
+
+        // Carregar tópicos importáveis
+        function loadImportableTopics() {
+            const select = document.getElementById('existingTopicSelect').innerHTML = 
+            '<option value="">{{ __("workspace.import_export.loading_topics") }}</option>';
+            
+            fetch(`/importable-topics?current_workspace_id=${currentWorkspaceId}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    select.innerHTML = '<option value="">Selecione um tópico</option>';
+                    data.data.topics.forEach(topic => {
+                        const option = document.createElement('option');
+                        option.value = topic.id;
+                        option.textContent = `${topic.title} (${topic.fields_count} campos) - ${topic.workspace.title}`;
+                        option.dataset.fieldsCount = topic.fields_count;
+                        select.appendChild(option);
+                    });
+                } else {
+                    select.innerHTML = '<option value="">Erro ao carregar tópicos</option>';
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                select.innerHTML = '<option value="">Erro ao carregar tópicos</option>';
+            });
+        }
+
+        // Confirmar Importação
+        function confirmImport() {
+            const confirmBtn = document.getElementById('confirmImportBtn');
+            const originalText = confirmBtn.innerHTML;
+            
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Importando...';
+            confirmBtn.disabled = true;
+
+            if (currentImportMethod === 'file') {
+                importFromFile();
+            } else {
+                importFromExisting();
+            }
+        }
+
+        // Importar de Arquivo
+        function importFromFile() {
+            const form = document.getElementById('importFileForm');
+            const formData = new FormData(form);
+            
+            fetch(`/workspaces/${currentWorkspaceId}/import-topic`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Tópico importado com sucesso!', 'success');
+                    closeImportModal();
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showNotification(data.message || 'Erro ao importar tópico', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                showNotification('Erro ao importar tópico', 'error');
+            })
+            .finally(() => {
+                document.getElementById('confirmImportBtn').innerHTML = '<i class="fas fa-download mr-2"></i>Importar';
+                document.getElementById('confirmImportBtn').disabled = false;
+            });
+        }
+
+        // Importar de Tópico Existente
+        function importFromExisting() {
+            const topicId = document.getElementById('existingTopicSelect').value;
+            const topicTitle = document.getElementById('existingTopicTitle').value;
+            
+            if (!topicId || !topicTitle) {
+                showNotification('Selecione um tópico e digite um nome', 'error');
+                return;
+            }
+
+            // Primeiro exporta o tópico existente
+            fetch(`/topics/${topicId}/export`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Cria um arquivo JSON com os dados exportados
+                    const exportData = data.data;
+                    const blob = new Blob([JSON.stringify(exportData)], { type: 'application/json' });
+                    const file = new File([blob], 'import.json', { type: 'application/json' });
+                    
+                    // Prepara form data para importação
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('topic_title', topicTitle);
+                    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+                    
+                    // Importa o arquivo
+                    return fetch(`/workspaces/${currentWorkspaceId}/import-topic`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                } else {
+                    throw new Error(data.message);
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Tópico importado com sucesso!', 'success');
+                    closeImportModal();
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showNotification(data.message || 'Erro ao importar tópico', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                showNotification('Erro ao importar tópico: ' + error.message, 'error');
+            })
+            .finally(() => {
+                document.getElementById('confirmImportBtn').innerHTML = '<i class="fas fa-download mr-2"></i>Importar';
+                document.getElementById('confirmImportBtn').disabled = false;
+            });
+        }
+
+        // Exportar Tópico
+        function exportTopic(method) {
+            if (!selectedTopicId) return;
+
+            if (method === 'json') {
+                // Exportar como JSON (visualização)
+                fetch(`/topics/${selectedTopicId}/export`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Mostrar JSON em um modal ou console
+                        console.log('Dados exportados:', data.data);
+                        showNotification('Tópico exportado! Verifique o console do navegador.', 'success');
+                        closeExportModal();
+                    } else {
+                        showNotification(data.message || 'Erro ao exportar tópico', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    showNotification('Erro ao exportar tópico', 'error');
+                });
+            } else if (method === 'download') {
+                // Download do arquivo
+                window.location.href = `/topics/${selectedTopicId}/download`;
+                closeExportModal();
+                showNotification('Download iniciado!', 'success');
+            }
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Botão Importar
+            const importBtn = document.getElementById('importTopicBtn');
+            if (importBtn) {
+                importBtn.addEventListener('click', openImportModal);
+            }
+
+            // Botão Exportar Todos
+            const exportAllBtn = document.getElementById('exportAllBtn');
+            if (exportAllBtn) {
+                exportAllBtn.addEventListener('click', function() {
+                    // Implementar exportação de todos os tópicos
+                    showNotification('Exportar todos os tópicos - em desenvolvimento', 'info');
+                });
+            }
+
+            // Botões de Exportação individual
+            document.querySelectorAll('.export-topic-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const topicId = this.getAttribute('data-topic-id');
+                    const topicTitle = this.getAttribute('data-topic-title');
+                    openExportModal(topicId, topicTitle);
+                });
+            });
+
+            // Botões de Download individual
+            document.querySelectorAll('.download-topic-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const topicId = this.getAttribute('data-topic-id');
+                    window.location.href = `/topics/${topicId}/download`;
+                });
+            });
+        });
+
+        // Função auxiliar para notificações
+        function showNotification(message, type = 'info') {
+            // Implementar sistema de notificação existente
+            alert(message); // Substituir pelo sistema de notificação do HandGeev
+        }
     </script>
 @endpush

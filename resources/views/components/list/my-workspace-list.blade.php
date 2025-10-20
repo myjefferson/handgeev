@@ -2,8 +2,8 @@
     <div class="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
         <!-- Cabeçalho da Lista -->
         <div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-slate-700 text-sm font-medium text-slate-400">
-            <div class="col-span-5">Workspace</div>
-            <div class="col-span-2 text-center">Tópicos</div>
+            <div class="col-span-7">Workspace</div>
+            {{-- <div class="col-span-2 text-center">Tópicos</div> --}}
             <div class="col-span-2 text-center">Status</div>
             <div class="col-span-2 text-center">Atualizado</div>
             <div class="col-span-1 text-center">Ações</div>
@@ -21,7 +21,7 @@
                      data-updated="{{ $workspace->updated_at->toISOString() }}">
                     
                     <!-- Nome e Descrição -->
-                    <div class="col-span-5">
+                    <div class="col-span-7">
                         <div class="flex items-start space-x-3">
                             <div class="flex-shrink-0 w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center">
                                 <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -53,12 +53,12 @@
                     </div>
 
                     <!-- Tópicos -->
-                    <div class="col-span-2 flex items-center justify-center">
+                    {{-- <div class="col-span-2 flex items-center justify-center">
                         <div class="text-center">
                             <div class="text-lg font-bold text-white">{{ $workspace->topics_count ?? 0 }}</div>
                             <div class="text-xs text-slate-400">tópicos</div>
                         </div>
-                    </div>
+                    </div> --}}
 
                     <!-- Status -->
                     <div class="col-span-2 flex items-center justify-center">

@@ -18,6 +18,7 @@ use App\Http\Controllers\EditRequestController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\HelpController;
 use App\Http\Controllers\LanguageController;
 
 use App\Http\Controllers\StripeWebhookController;
@@ -27,6 +28,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['languages'])->group(function(){
     Route::get('/', function (){ return view('landing.handgeev'); } )->name('landing.handgeev');
+
+    //Help Center
+    Route::get('/help', [HelpController::class, 'index'])->name('help.center');
     
     // Termos e Privacidade
     Route::get('/terms', function () { return view('legal.terms'); })->name('legal.terms');
@@ -82,7 +86,13 @@ Route::middleware(['languages'])->group(function(){
 });
 
 
-Route::middleware(['auth:web', 'languages', 'plan.limits', 'record.last.login'])->group(function(){
+Route::middleware([
+    'auth:web', 
+    'languages', 
+    'plan.limits', 
+    'record.last.login',
+    'check.user.suspended'
+])->group(function(){
     Route::controller(WorkspaceController::class)->group(function(){
         Route::get('/workspaces', 'indexWorkspaces')->name('workspaces.index');
         Route::get('/workspace/{id}', 'index')->name('workspace.show');
@@ -143,6 +153,11 @@ Route::middleware(['auth:web', 'languages', 'plan.limits', 'record.last.login'])
         Route::put('/topic/{id}/update', 'update')->name('topic.update');
         Route::delete('/topic/{id}/destroy', 'destroy')->name('topic.destroy');
         Route::post('/topic/{workspaceid}/merge-topics', 'mergeTopics')->name('workspace.merge-topics');
+    
+        Route::get('/topics/{topic}/export', 'export')->name('topics.export');
+        Route::get('/topics/{topic}/download', 'download')->name('topics.download');
+        Route::post('/workspaces/{workspace}/import-topic', 'import')->name('topics.import');
+        Route::get('/importable-topics', 'importableTopics')->name('topics.importable');
     });
 
     Route::controller(DashboardController::class)->group(function(){
@@ -199,7 +214,8 @@ Route::middleware(['auth:web', 'languages', 'plan.limits', 'record.last.login'])
     Route::prefix('admin')->middleware(['role:admin'])->group(function () {
         Route::controller(AdminController::class)->group(function () {
             // Gestão de usuários
-            Route::get('/users', 'users')->name('admin.users');
+            Route::get('/users', 'indexUsers')->name('admin.users');
+            Route::get('/users/{id}/profile', 'userProfile')->name('admin.users.profile');
             Route::put('/users/{id}', 'updateUser')->name('admin.users.update');
             Route::delete('/users/{id}', 'deleteUser')->name('admin.users.delete');
             Route::post('/users/{id}/reset-password', 'resetPassword')->name('admin.users.reset-password');

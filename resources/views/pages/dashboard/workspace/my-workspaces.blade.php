@@ -71,9 +71,9 @@
                         {{-- Botão de Importação apenas para Start, Pro, Premium e Admin --}}
                         @if(auth()->user()->isStart() || auth()->user()->isPro() || auth()->user()->isPremium() || auth()->user()->isAdmin())
                             <a href="{{ route('workspace.import.form') }}" 
-                                class="flex items-center px-4 py-2 text-white rounded-lg bg-purple-600 hover:bg-purple-700 transition-colors purple-glow-hover">
+                                class="flex items-center px-4 py-2 text-white rounded-lg bg-slate-600 hover:bg-slate-700 transition-colors purple-glow-hover">
                                 <i class="fas fa-upload mr-2"></i>
-                                Importar Workspace
+                                Importar
                             </a>
                         @else
                             @include('components.upsell.button-upgrade-pro', [

@@ -29,6 +29,12 @@ class Handler extends ExceptionHandler
             //
         });
 
+        // Página 419 - Token CSRF Expirado
+        $this->renderable(function (TokenMismatchException $e, $request) {
+            return response()->view('errors.419', [], 419);
+        });
+
+
         // Página 404 - Não Encontrado
         $this->renderable(function (NotFoundHttpException $e, $request) {
             return response()->view('errors.404', [], 404);

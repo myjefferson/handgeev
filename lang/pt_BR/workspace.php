@@ -12,6 +12,18 @@ return [
         'topics_count' => ':count tópico|:count tópicos',
         'new_topic' => 'Novo Tópico',
         'fields_count' => ':count',
+        'import_topic' => 'Importar Tópico',
+        'export_topic' => 'Exportar Tópico',
+        'download_topic' => 'Download do Tópico',
+        'import_success' => 'Tópico importado com sucesso!',
+        'export_success' => 'Tópico exportado com sucesso!',
+        'import_error' => 'Erro ao importar tópico',
+        'export_error' => 'Erro ao exportar tópico',
+    ],
+
+    'import_export' => [
+        'actions' => 'Ações',
+        'quick_export' => 'Exportação Rápida',
     ],
     
     'limits' => [

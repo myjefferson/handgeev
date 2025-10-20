@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Topic;
+use App\Models\Field;
 use App\Models\Workspace;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -289,5 +290,396 @@ class TopicController extends Controller
         $mergeStats['main_topic_id'] = $mainTopic->id;
 
         return $mergeStats;
+    }
+
+    /**
+     * Exporta um tópico com todos os seus campos
+     */
+    public function export(Topic $topic)
+    {
+        try {
+            $workspace = $topic->workspace;
+            
+            // Verificar permissão
+            $user = Auth::user();
+            $isOwner = $workspace->user_id === $user->id;
+            $collaborator = $workspace->collaborators()->where('user_id', $user->id)->where('status', 'accepted')->first();
+            
+            if (!$isOwner && (!$collaborator || !$collaborator->canView())) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'permission_denied',
+                    'message' => __('workspace.notifications.permission_denied')
+                ], 403);
+            }
+
+            // Carregar tópico com campos ordenados
+            $topic->load(['fields' => function($query) {
+                $query->orderBy('order');
+            }]);
+
+            // Estrutura de dados para exportação
+            $exportData = [
+                'version' => '1.0',
+                'exported_at' => now()->toISOString(),
+                'topic' => [
+                    'id' => $topic->id,
+                    'title' => $topic->title,
+                    'order' => $topic->order,
+                    'created_at' => $topic->created_at->toISOString(),
+                    'updated_at' => $topic->updated_at->toISOString(),
+                ],
+                'workspace' => [
+                    'id' => $workspace->id,
+                    'title' => $workspace->title,
+                    'type' => $workspace->type_workspace_id,
+                ],
+                'fields' => $topic->fields->map(function($field) {
+                    return [
+                        'id' => $field->id,
+                        'key_name' => $field->key_name,
+                        'value' => $field->value,
+                        'type' => $field->type,
+                        'is_visible' => $field->is_visible,
+                        'order' => $field->order,
+                        'created_at' => $field->created_at->toISOString(),
+                        'updated_at' => $field->updated_at->toISOString(),
+                    ];
+                })->toArray()
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $exportData,
+                'message' => __('workspace.notifications.export_success')
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'export_error',
+                'message' => __('workspace.notifications.export_error', ['message' => $e->getMessage()])
+            ], 500);
+        }
+    }
+
+    /**
+     * Importa um tópico de um arquivo JSON
+     */
+    public function import(Request $request, Workspace $workspace)
+    {
+        DB::beginTransaction();
+        
+        try {
+            $user = Auth::user();
+            
+            // Verificar permissão de escrita no workspace
+            $isOwner = $workspace->user_id === $user->id;
+            $collaborator = $workspace->collaborators()->where('user_id', $user->id)->where('status', 'accepted')->first();
+            
+            if (!$isOwner && (!$collaborator || !$collaborator->canEdit())) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'permission_denied',
+                    'message' => __('workspace.notifications.permission_denied')
+                ], 403);
+            }
+
+            // Verificar plano do usuário - apenas Start, Pro, Premium e Admin podem importar
+            if ($user->isFree()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'plan_restriction',
+                    'message' => __('workspace.import_export.plan_restriction')
+                ], 403);
+            }
+
+            // Validar requisição
+            $validator = Validator::make($request->all(), [
+                'file' => 'required|file|mimes:json|max:10240', // 10MB max
+                'topic_title' => 'required|string|max:200',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'validation_error',
+                    'message' => 'Validation error',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Ler e validar arquivo
+            $file = $request->file('file');
+            $fileContent = file_get_contents($file->getRealPath());
+            $importData = json_decode($fileContent, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'invalid_json',
+                    'message' => __('workspace.notifications.file_invalid')
+                ], 422);
+            }
+
+            // Validar estrutura do arquivo
+            $validationResult = $this->validateImportFile($importData);
+            if (!$validationResult['valid']) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'invalid_structure',
+                    'message' => $validationResult['message']
+                ], 422);
+            }
+
+            // Verificar limites do plano
+            $fieldsCount = count($importData['fields']);
+            if (!$user->canAddMoreFields($workspace->id)) {
+                $remaining = $user->getRemainingFieldsCount($workspace->id);
+                return response()->json([
+                    'success' => false,
+                    'error' => 'plan_limit_exceeded',
+                    'message' => __('workspace.import_export.plan_limit_exceeded', ['remaining' => $remaining])
+                ], 422);
+            }
+
+            // Criar novo tópico
+            $topic = Topic::create([
+                'workspace_id' => $workspace->id,
+                'title' => $request->topic_title,
+                'order' => $workspace->topics()->max('order') + 1,
+            ]);
+
+            // Importar campos
+            $importedFields = 0;
+            $order = 1;
+
+            foreach ($importData['fields'] as $fieldData) {
+                // Validar tipo de campo baseado no plano do usuário
+                if (!Field::isTypeAllowed($fieldData['type'], $user)) {
+                    continue; // Pula campos com tipos não permitidos
+                }
+
+                // Criar campo
+                Field::create([
+                    'topic_id' => $topic->id,
+                    'key_name' => Field::formatKeyName($fieldData['key_name']),
+                    'value' => $fieldData['value'] ?? '',
+                    'type' => $fieldData['type'],
+                    'is_visible' => $fieldData['is_visible'] ?? true,
+                    'order' => $order++,
+                ]);
+
+                $importedFields++;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => __('workspace.notifications.import_success'),
+                'data' => [
+                    'topic' => [
+                        'id' => $topic->id,
+                        'title' => $topic->title,
+                        'order' => $topic->order,
+                    ],
+                    'imported_fields' => $importedFields,
+                    'total_fields' => count($importData['fields'])
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'error' => 'import_error',
+                'message' => __('workspace.notifications.import_error', ['message' => $e->getMessage()])
+            ], 500);
+        }
+    }
+
+        /**
+     * Download do tópico exportado como arquivo JSON
+     */
+    public function download(Topic $topic)
+    {
+        try {
+            $workspace = $topic->workspace;
+            
+            // Verificar permissão
+            $user = Auth::user();
+            $isOwner = $workspace->user_id === $user->id;
+            $collaborator = $workspace->collaborators()->where('user_id', $user->id)->where('status', 'accepted')->first();
+            
+            if (!$isOwner && (!$collaborator || !$collaborator->canView())) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'permission_denied',
+                    'message' => __('workspace.notifications.permission_denied')
+                ], 403);
+            }
+
+            // Carregar tópico com campos
+            $topic->load(['fields' => function($query) {
+                $query->orderBy('order');
+            }]);
+
+            // Preparar dados para download
+            $exportData = [
+                'version' => '1.0',
+                'exported_at' => now()->toISOString(),
+                'source' => 'HandGeev',
+                'topic' => [
+                    'title' => $topic->title,
+                    'order' => $topic->order,
+                ],
+                'fields' => $topic->fields->map(function($field) {
+                    return [
+                        'key_name' => $field->key_name,
+                        'value' => $field->value,
+                        'type' => $field->type,
+                        'is_visible' => $field->is_visible,
+                        'order' => $field->order,
+                    ];
+                })->toArray()
+            ];
+
+            $filename = "topic_{$topic->title}_" . now()->format('Y-m-d_H-i-s') . '.json';
+            $filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $filename);
+
+            return response()->streamDownload(function() use ($exportData) {
+                echo json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            }, $filename, [
+                'Content-Type' => 'application/json',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'download_error',
+                'message' => __('workspace.notifications.export_error', ['message' => $e->getMessage()])
+            ], 500);
+        }
+    }
+
+    /**
+     * Valida a estrutura do arquivo de importação
+     */
+    private function validateImportFile(array $data): array
+    {
+        // Verificar estrutura básica
+        if (!isset($data['fields']) || !is_array($data['fields'])) {
+            return [
+                'valid' => false,
+                'message' => __('workspace.import_export.invalid_file')
+            ];
+        }
+
+        // Validar cada campo
+        foreach ($data['fields'] as $index => $field) {
+            if (!isset($field['key_name']) || empty(trim($field['key_name']))) {
+                return [
+                    'valid' => false,
+                    'message' => __('workspace.import_export.field_required', [
+                        'index' => $index,
+                        'field' => 'key_name'
+                    ])
+                ];
+            }
+
+            if (!isset($field['type']) || empty(trim($field['type']))) {
+                return [
+                    'valid' => false,
+                    'message' => __('workspace.import_export.field_required', [
+                        'index' => $index,
+                        'field' => 'type'
+                    ])
+                ];
+            }
+
+            // Validar tipos permitidos
+            $allowedTypes = ['text', 'number', 'boolean', 'email', 'url', 'date', 'json'];
+            if (!in_array($field['type'], $allowedTypes)) {
+                return [
+                    'valid' => false,
+                    'message' => __('workspace.import_export.type_not_supported', [
+                        'index' => $index,
+                        'type' => $field['type']
+                    ])
+                ];
+            }
+        }
+
+        return [
+            'valid' => true,
+            'message' => 'File is valid'
+        ];
+    }
+
+    /**
+     * Obtém a lista de tópicos para importação em outros workspaces
+     */
+    public function importableTopics(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $currentWorkspaceId = $request->input('current_workspace_id');
+
+            // Buscar todos os workspaces do usuário (como owner ou colaborador)
+            $ownedWorkspaces = Workspace::where('user_id', $user->id)
+                ->with(['topics' => function($query) {
+                    $query->orderBy('title');
+                }])
+                ->get();
+
+            $collaboratorWorkspaces = Workspace::whereHas('collaborators', function($query) use ($user) {
+                $query->where('user_id', $user->id)
+                    ->where('status', 'accepted')
+                    ->where('can_edit', true);
+            })
+            ->with(['topics' => function($query) {
+                $query->orderBy('title');
+            }])
+            ->get();
+
+            $allWorkspaces = $ownedWorkspaces->merge($collaboratorWorkspaces);
+            $topics = [];
+
+            foreach ($allWorkspaces as $workspace) {
+                // Pular o workspace atual
+                if ($workspace->id == $currentWorkspaceId) {
+                    continue;
+                }
+
+                foreach ($workspace->topics as $topic) {
+                    $topics[] = [
+                        'id' => $topic->id,
+                        'title' => $topic->title,
+                        'fields_count' => $topic->fields->count(),
+                        'workspace' => [
+                            'id' => $workspace->id,
+                            'title' => $workspace->title,
+                        ],
+                        'created_at' => $topic->created_at->toISOString(),
+                    ];
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'topics' => $topics
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'server_error',
+                'message' => 'Error loading topics: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

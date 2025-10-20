@@ -1,5 +1,8 @@
 @extends('template.template-site')
 
+@section('title', 'Conta Suspensa')
+@section('description', 'Conta suspensa devido a violação dos termos de uso da plataforma - uso excessivo de recursos do sistema.')
+
 @section('content_site')
 <div class="min-h-screen bg-slate-900 flex items-center justify-center p-6">
     <div class="max-w-md w-full bg-slate-800 rounded-2xl shadow-xl p-8 border border-red-500/30">
@@ -49,7 +52,7 @@
                 <i class="fas fa-file-alt mr-2"></i> Ver Termos de Uso
             </button>
             
-            <a href="{{ route('logout') }}" class="block w-full text-center text-gray-400 hover:text-teal-400 transition-colors duration-300 mt-4">
+            <a href="{{ route('login.show') }}" class="block w-full text-center text-gray-400 hover:text-teal-400 transition-colors duration-300 mt-4">
                 <i class="fas fa-sign-out-alt mr-2"></i> Fazer Logout
             </a>
         </div>
@@ -70,6 +73,8 @@
         </div>
     </div>
 </div>
+
+@include('components.footer.footer')
 
 <style>
     .teal-glow {

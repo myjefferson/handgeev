@@ -9,6 +9,7 @@ use App\Http\Middleware\CheckPlanLimits;
 use App\Http\Middleware\CheckApiEnabled;
 use App\Http\Middleware\LanguageMiddleware;
 use App\Http\Middleware\RecordLastLogin;
+use App\Http\Middleware\CheckSuspendedUser;
 
 use App\Http\Middleware\CheckSubscription;
 use App\Http\Middleware\CheckAllowedDomain;
@@ -55,6 +56,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'check.api.method' => CheckApiMethodPermission::class,
             'check.api.enabled' => CheckApiEnabled::class,
             'check.api.domain' => CheckAllowedDomain::class,
+            'check.user.suspended' => CheckSuspendedUser::class,
             'log.api.request' => LogApiRequest::class,
             'record.last.login' => RecordLastLogin::class,
         ]);

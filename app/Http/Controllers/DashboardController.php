@@ -166,7 +166,7 @@ class DashboardController extends Controller
             "{$greeting}! Seus workspaces estão te esperando 🚀",
             "{$greeting}! Hora de criar algo incrível 💫",
             "{$greeting}! Vamos simplificar seus dados hoje? 🔧",
-            "{$greeting}! Seu hub de dados está atualizado 📈"
+            // "{$greeting}! Seu hub de dados está atualizado 📈"
         ];
         
         return $messages[array_rand($messages)];

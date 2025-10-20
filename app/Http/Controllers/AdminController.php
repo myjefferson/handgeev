@@ -13,7 +13,7 @@ use DB;
 
 class AdminController extends Controller
 {
-    public function users(Request $request)
+    public function indexUsers(Request $request)
     {
         // Buscar todos os planos disponíveis
         $plans = ['free', 'start', 'pro', 'premium', 'admin'];
@@ -75,7 +75,130 @@ class AdminController extends Controller
 
         $users = $query->paginate(10);
 
-        return view('pages.dashboard.admin.users', compact('users', 'plans', 'statuses'));
+        // Se for requisição AJAX, retornar JSON
+        if ($request->ajax()) {
+            return response()->json([
+                'html' => view('components.admin.users-table-rows', compact('users'))->render(),
+                'pagination' => $users->links()->toHtml(),
+                'stats' => [
+                    'total' => $users->total(),
+                    'active' => $users->where('status', 'active')->count(),
+                    'suspended' => $users->where('status', 'suspended')->count(),
+                    'pro' => $users->where('plan_name', 'pro')->count(),
+                    'premium' => $users->where('plan_name', 'premium')->count(),
+                ],
+                'resultsInfo' => "Mostrando {$users->firstItem()} - {$users->lastItem()} de {$users->total()} resultados"
+            ]);
+        }
+
+        return view('pages.dashboard.admin.users-admin', compact('users', 'plans', 'statuses'));
+    }
+
+    public function getUserStats($id)
+    {
+        try {
+            $user = User::findOrFail($id);
+            
+            $stats = [
+                'workspaces_count' => $user->workspaces()->count(),
+                'topics_count' => $user->topics()->count(),
+                'fields_count' => $user->fields()->count(),
+                'collaborations_count' => $user->collaborations()->count(),
+                'total_usage' => [
+                    'storage' => 0, // Implementar cálculo de storage se necessário
+                    'api_calls' => DB::table('api_request_logs')->where('user_id', $id)->count(),
+                ]
+            ];
+
+            return response()->json([
+                'success' => true,
+                'stats' => $stats
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao buscar estatísticas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function userProfile($id)
+    {
+        try {
+            $user = User::select(
+                'users.id',
+                'users.email',
+                'users.name',
+                'users.surname',
+                'users.avatar',
+                'users.status',
+                'users.email_verified_at',
+                'users.created_at',
+                'users.last_login_at',
+                'users.phone',
+                'users.timezone',
+                'users.language',
+                'roles.name as plan_name'
+            )
+            ->leftJoin('model_has_roles', function($join) {
+                $join->on('model_has_roles.model_id', '=', 'users.id')
+                    ->where('model_has_roles.model_type', User::class);
+            })
+            ->leftJoin('roles', 'roles.id', '=', 'model_has_roles.role_id')
+            ->where('users.id', $id)
+            ->firstOrFail();
+
+            // Estatísticas
+            $stats = [
+                'workspaces_count' => $user->workspaces()->count(),
+                'topics_count' => $user->topics()->count(),
+                'fields_count' => $user->fields()->count(),
+                'collaborations_count' => $user->collaborations()->count()
+            ];
+
+            // Workspaces recentes
+            $recentWorkspaces = $user->workspaces()
+                ->withCount('topics')
+                ->orderBy('updated_at', 'desc')
+                ->limit(5)
+                ->get()
+                ->each(function($workspace) {
+                    $workspace->fields_count = $workspace->getFieldsCountAttribute();
+                });
+
+            // Atividades recentes
+            $activities = DB::table('api_request_logs')
+                ->where('user_id', $id)
+                ->select('method', 'endpoint', 'response_code', 'response_time', 'created_at')
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get();
+
+            // Informações do plano
+            $plan = $user->getPlan();
+            $planLimits = [
+                'max_workspaces' => $plan->max_workspaces,
+                'max_topics' => $plan->max_topics,
+                'max_fields' => $plan->max_fields,
+                'can_export' => $plan->can_export,
+                'can_use_api' => $plan->can_use_api,
+            ];
+
+            // Uso atual
+            $currentUsage = [
+                'workspaces' => $stats['workspaces_count'],
+                'topics' => $stats['topics_count'],
+                'fields' => $stats['fields_count'],
+            ];
+
+            return view('pages.dashboard.admin.user-admin', compact(
+                'user', 'stats', 'recentWorkspaces', 'activities', 'planLimits', 'currentUsage'
+            ));
+
+        } catch (\Exception $e) {
+            return redirect()->route('admin.users')
+                ->with('error', 'Usuário não encontrado: ' . $e->getMessage());
+        }
     }
 
     public function toggleUserStatus(Request $request, $id)

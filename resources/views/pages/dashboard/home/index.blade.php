@@ -114,7 +114,7 @@
             </div>
 
             <!-- Ferramentas Rápidas -->
-            <div class="bg-slate-800 rounded-2xl shadow-lg p-6">
+            {{-- <div class="bg-slate-800 rounded-2xl shadow-lg p-6">
                 <h2 class="text-xl font-semibold text-white mb-6">Ferramentas Rápidas</h2>
                 
                 <div class="grid grid-cols-2 gap-4">
@@ -158,12 +158,7 @@
                         </a>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Seção de Atividade Rápida -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Workspaces com Mais Atividade -->
+            </div> --}}
             <div class="bg-slate-800 rounded-2xl shadow-lg p-6">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-xl font-semibold text-white">Workspaces Mais Ativos</h2>
@@ -192,6 +187,11 @@
                 </div>
             </div>            
         </div>
+
+        {{-- <!-- Seção de Atividade Rápida -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Workspaces com Mais Atividade -->
+        </div> --}}
     </div>
 
     <style>

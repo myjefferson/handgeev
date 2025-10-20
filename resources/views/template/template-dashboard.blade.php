@@ -157,7 +157,7 @@
                 <!-- Navigation -->
                 <ul class="space-y-1 font-medium">
                     <li>
-                        <a href="{{route('dashboard.home')}}" class="nav-item button-item flex items-center p-3 text-gray-300 rounded-lg group {{ request()->routeIs('dashboard.home') ? 'active' : '' }}">
+                        <a href="{{route('dashboard.home')}}" class="nav-item button-item flex items-center px-5 py-3 text-gray-300 rounded-lg group {{ request()->routeIs('dashboard.home') ? 'active' : '' }}">
                             <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
                                 <i class="fas fa-home text-teal-400"></i>
                             </div>
@@ -165,16 +165,16 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{route('workspaces.index')}}" class="nav-item button-item flex items-center justify-between p-3 text-gray-300 rounded-lg group {{ request()->routeIs('workspaces.index') ? 'active' : '' }}">
+                        <a href="{{route('workspaces.index')}}" class="nav-item button-item flex items-center justify-between px-5 py-3 text-gray-300 rounded-lg group {{ request()->routeIs('workspaces.index') ? 'active' : '' }}">
                             <div class="flex items-center">
                                 <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
                                     <i class="fas fa-layer-group text-teal-400"></i>
                                 </div>
                                 <span class="font-medium">{{ __('dashboard.navigation.workspaces') }}</span>
                             </div>
-                            <div class="bg-teal-800 h-5 w-5 flex justify-center items-center rounded-full">
+                            {{-- <div class="bg-teal-800 h-5 w-5 flex justify-center items-center rounded-full">
                                 <span class="text-sm font-semibold">{{ auth()->user()->workspaces()->count() }}</span>
-                            </div>
+                            </div> --}}
                         </a>
                     </li>
                     <li>
