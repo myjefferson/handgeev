@@ -32,12 +32,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // $middleware->redirectGuestsTo(fn (Request $request) => route('login.show'));
+        $middleware->trustProxies(at: '*');
+        
         $middleware->api(prepend: [
             \Illuminate\Http\Middleware\HandleCors::class,
         ]);
         
-        // Ou configure CORS com opções específicas
         $middleware->validateCsrfTokens(except: [
             'api/*',
             'auth/token',
