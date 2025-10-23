@@ -12,10 +12,8 @@ class AppServiceProvider extends ServiceProvider
 {
     public function boot()
     {
-        // Configurar Cashier SEM automatic tax
-        Cashier::calculateTaxes(false); // ← DESABILITA tax automático
+        Cashier::calculateTaxes(false);
         
-        // Usar SUA model Subscription personalizada
         Cashier::useSubscriptionModel(\App\Models\Subscription::class);
         
         // Definir preços dos planos
@@ -52,17 +50,28 @@ class AppServiceProvider extends ServiceProvider
                 return Limit::perMinute(5)->by($request->ip());
             }
 
-            // Limites mais generosos para usuários Pro
+            // Admin - sem limites (ou limites muito altos)
+            if ($user->isAdmin()) {
+                return Limit::none();
+            }
+
+            // Limites mais generosos para usuários Premium
+            if ($user->isPremium()) {
+                return Limit::perMinute(250)->by($user->id);
+            }
+            
+            // Limites para usuários Pro
             if ($user->isPro()) {
-                return Limit::perMinute(30)->by($user->id);
+                return Limit::perMinute(120)->by($user->id);
+            }
+            
+            // Limites para usuários Start
+            if ($user->isStart()) {
+                return Limit::perMinute(60)->by($user->id);
             }
 
-            // Limites para Free
-            if ($user->isFree()) {
-                return Limit::perMinute(10)->by($user->id);
-            }
-
-            return Limit::perMinute(5)->by($user->id);
+            // Limites para Free (padrão)
+            return Limit::perMinute(30)->by($user->id);
         });
     }
 }
