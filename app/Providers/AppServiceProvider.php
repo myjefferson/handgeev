@@ -12,6 +12,11 @@ class AppServiceProvider extends ServiceProvider
 {
     public function boot()
     {
+        // Força o esquema HTTPS para todos os URLs gerados, exceto em ambiente 'local'.
+        if (! $this->app->environment('local')) {
+            URL::forceScheme('https');
+        }
+
         Cashier::calculateTaxes(false);
         
         Cashier::useSubscriptionModel(\App\Models\Subscription::class);
