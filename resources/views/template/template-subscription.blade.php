@@ -64,7 +64,6 @@
                 <div class="flex justify-between h-16">
                     <div class="flex items-center">
                         <a href="{{ route('dashboard') }}" class="flex-shrink-0 flex items-center">
-                            <x-application-logo class="block h-8 w-auto" />
                             <span class="ml-2 text-xl font-bold text-gray-900">HandGeev</span>
                         </a>
                     </div>
