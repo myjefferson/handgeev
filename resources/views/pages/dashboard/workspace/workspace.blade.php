@@ -27,7 +27,7 @@
                             <p class="text-sm text-gray-400 mt-1">
                                 <div class="flex items-center justify-between text-xs">
                                     <span class="font-medium {{ $canAddMoreTopics ? 'text-teal-400' : 'text-yellow-400' }}">
-                                        {{ $currentTopics }}/{{ $topicsLimit }} {{__('workspace.sidebar.topics_count') }}
+                                        {{ $currentTopics }}/{{ $topicsLimit < 9999 ? '∞' : $topicsLimit }} {{__('workspace.sidebar.topics_count') }}
                                     </span>
                                     @if(!$canAddMoreTopics)
                                         <p class="text-xs text-yellow-400 mt-1">
@@ -151,7 +151,7 @@
                                         <i class="fas fa-chart-pie text-teal-400 mr-3"></i>
                                         <div>
                                             <p class="text-teal-300 text-sm">
-                                                Campos neste tópico: {{ $topicLimits['currentFieldsCount'] }}/{{ $topicLimits['fieldsLimit'] }} 
+                                                Campos neste tópico: {{ $topicLimits['currentFieldsCount'] }}/{{ $topicLimits['fieldsLimit'] < 9999 ? '∞' : $topicLimits['fieldsLimit'] }} 
                                                 ({{ $topicLimits['remainingFields'] }} restantes)
                                             </p>
                                         </div>

@@ -301,7 +301,7 @@
                             <span class="text-gray-600 dark:text-gray-400">{{ __('workspace_settings_overview.topics') }}</span>
                             <span class="font-medium text-gray-900 dark:text-white">
                                 {{ $currentTopics }} 
-                                @if($plan->max_topics > 0)
+                                @if($plan->max_topics < 9999)
                                     / {{ $plan->max_topics }}
                                 @else
                                     / ∞

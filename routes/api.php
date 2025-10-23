@@ -28,7 +28,6 @@ Route::middleware([
     'check.api.enabled', 
     'check.api.domain'
 ])->group(function () {
-    
     // Workspace endpoints
     Route::prefix('workspaces')->middleware('check.api.method:workspace')->group(function () {
         Route::get('/{workspaceId}', [WorkspaceApiController::class, 'show']);
