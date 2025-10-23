@@ -1,0 +1,91 @@
+services:
+    handgeev:
+        container_name: handgeev
+        build:
+            context: .
+            dockerfile: Dockerfile
+        working_dir: /var/www/
+        volumes:
+            - ./:/var/www/
+        restart: unless-stopped
+        ports:
+            - "5173:5173"
+        depends_on:
+            - postgres
+            - redis
+            - nginx
+        networks:
+            - handgeev
+
+    nginx:
+        image: nginx:alpine
+        container_name: nginx_scg
+        restart: always
+        ports:
+            - "80:80"
+        volumes:
+            - ./public:/var/www/public
+            - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+        networks:
+            - handgeev
+
+    postgres:
+        container_name: postgres_handgeev
+        image: postgres:latest
+        restart: always
+        ports:
+            - "5432:5432"
+        env_file:
+            - .env
+        volumes:
+            - mysql-handgeev:/var/lib/postgresql/data
+        environment:
+            POSTGRES_DB: ${DB_DATABASE}
+            POSTGRES_USER: ${DB_USERNAME}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+            PGDATA: /var/lib/postgresql/data/pgdata  # Evita corrupção de dados
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        networks:
+            - handgeev
+        command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+        entrypoint: ["/bin/bash", "-c", "docker-entrypoint.sh postgres & sleep 5 && psql -U $DB_USERNAME -d $DB_DATABASE -c 'ALTER USER \"$DB_USERNAME\" WITH SUPERUSER;' && wait"]
+
+    redis:
+        container_name: redis_handgeev
+        image: redis:latest
+        volumes:
+            - redis-handgeev:/data
+        networks:
+            - handgeev
+
+    mailpit:
+        container_name: mailpit_handgeev
+        image: axllent/mailpit:latest
+        tty: true
+        environment:
+            MP_MAX_MESSAGES: 5000
+            MP_SMTP_AUTH_ALLOW_INSECURE: 'true'  # Permite conexões sem segurança (inseguro)
+            MP_SMTP_AUTH_ACCEPT_ANY: 'true'
+        ports:
+            - "1025:1025"
+            - "8025:8025"
+        networks:
+            - handgeev
+
+volumes:
+    mysql-handgeev:
+        driver: local
+        name: mysql-handgeev
+    redis-handgeev:
+        driver: local
+        name: redis-handgeev
+
+networks:
+    handgeev:
+        driver: bridge
+        name: handgeev

@@ -142,53 +142,58 @@
                 id="apiTabs"
                 role="tablist">
                 <li class="mr-2" role="presentation">
-                    <button class="inline-block p-4 border-b-2 rounded-t-lg text-slate-400 border-transparent hover:text-slate-300 hover:border-slate-300" 
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg text-slate-400 border-transparent hover:text-slate-300 hover:border-slate-300 flex items-center" 
                             type="button" 
                             role="tab" 
                             aria-controls="statistics-tab" 
                             aria-selected="true" 
                             data-tab-target="statistics-tab">
-                        📊 Estatísticas
+                        <i class="fas fa-chart-bar mr-2"></i>
+                        Estatísticas
                     </button>
                 </li>
                 <li class="mr-2" role="presentation">
-                    <button class="inline-block p-4 border-b-2 rounded-t-lg text-cyan-400 border-cyan-400" 
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg text-cyan-400 border-cyan-400 flex items-center" 
                             type="button" 
                             role="tab" 
                             aria-controls="endpoints-tab" 
                             aria-selected="false"
                             data-tab-target="endpoints-tab">
-                        📡 Endpoints
+                        <i class="fas fa-satellite-dish mr-2"></i>
+                        Endpoints
                     </button>
                 </li>
                 <li class="mr-2" role="presentation">
-                    <button class="inline-block p-4 border-b-2 rounded-t-lg text-slate-400 border-transparent hover:text-slate-300 hover:border-slate-300" 
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg text-slate-400 border-transparent hover:text-slate-300 hover:border-slate-300 flex items-center" 
                             type="button" 
                             role="tab" 
                             aria-controls="documentation-tab" 
                             aria-selected="false" 
                             data-tab-target="documentation-tab">
-                        📚 Documentação
+                        <i class="fas fa-book mr-2"></i>
+                        Documentação
                     </button>
                 </li>
                 <li class="mr-2" role="presentation">
-                    <button class="inline-block p-4 border-b-2 rounded-t-lg text-slate-400 border-transparent hover:text-slate-300 hover:border-slate-300" 
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg text-slate-400 border-transparent hover:text-slate-300 hover:border-slate-300 flex items-center" 
                             type="button" 
                             role="tab" 
                             aria-controls="permissions-tab" 
                             aria-selected="false" 
                             data-tab-target="permissions-tab">
-                        🔐 Permissões
+                        <i class="fas fa-lock mr-2"></i>
+                        Permissões
                     </button>
                 </li>
                 <li role="presentation">
-                    <button class="inline-block p-4 border-b-2 rounded-t-lg text-slate-400 border-transparent hover:text-slate-300 hover:border-slate-300" 
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg text-slate-400 border-transparent hover:text-slate-300 hover:border-slate-300 flex items-center" 
                             type="button" 
                             role="tab" 
                             aria-controls="settings-tab" 
                             aria-selected="false" 
                             data-tab-target="settings-tab">
-                        ⚙️ Configurações
+                        <i class="fas fa-cog mr-2"></i>
+                        Configurações
                     </button>
                 </li>
             </ul>

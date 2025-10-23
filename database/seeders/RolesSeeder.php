@@ -13,7 +13,9 @@ class RolesSeeder extends Seeder
         // Criar as roles
         $roles = [
             User::ROLE_FREE,
+            User::ROLE_START, 
             User::ROLE_PRO, 
+            User::ROLE_PREMIUM, 
             User::ROLE_ADMIN
         ];
 

@@ -26,6 +26,10 @@ class WorkspaceSharedController extends Controller
             ->where('user_id', $user->id)
             ->where('workspace_key_api', $workspace_key_api)
             ->firstOrFail();
+
+        if (!$workspace->is_published) {
+            abort(403);
+        }
         
         if ($workspace->type_view_workspace_id != 1) {
             abort(404);

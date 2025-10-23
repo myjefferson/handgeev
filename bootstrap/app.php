@@ -11,6 +11,8 @@ use App\Http\Middleware\LanguageMiddleware;
 use App\Http\Middleware\RecordLastLogin;
 use App\Http\Middleware\CheckSuspendedUser;
 
+use App\Http\Middleware\CheckDeactivatedAccount;
+
 use App\Http\Middleware\CheckSubscription;
 use App\Http\Middleware\CheckAllowedDomain;
 use App\Http\Middleware\WorkspacePasswordMiddleware;
@@ -46,19 +48,19 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RoleMiddleware::class,
             'plan.rate_limit' => CheckPlanLimits::class,
             'api.auth_token' => AuthTokenApi::class,
-            'check.api.access' => CheckApiAccessMiddleware::class,
             'languages' => LanguageMiddleware::class,
             'subscribed' => CheckSubscription::class,
             'plan.limits' => CheckPlanLimits::class,
             'plan.rate_limit' => PlanRateLimitMiddleware::class,
             'workspace.api.password' => WorkspacePasswordMiddleware::class,
-            'check.api.method' => CheckApiMethodPermission::class,
+            'check.api.access' => CheckApiAccessMiddleware::class,
             'check.api.method' => CheckApiMethodPermission::class,
             'check.api.enabled' => CheckApiEnabled::class,
             'check.api.domain' => CheckAllowedDomain::class,
             'check.user.suspended' => CheckSuspendedUser::class,
             'log.api.request' => LogApiRequest::class,
             'record.last.login' => RecordLastLogin::class,
+            'account.deactivated' => CheckDeactivatedAccount::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

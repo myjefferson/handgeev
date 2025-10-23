@@ -18,7 +18,6 @@ class CollaboratorController extends Controller
     {
         $user = auth()->user();
         
-        // Busca TODAS as colaborações (incluindo pendentes) onde você NÃO é o proprietário
         $collaborations = $user->allCollaborations() // ← USA A NOVA RELAÇÃO
             ->whereHas('workspace', function($query) use ($user) {
                 $query->where('user_id', '!=', $user->id); // Exclui workspaces que você é dono
@@ -224,7 +223,7 @@ class CollaboratorController extends Controller
 
             // Verificar se usuário logado é o dono do email do convite
             if (auth()->check() && auth()->user()->email !== $collaborator->invitation_email) {
-                return redirect()->route('login')
+                return redirect()->route('login.show')
                     ->with('error', 'Este convite é para outro usuário. Por favor, faça login com o email correto.');
             }
 

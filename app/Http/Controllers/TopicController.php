@@ -44,6 +44,23 @@ class TopicController extends Controller
                     'message' => 'Você não tem permissão para adicionar tópicos neste workspace'
                 ], 403);
             }
+
+            // 🔥 NOVA VERIFICAÇÃO: LIMITE DE TÓPICOS POR PLANO
+            if (!$user->canAddMoreTopics($workspace->id)) {
+                $topicsLimit = $user->getTopicsLimit();
+                $currentTopics = $user->getCurrentTopicsCount($workspace->id);
+                
+                return response()->json([
+                    'success' => false,
+                    'error' => 'plan_limit_exceeded',
+                    'message' => "Limite de tópicos atingido! Seu plano permite {$topicsLimit} tópicos. Você já tem {$currentTopics} tópicos.",
+                    'limits' => [
+                        'max_topics' => $topicsLimit,
+                        'current_topics' => $currentTopics,
+                        'remaining' => $user->getRemainingTopicsCount($workspace->id)
+                    ]
+                ], 422);
+            }
             
             $topic = Topic::create($validated);
             
@@ -57,6 +74,9 @@ class TopicController extends Controller
                         'title' => $topic->title,
                         'order' => $topic->order,
                         'fields_count' => 0
+                    ],
+                    'limits' => [
+                        'remaining_topics' => $user->getRemainingTopicsCount($workspace->id)
                     ]
                 ]
             ], 201);

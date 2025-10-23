@@ -9,6 +9,11 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Mail;
+use App\Jobs\PermanentAccountDeletion;
+use App\Mail\AccountDeactivatedMail;
+use App\Mail\AccountRestoredMail;
+
 use Carbon\Carbon;
 
 class AccountController extends Controller
@@ -32,7 +37,8 @@ class AccountController extends Controller
             'password' => 'required|min:8',
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        // Buscar usuário incluindo os desativados
+        $user = User::withTrashed()->where('email', $request->email)->first();
 
         if(!$user){
             return redirect()->route('login.show')->withErrors([
@@ -47,12 +53,36 @@ class AccountController extends Controller
             ]);
         }
 
+        
+        // Verificar se a conta está desativada
+        if ($user->trashed()) {
+            $daysPassed = $user->deleted_at->diffInDays(now());
+            $daysRemaining = 30 - (int)floor($daysPassed);
+            
+            if ($user->deleted_at && $user->deleted_at->diffInDays(now()) > 30) {
+                return redirect()->route('login.show')->withErrors([
+                    'email' => 'O período de recuperação de 30 dias expirou. Esta conta foi permanentemente removida.'
+                ]);
+            }
+        
+            $request->session()->put('deactivated_account_access', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'name' => $user->name,
+                'deleted_at' => $user->deleted_at->toDateTimeString(),
+                'days_remaining' => $daysRemaining
+            ]);
+
+            return redirect()->route('account.deactivated');
+        }
+
+
         // Verificar se o email foi confirmado
         if (!$user->email_verified) {
             Auth::login($user);
             $request->session()->regenerate();
 
-            return redirect()->route('verification.show')
+            return redirect()->route('verify.code.email.show')
                 ->withErrors([
                     'error' => __('login.messages.email_not_verified')
                 ]);
@@ -77,9 +107,8 @@ class AccountController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('dashboard.home')->with([
-            'success' => __('login.messages.success')
-        ]);
+        return redirect()->route('dashboard.home');
+        // ->with(['success' => __('login.messages.success')]);
     }
     
     public function indexRegister(Request $request)
@@ -259,19 +288,160 @@ class AccountController extends Controller
         ]);
     }
 
+    public function showDeactivated(Request $request)
+    {
+        // Verificação é feita pelo middleware
+        $deactivatedData = $request->session()->get('deactivated_account_access');
+        
+        return view('pages.auth.account-deactivated', [
+            'deleted_at' => $deactivatedData['deleted_at'],
+            'days_remaining' => $deactivatedData['days_remaining'],
+            'user_name' => $deactivatedData['name']
+        ]);
+    }
+
+    public function deleteAccount(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'password' => ['required', 'current_password'],
+        ]);
+
+        // Verificar se o plano de assinatura expirou
+        if ($user->hasActiveSubscription() || $user->isOnGracePeriod()) {
+            return redirect()->back()->withErrors([
+                'error' => 'Você só pode deletar sua conta após a expiração do seu plano de assinatura.'
+            ]);
+        }
+
+        // Verificar se já está marcado para exclusão
+        if ($user->trashed()) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            return redirect()->route('account.deactivated');
+        }
+
+        try {
+            DB::transaction(function () use ($user) {
+                // Calcular dias restantes
+                $daysRemaining = 30;
+
+                Mail::to($user->email)->send(new AccountDeactivatedMail(
+                    $user, 
+                    now(), 
+                    $daysRemaining
+                ));
+
+                $user->workspaces->each(function ($workspace) {
+                    $workspace->topics->each(function ($topic) {
+                        $topic->fields()->delete();
+                        $topic->delete();
+                    });
+                    
+                    $workspace->collaborators()->delete();
+                    $workspace->delete();
+                });
+
+                $user->allCollaborations()->delete();
+                $user->activities()->delete();
+
+                if ($user->hasActiveStripeSubscription()) {
+                    try {
+                        $user->subscription('default')->cancelNow();
+                    } catch (\Exception $e) {
+                        \Log::error('Erro ao cancelar assinatura Stripe durante deleção de conta: ' . $e->getMessage());
+                    }
+                }
+
+                Auth::logout();
+                $user->delete();
+                PermanentAccountDeletion::dispatch($user->id)
+                    ->delay(now()->addDays(30));
+            });
+
+            // Invalidar a sessão
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            $daysPassed = $user->deleted_at->diffInDays(now());
+            $daysRemaining = 30 - (int)floor($daysPassed);
+            $request->session()->put('deactivated_account_access', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'name' => $user->name,
+                'deleted_at' => $user->deleted_at->toDateTimeString(),
+                'days_remaining' => $daysRemaining
+            ]);
+
+            return redirect()->route('account.deactivated');
+        } catch (\Exception $e) {
+            \Log::error('Erro ao deletar conta do usuário: ' . $e->getMessage());
+            
+            return redirect()->back()->withErrors([
+                'error' => 'Ocorreu um erro ao tentar deletar sua conta. Por favor, tente novamente.'
+            ]);
+        }
+    }
+
+    public function restoreAccount(Request $request)
+    {
+        if (!$request->session()->has('deactivated_account_access')) {
+            return redirect()->route('login.show');
+        }
+
+        $deactivatedData = $request->session()->get('deactivated_account_access');
+        $user = User::withTrashed()->find($deactivatedData['user_id']);
+
+        if (!$user || !$user->trashed()) {
+            $request->session()->forget('deactivated_account_access');
+            return redirect()->route('login.show');
+        }
+
+        // Verificar se ainda está no período
+        if ($user->deleted_at->diffInDays(now()) > 30) {
+            $request->session()->forget('deactivated_account_access');
+            return redirect()->route('login.show')->withErrors([
+                'email' => 'O período de recuperação expirou.'
+            ]);
+        }
+
+        try {
+            // Restaurar a conta
+            $user->restore();
+
+            $restoredAt = now();
+            Mail::to($user->email)->queue(new AccountRestoredMail(
+                $user, 
+                $restoredAt
+            ));
+            
+            // Limpar sessão especial
+            $request->session()->forget('deactivated_account_access');
+            
+            // Fazer login normal
+            Auth::login($user);
+            $request->session()->regenerate();
+
+            return redirect()->route('dashboard.home')->with('success', [
+                'title' => 'Bem-vindo de volta! 🎉',
+                'message' => 'Sua conta foi restaurada com todos os dados preservados.'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erro ao restaurar conta: ' . $e->getMessage());
+            return redirect()->route('account.deactivated')->withErrors([
+                'error' => 'Erro ao restaurar conta. Tente novamente.'
+            ]);
+        }
+    }
     
     /**
      * Remove the specified resource from storage.
      */
     public function logout()
-    {
-        $user = Auth::user();
-        
-        \Log::info('Usuário fez logout', [
-            'user_id' => $user->id,
-            'email' => $user->email
-        ]);
-        
+    {        
         Auth::logout();
         Session::flush();
         

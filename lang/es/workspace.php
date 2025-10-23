@@ -9,7 +9,7 @@ return [
     ],
     
     'sidebar' => [
-        'topics_count' => ':count tema|:count temas',
+        'topics_count' => 'temas',
         'new_topic' => 'Nuevo Tema',
         'fields_count' => ':count campo|:count campos',
         'import_topic' => 'Importar Tema',

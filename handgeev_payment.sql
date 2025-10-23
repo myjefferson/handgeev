@@ -1,3 +1,5 @@
+USE handgeev;
+
 CREATE TABLE subscriptions (
     id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT UNSIGNED NOT NULL,
@@ -13,7 +15,7 @@ CREATE TABLE subscriptions (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (plan_id) REFERENCES plans(id),
+--    FOREIGN KEY (plan_id) REFERENCES plans(id),
     UNIQUE KEY unique_stripe_subscription (stripe_subscription_id),
     INDEX idx_user_status (user_id, status),
     INDEX idx_period_end (current_period_end)

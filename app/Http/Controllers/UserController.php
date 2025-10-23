@@ -6,11 +6,11 @@ use App\Models\User;
 use App\Models\Plan;
 use App\Services\HashService;
 use App\Services\SubscriptionService;
+use App\Mail\VerificationEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Validation\Rule;
-use App\Mail\VerificationEmail;
 use Illuminate\Support\Facades\Mail;
 use Auth;
 use Validator;
@@ -113,7 +113,7 @@ class UserController extends Controller
             Auth::login($user);
 
             // Redirecionar para página de verificação
-            return redirect()->route('verification.show')
+            return redirect()->route('verify.code.email.show')
                 ->with([
                     'success' => __('register.messages.success'),
                     'email' => $user->email
@@ -140,12 +140,6 @@ class UserController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'surname' => 'required|string|max:255',
-                'email' => [
-                    'required',
-                    'email',
-                    'max:255',
-                    Rule::unique('users')->ignore($user->id)
-                ],
                 'phone' => 'nullable|string|max:20',
             ], [
                 'name.required' => 'O nome é obrigatório.',
@@ -335,14 +329,6 @@ class UserController extends Controller
         return response()->json($user);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
-    }
-
     // UpgradeController.php
     public function upgradeToPro(User $user)
     {
@@ -378,7 +364,7 @@ class UserController extends Controller
 
         // Verificar se o email foi verificado
         if (!$user->hasVerifiedEmail()) {
-            return redirect()->route('verification.show')
+            return redirect()->route('verify.code.email.show')
                 ->with('error', 'Por favor, verifique seu email antes de escolher um plano.');
         }
 

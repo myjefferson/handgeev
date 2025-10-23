@@ -56,9 +56,12 @@ Route::middleware(['languages'])->group(function(){
     });
     
     Route::controller(EmailController::class)->group(function(){
-        Route::get('/verificar-email', 'showVerifyEmail')->name('verification.show');
-        Route::post('/recovery-password/email', 'sendRecoveryEmail')->name('recovery.password.email');
-        Route::post('/verificar-email', 'verifyEmail')->name('verification.verify');
+        Route::get('/verify-code-email', 'showVerifyCodeEmail')->name('verify.code.email.show');
+        Route::get('/email/confirm-form', 'showEmailConfirmForm')->name('email.confirm.form');
+        Route::get('/email/confirm/{token}', 'confirmEmailChange')->name('email.confirm');
+        Route::put('/email/update', 'updateEmail')->name('email.update');
+        Route::post('/recovery-password/email', 'sendRecoveryAccountEmail')->name('recovery.password.email');
+        Route::post('/verify-code-email', 'verifyEmail')->name('verification.verify');
         Route::post('/reenviar-codigo', 'resendVerifyEmail')->name('verification.resend');
         Route::post('/alterar-email', 'updateVerifyEmail')->name('verification.update-email');
     });
@@ -78,11 +81,13 @@ Route::middleware(['languages'])->group(function(){
         Route::get('/shared/workspace/{global_key_api}/{workspace_key_api}/statistics', 'getApiStatistics')->name('api.get.statistics');
         Route::get('/shared/workspace/{global_key_api}/{workspace_key_api}/endpoint-statistics', 'getEndpointStatistics')->name('api.get.endpoint-statistics');
         // Rotas para visualização compartilhada
-        Route::middleware(['workspace.api.password'])->group(function(){
+        Route::middleware(['workspace.api.password', 'check.api.access'])->group(function(){
             Route::get('/api/interface/workspace/{global_key_api}/{workspace_key_api}', 'showInterfaceApi')->name('workspace.shared-interface-api.show');
             Route::get('/api/rest/workspace/{global_key_api}/{workspace_key_api}', 'showApiRest')->name('workspace.api-rest.show');
         });
     }); 
+
+    Route::get('/account/deactivated', function () { return view('pages.auth.account-deactivated');})->name('account.deactivated')->middleware('account.deactivated');
 });
 
 
@@ -171,6 +176,10 @@ Route::middleware([
         Route::put('/dashboard/profile/update', 'updateProfile')->name('user.profile.update');
         Route::put('/dashboard/profile/password/update', 'updatePassword')->name('user.profile.password.update');
     });
+    
+    Route::controller(AccountController::class)->group(function(){
+        Route::delete('/account/delete', 'deleteAccount')->name('user.account.delete');
+    });
 
     Route::controller(SettingController::class)->group(function(){
         Route::get('/dashboard/settings', 'index')->name('dashboard.settings');
@@ -240,5 +249,12 @@ Route::middleware([
         });
     });
 });
+
+Route::middleware(['account.deactivated'])->group(function () {
+    Route::controller(AccountController::class)->group(function(){
+        Route::post('/account/restore', 'restoreAccount')->name('account.restore');
+    });
+});
+
 //Lang
 Route::get('/lang/{locale}', [LanguageController::class, 'switchLang'])->name('lang.switch');

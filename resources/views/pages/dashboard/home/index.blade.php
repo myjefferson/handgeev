@@ -5,6 +5,9 @@
 
 @section('content_dashboard')
     <div class="max-w-7xl mx-auto min-h-screen p-6">
+
+        @include('components.alerts.alert')
+        
         <!-- Header com Saudação Personalizada -->
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-white mb-2">

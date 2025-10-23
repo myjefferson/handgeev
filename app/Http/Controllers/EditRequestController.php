@@ -22,7 +22,7 @@ class EditRequestController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Você precisa estar logado para solicitar permissão de edição.',
-                'redirect' => route('login')
+                'redirect' => route('login.show')
             ], 401);
         }
 

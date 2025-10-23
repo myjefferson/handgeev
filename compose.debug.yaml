@@ -1,0 +1,6 @@
+services:
+  handgeev:
+    image: handgeev
+    build:
+      context: .
+      dockerfile: ./Dockerfile

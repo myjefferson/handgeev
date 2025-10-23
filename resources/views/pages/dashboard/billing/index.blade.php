@@ -101,7 +101,7 @@
                     @endif
                 </div>
 
-                <!-- Alterar Plano -->
+                {{-- <!-- Alterar Plano -->
                 @if($planInfo['has_subscription'] && !$planInfo['cancel_at_period_end'])
                 <div class="bg-slate-800 rounded-2xl p-6">
                     <h2 class="text-xl font-semibold text-white mb-4">Alterar Plano</h2>
@@ -125,7 +125,7 @@
                         @endforeach
                     </div>
                 </div>
-                @endif
+                @endif --}}
 
                 <!-- Próxima Fatura -->
                 @if($upcomingInvoice)

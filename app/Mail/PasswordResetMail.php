@@ -31,7 +31,7 @@ class PasswordResetMail extends Mailable implements ShouldQueue
     public function build()
     {
         return $this->subject('🔐 Recuperação de Senha - Handgeev')
-                    ->view('email.recovery-account')
+                    ->view('sendmail.account-recovered')
                     ->with([
                         'user' => $this->user,
                         'resetUrl' => $this->resetUrl,

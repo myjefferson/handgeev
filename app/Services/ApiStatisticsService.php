@@ -57,12 +57,7 @@ class ApiStatisticsService
             ->first();
 
         // Horário de pico (agrupar por hora)
-        $peakHour = ApiRequestLog::where('workspace_id', $workspace->id)
-            ->whereDate('created_at', '>=', $lastWeek)
-            ->select(DB::raw('HOUR(created_at) as hour'), DB::raw('COUNT(*) as count'))
-            ->groupBy(DB::raw('HOUR(created_at)'))
-            ->orderByDesc('count')
-            ->first();
+        $peakHour = ApiRequestLog::scopePeakHour($workspace->id, $lastWeek)->first();
 
         // Última requisição
         $lastRequest = ApiRequestLog::where('workspace_id', $workspace->id)
@@ -105,6 +100,7 @@ class ApiStatisticsService
                 DB::raw('AVG(response_time) as avg_response_time'),
                 DB::raw('MAX(response_time) as max_response_time'),
                 DB::raw('MIN(response_time) as min_response_time'),
+                DB::raw('STDDEV(response_time) as std_response_time'),
             ])
             ->groupBy('endpoint', 'method')
             ->orderByDesc('total_requests')
@@ -120,6 +116,7 @@ class ApiStatisticsService
                     'avg_response_time' => round($log->avg_response_time ?? 0, 2) . 'ms',
                     'max_response_time' => round($log->max_response_time ?? 0, 2) . 'ms',
                     'min_response_time' => round($log->min_response_time ?? 0, 2) . 'ms',
+                    'std_response_time' => round($log->std_response_time ?? 0, 2) . 'ms', // Adicionar ao resultado
                 ];
             })
             ->toArray();
@@ -162,40 +159,6 @@ class ApiStatisticsService
     {
         $lastWeek = Carbon::today()->subWeek();
 
-        // Métricas básicas
-        $basicMetrics = ApiRequestLog::where('workspace_id', $workspace->id)
-            ->whereDate('created_at', '>=', $lastWeek)
-            ->select([
-                DB::raw('AVG(response_time) as overall_avg_response_time'),
-                DB::raw('MAX(response_time) as max_response_time'),
-                DB::raw('MIN(response_time) as min_response_time'),
-                DB::raw('COUNT(DISTINCT ip_address) as unique_ips'),
-                DB::raw('COUNT(DISTINCT DATE(created_at)) as active_days'),
-            ])
-            ->first();
-
-        // Calcular percentis manualmente para MySQL
-        $percentiles = self::calculatePercentiles($workspace, $lastWeek);
-
-        return [
-            'overall_avg_response_time' => round($basicMetrics->overall_avg_response_time ?? 0, 2) . 'ms',
-            'p95_response_time' => $percentiles['p95'] . 'ms',
-            'p99_response_time' => $percentiles['p99'] . 'ms',
-            'max_response_time' => round($basicMetrics->max_response_time ?? 0, 2) . 'ms',
-            'min_response_time' => round($basicMetrics->min_response_time ?? 0, 2) . 'ms',
-            'unique_ips' => $basicMetrics->unique_ips ?? 0,
-            'active_days' => $basicMetrics->active_days ?? 0,
-            'uptime' => self::calculateUptime($workspace),
-        ];
-    }
-
-    /**
-     * Métricas de performance otimizadas (alternativa mais rápida)
-     */
-    public static function getPerformanceMetricsOptimized(Workspace $workspace): array
-    {
-        $lastWeek = Carbon::today()->subWeek();
-
         $metrics = ApiRequestLog::where('workspace_id', $workspace->id)
             ->whereDate('created_at', '>=', $lastWeek)
             ->select([
@@ -204,19 +167,19 @@ class ApiStatisticsService
                 DB::raw('MIN(response_time) as min_response_time'),
                 DB::raw('COUNT(DISTINCT ip_address) as unique_ips'),
                 DB::raw('COUNT(DISTINCT DATE(created_at)) as active_days'),
-                // Aproximação para percentis usando funções MySQL
+                // Aproximação para percentis usando funções PostgreSQL
                 DB::raw('(SELECT response_time FROM api_request_logs 
-                         WHERE workspace_id = ' . $workspace->id . ' 
-                         AND DATE(created_at) >= "' . $lastWeek->format('Y-m-d') . '"
-                         ORDER BY response_time LIMIT 1 OFFSET FLOOR(0.95 * (SELECT COUNT(*) FROM api_request_logs 
-                         WHERE workspace_id = ' . $workspace->id . ' 
-                         AND DATE(created_at) >= "' . $lastWeek->format('Y-m-d') . '"))) as p95_approx'),
+                        WHERE workspace_id = ' . $workspace->id . ' 
+                        AND created_at >= \'' . $lastWeek->format('Y-m-d') . '\'
+                        ORDER BY response_time LIMIT 1 OFFSET FLOOR(0.95 * (SELECT COUNT(*) FROM api_request_logs 
+                        WHERE workspace_id = ' . $workspace->id . ' 
+                        AND created_at >= \'' . $lastWeek->format('Y-m-d') . '\'))) as p95_approx'),
                 DB::raw('(SELECT response_time FROM api_request_logs 
-                         WHERE workspace_id = ' . $workspace->id . ' 
-                         AND DATE(created_at) >= "' . $lastWeek->format('Y-m-d') . '"
-                         ORDER BY response_time LIMIT 1 OFFSET FLOOR(0.99 * (SELECT COUNT(*) FROM api_request_logs 
-                         WHERE workspace_id = ' . $workspace->id . ' 
-                         AND DATE(created_at) >= "' . $lastWeek->format('Y-m-d') . '"))) as p99_approx'),
+                        WHERE workspace_id = ' . $workspace->id . ' 
+                        AND created_at >= \'' . $lastWeek->format('Y-m-d') . '\'
+                        ORDER BY response_time LIMIT 1 OFFSET FLOOR(0.99 * (SELECT COUNT(*) FROM api_request_logs 
+                        WHERE workspace_id = ' . $workspace->id . ' 
+                        AND created_at >= \'' . $lastWeek->format('Y-m-d') . '\'))) as p99_approx'),
             ])
             ->first();
 
@@ -281,7 +244,7 @@ class ApiStatisticsService
             ->where('response_time', '>', 0)
             ->select([
                 DB::raw('AVG(response_time) as avg_time'),
-                DB::raw('STD(response_time) as std_time'),
+                DB::raw('STDDEV(response_time) as std_time'),
             ])
             ->first();
 
@@ -328,10 +291,10 @@ class ApiStatisticsService
         $distribution = ApiRequestLog::where('workspace_id', $workspace->id)
             ->select(
                 DB::raw('CASE 
-                    WHEN response_code BETWEEN 200 AND 299 THEN "2xx"
-                    WHEN response_code BETWEEN 400 AND 499 THEN "4xx" 
-                    WHEN response_code BETWEEN 500 AND 599 THEN "5xx"
-                    ELSE "other"
+                    WHEN response_code BETWEEN 200 AND 299 THEN \'2xx\'
+                    WHEN response_code BETWEEN 400 AND 499 THEN \'4xx\' 
+                    WHEN response_code BETWEEN 500 AND 599 THEN \'5xx\'
+                    ELSE \'other\'
                 END as status_group'),
                 DB::raw('COUNT(*) as count')
             )

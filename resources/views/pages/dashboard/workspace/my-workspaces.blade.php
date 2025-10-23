@@ -50,7 +50,7 @@
                 <div class="flex justify-between items-center py-6">
                     <div>
                         <h1 class="text-2xl font-bold text-white">Meus Workspaces</h1>
-                        <p class="text-slate-400 mt-1">Gerencie seus workspaces e colaborações</p>
+                        <p class="text-slate-400 mt-1">Gerencie seus workspaces</p>
                     </div>
                     <div class="flex items-center space-x-3">
                         @if (auth()->user()->canCreateWorkspace())
@@ -129,7 +129,7 @@
                             </svg>
                         </div>
                         <div>
-                            <p class="text-sm text-slate-400">Workspaces Ativos</p>
+                            <p class="text-sm text-slate-400">Workspaces API Ativos</p>
                             <p class="text-2xl font-bold text-white">{{ $workspaces->where('api_enabled', true)->count() }}</p>
                         </div>
                     </div>

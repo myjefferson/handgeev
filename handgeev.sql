@@ -24,15 +24,13 @@ CREATE TABLE users (
     trial_ends_at TIMESTAMP NULL,
 	 stripe_customer_id VARCHAR(255) NULL,
 	 stripe_subscription_id VARCHAR(255) NULL,
-    plan_expires_at TIMESTAMP TINYINT(1) NOT NULL DEFAULT 0,
+    plan_expires_at TINYINT(1) NOT NULL DEFAULT 0,
 	 status ENUM('active', 'inactive', 'suspended', 'past_due', 'unpaid', 'incomplete', 'trial') DEFAULT 'active',
-	 
-	 last_login_at TIMESTAMP NULL AFTER,
-	 last_login_ip VARCHAR(45) NULL AFTER,
-    
+	 last_login_at TIMESTAMP NULL,
+	 last_login_ip VARCHAR(45) NULL,
 	 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (current_plan_id) REFERENCES plans(id),
+    delete_at TIMESTAMP NULL,
     INDEX idx_email (email),
     INDEX idx_status (STATUS),
     INDEX `users_stripe_id_index` (`stripe_id`)
@@ -104,7 +102,7 @@ CREATE TABLE workspaces (
 	 api_jwt_required TINYINT(1) NOT NULL DEFAULT 0,
 	 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+) ENGINE=;
 -- DROP TABLE workspaces
 SELECT * FROM workspaces;
 
@@ -191,7 +189,7 @@ CREATE TABLE topics (
 	`order` INTEGER NOT NULL,
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=;
 
 -- DROP TABLE topics;
 SELECT * FROM topics;
@@ -209,12 +207,12 @@ CREATE TABLE fields (
 	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-SELECT * FROM FIELDS
+SELECT * FROM FIELDS;
 
 
 -- Tabela de planos simplificada
 CREATE TABLE plans (
-    id TINYINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE,
     price DECIMAL(10,2) DEFAULT 0.00,
     max_workspaces INT UNSIGNED DEFAULT 1,
@@ -271,9 +269,6 @@ CREATE TABLE roles (
 );
 SELECT * FROM roles;
 
-
-
-
 CREATE TABLE model_has_roles (
     role_id BIGINT UNSIGNED NOT NULL,
     model_type VARCHAR(255) NOT NULL,
@@ -282,6 +277,7 @@ CREATE TABLE model_has_roles (
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
 );
 SELECT * FROM model_has_roles;
+
 
 
 CREATE TABLE `notifications` (

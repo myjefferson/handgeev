@@ -1,11 +1,11 @@
-<!-- Conteúdo da aba Estatísticas -->
 <div class="hidden p-6 rounded-lg bg-slate-800/50 border border-slate-700" id="statistics-tab" role="tabpanel">
     <div class="flex justify-between items-center mb-6">
-        <h3 class="text-xl font-semibold text-white">📊 Estatísticas da API</h3>
+        <h3 class="text-xl font-semibold text-white">
+            <i class="fas fa-chart-bar mr-2 text-cyan-400"></i>
+            Estatísticas da API
+        </h3>
         <button onclick="refreshStatistics()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors flex items-center">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-            </svg>
+            <i class="fas fa-sync-alt mr-2"></i>
             Atualizar
         </button>
     </div>
@@ -25,9 +25,7 @@
                 <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
                     <div class="flex items-center">
                         <div class="p-2 bg-blue-500/20 rounded-lg mr-3">
-                            <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                            </svg>
+                            <i class="fas fa-exchange-alt text-blue-400 text-lg"></i>
                         </div>
                         <div>
                             <p class="text-sm text-slate-400">Total de Requisições</p>
@@ -40,9 +38,7 @@
                 <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
                     <div class="flex items-center">
                         <div class="p-2 bg-green-500/20 rounded-lg mr-3">
-                            <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
+                            <i class="fas fa-check-circle text-green-400 text-lg"></i>
                         </div>
                         <div>
                             <p class="text-sm text-slate-400">Taxa de Sucesso</p>
@@ -55,9 +51,7 @@
                 <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
                     <div class="flex items-center">
                         <div class="p-2 bg-purple-500/20 rounded-lg mr-3">
-                            <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
+                            <i class="fas fa-clock text-purple-400 text-lg"></i>
                         </div>
                         <div>
                             <p class="text-sm text-slate-400">Tempo Médio</p>
@@ -70,9 +64,7 @@
                 <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
                     <div class="flex items-center">
                         <div class="p-2 bg-amber-500/20 rounded-lg mr-3">
-                            <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
+                            <i class="fas fa-calendar-day text-amber-400 text-lg"></i>
                         </div>
                         <div>
                             <p class="text-sm text-slate-400">Requisições Hoje</p>
@@ -86,7 +78,10 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Rate Limits -->
                 <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
-                    <h4 class="text-lg font-semibold text-white mb-4">📈 Rate Limits</h4>
+                    <h4 class="text-lg font-semibold text-white mb-4">
+                        <i class="fas fa-tachometer-alt mr-2 text-green-400"></i>
+                        Rate Limits
+                    </h4>
                     <div class="space-y-4">
                         <div>
                             <div class="flex justify-between text-sm text-slate-300 mb-1">
@@ -125,7 +120,10 @@
 
                 <!-- Estatísticas do Workspace -->
                 <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
-                    <h4 class="text-lg font-semibold text-white mb-4">🗂️ Conteúdo do Workspace</h4>
+                    <h4 class="text-lg font-semibold text-white mb-4">
+                        <i class="fas fa-folder-open mr-2 text-blue-400"></i>
+                        Conteúdo do Workspace
+                    </h4>
                     <div class="space-y-3">
                         <div class="flex justify-between items-center py-2 border-b border-slate-700">
                             <span class="text-slate-300">Total de Tópicos</span>
@@ -151,16 +149,22 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Endpoint Mais Usado -->
                 <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
-                    <h4 class="text-lg font-semibold text-white mb-4">🔥 Endpoint Mais Popular</h4>
-                    <div class="flex items-center justify-between">
-                        <code class="text-cyan-300 bg-slate-800 px-3 py-2 rounded text-sm" id="popular-endpoint">/endpoint</code>
+                    <h4 class="text-lg font-semibold text-white mb-4">
+                        <i class="fas fa-fire mr-2 text-red-400"></i>
+                        Endpoint Mais Popular
+                    </h4>
+                    <div class="flex space-x-3 items-center justify-between">
+                        <code class="text-cyan-300 bg-slate-800 px-3 py-2 rounded text-sm overflow-scroll" id="popular-endpoint">/endpoint</code>
                         <span class="text-slate-300 text-sm" id="endpoint-usage">-- requisições</span>
                     </div>
                 </div>
 
                 <!-- Horário de Pico -->
                 <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
-                    <h4 class="text-lg font-semibold text-white mb-4">⏰ Horário de Pico</h4>
+                    <h4 class="text-lg font-semibold text-white mb-4">
+                        <i class="fas fa-chart-line mr-2 text-amber-400"></i>
+                        Horário de Pico
+                    </h4>
                     <div class="text-center">
                         <div class="text-2xl font-bold text-amber-400" id="peak-hour">--:--</div>
                         <p class="text-slate-400 text-sm mt-1">Maior volume de requisições</p>
@@ -170,7 +174,10 @@
 
             <!-- Métricas de Performance -->
             <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
-                <h4 class="text-lg font-semibold text-white mb-4">⚡ Performance</h4>
+                <h4 class="text-lg font-semibold text-white mb-4">
+                    <i class="fas fa-bolt mr-2 text-yellow-400"></i>
+                    Performance
+                </h4>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div class="text-center">
                         <div class="text-2xl font-bold text-green-400" id="uptime">100%</div>
@@ -193,7 +200,10 @@
 
             <!-- Gráficos -->
             <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
-                <h4 class="text-lg font-semibold text-white mb-4">📈 Tendência dos Últimos 7 Dias</h4>
+                <h4 class="text-lg font-semibold text-white mb-4">
+                    <i class="fas fa-chart-line mr-2 text-green-400"></i>
+                    Tendência dos Últimos 7 Dias
+                </h4>
                 <div class="h-64">
                     <canvas id="requestsChart"></canvas>
                 </div>
@@ -201,13 +211,19 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
-                    <h4 class="text-lg font-semibold text-white mb-4">🔄 Distribuição por Método HTTP</h4>
+                    <h4 class="text-lg font-semibold text-white mb-4">
+                        <i class="fas fa-code-branch mr-2 text-blue-400"></i>
+                        Distribuição por Método HTTP
+                    </h4>
                     <div class="h-48">
                         <canvas id="methodsChart"></canvas>
                     </div>
                 </div>
                 <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
-                    <h4 class="text-lg font-semibold text-white mb-4">📊 Códigos de Status</h4>
+                    <h4 class="text-lg font-semibold text-white mb-4">
+                        <i class="fas fa-list-alt mr-2 text-purple-400"></i>
+                        Códigos de Status
+                    </h4>
                     <div class="h-48">
                         <canvas id="statusChart"></canvas>
                     </div>
@@ -217,12 +233,16 @@
             <!-- Endpoints Mais Usados -->
             <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
                 <div class="flex justify-between items-center mb-4">
-                    <h4 class="text-lg font-semibold text-white">📋 Top 5 Endpoints</h4>
+                    <h4 class="text-lg font-semibold text-white">
+                        <i class="fas fa-list-ol mr-2 text-cyan-400"></i>
+                        Top 5 Endpoints
+                    </h4>
                     <button onclick="loadEndpointStatistics()" class="text-slate-400 hover:text-white text-sm">
+                        <i class="fas fa-sync-alt mr-1"></i>
                         Atualizar
                     </button>
                 </div>
-                <div id="endpoints-stats">
+                <div id="endpoints-stats" class="overflow-scroll">
                     <div class="text-center py-4 text-slate-400">
                         Carregando endpoints...
                     </div>
@@ -232,10 +252,13 @@
 
         <!-- Erro -->
         <div id="statistics-error" class="hidden text-center py-8">
-            <div class="text-red-400 text-6xl mb-4">⚠️</div>
+            <div class="text-red-400 text-6xl mb-4">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
             <h4 class="text-lg font-semibold text-white mb-2">Erro ao carregar estatísticas</h4>
             <p class="text-slate-300 mb-4" id="error-message">Não foi possível carregar as estatísticas da API.</p>
             <button onclick="loadStatistics()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors">
+                <i class="fas fa-redo mr-2"></i>
                 Tentar Novamente
             </button>
         </div>

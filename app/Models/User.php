@@ -5,19 +5,20 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Cashier\Billable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use Spatie\Permission\Traits\HasRoles;
 use App\Models\Field;
 use App\Models\Topic;
-use DB;
 
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles, Billable;
+    use HasFactory, Notifiable, HasRoles, Billable,SoftDeletes;
 
     const ROLE_FREE = 'free';
     const ROLE_START = 'start';
@@ -85,6 +86,7 @@ class User extends Authenticatable implements JWTSubject
             'last_login_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
+            'deleted_at' => 'datetime',
         ];
     }
 
@@ -266,7 +268,105 @@ class User extends Authenticatable implements JWTSubject
             dd($e->error());
         }
     }
-    
+
+    /**
+     * Verifica se pode adicionar mais tópicos
+     */
+    public function canAddMoreTopics($workspaceId = null): bool
+    {
+        // Admin, Premium e Pro sempre podem (planos ilimitados)
+        if ($this->isAdmin() || $this->isPremium() || $this->isPro()) {
+            return true;
+        }
+        
+        $plan = $this->getPlan();
+        
+        // Se for plano ilimitado, sempre pode adicionar
+        if ($plan->max_topics === 0) {
+            return true;
+        }
+        
+        $currentCount = $this->getCurrentTopicsCount($workspaceId);
+        $canAdd = $currentCount < $plan->max_topics;
+        
+        return $canAdd;
+    }
+
+    /**
+     * Obter número atual de tópicos
+     */
+    public function getCurrentTopicsCount($workspaceId = null): int
+    {
+        $query = Topic::query();
+        
+        // Filtrar pelos tópicos do usuário (dono do workspace)
+        $query->whereHas('workspace', function($q) {
+            $q->where('user_id', $this->id);
+        });
+
+        if ($workspaceId) {
+            // Contar apenas tópicos do workspace específico
+            $query->where('workspace_id', $workspaceId);
+        }
+        
+        $count = $query->count();
+        
+        \Log::info("🔍 getCurrentTopicsCount", [
+            'user_id' => $this->id,
+            'workspace_id' => $workspaceId,
+            'count' => $count
+        ]);
+        
+        return $count;
+    }
+
+    /**
+     * Obter limite de tópicos do plano
+     */
+    public function getTopicsLimit(): int
+    {
+        $plan = $this->getPlan();
+        
+        if ($this->isPro() || $this->isPremium() || $this->isAdmin()) {
+            return 0; // Ilimitado
+        }
+        
+        return $plan->max_topics;
+    }
+
+    /**
+     * Obter número de tópicos restantes
+     */
+    public function getRemainingTopicsCount($workspaceId = null): int
+    {
+        if ($this->isAdmin() || $this->isPremium() || $this->isPro()) {
+            return PHP_INT_MAX;
+        }
+        
+        $plan = $this->getPlan();
+        
+        // Se for plano ilimitado, retornar um número grande
+        if ($plan->max_topics === 0) {
+            return PHP_INT_MAX;
+        }
+        
+        $currentCount = $this->getCurrentTopicsCount($workspaceId);
+        return max(0, $plan->max_topics - $currentCount);
+    }
+
+    /**
+     * Verificar se o plano tem tópicos ilimitados
+     */
+    public function hasUnlimitedTopics(): bool
+    {
+        if ($this->isAdmin() || $this->isPremium() || $this->isPro()) {
+            return true;
+        }
+        
+        $plan = $this->getPlan();
+        return $plan->max_topics === 0;
+    }
+        
     // Verificar limites do plano COM SEGURANÇA
     public function canCreateWorkspace(): bool
     {

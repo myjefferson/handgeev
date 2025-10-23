@@ -9,7 +9,7 @@ return [
     ],
     
     'sidebar' => [
-        'topics_count' => ':count tópico|:count tópicos',
+        'topics_count' => 'tópicos',
         'new_topic' => 'Novo Tópico',
         'fields_count' => ':count',
         'import_topic' => 'Importar Tópico',

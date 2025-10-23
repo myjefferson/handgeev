@@ -314,7 +314,7 @@
                         </div>
                     </div>
 
-                    <!-- Limite de Campos -->
+                    {{-- <!-- Limite de Campos -->
                     <div>
                         <div class="flex justify-between text-sm mb-1">
                             <span class="text-gray-600 dark:text-gray-400">{{ __('workspace_settings_overview.fields') }}</span>
@@ -331,7 +331,7 @@
                             <div class="bg-green-500 h-2 rounded-full transition-all duration-500" 
                                 style="width: {{ $plan->max_fields > 0 ? min(100, ($currentFields / $plan->max_fields) * 100) : 100 }}%"></div>
                         </div>
-                    </div>
+                    </div> --}}
 
                     <!-- Plano Atual -->
                     <div class="pt-3 border-t border-gray-200 dark:border-gray-600">

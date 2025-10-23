@@ -3,6 +3,47 @@
 @section('title', __('profile.title'))
 @section('description', __('profile.description'))
 
+@push('style')
+    <style>
+        /* Estilos customizados para as tabs do Flowbite */
+        [data-tabs-toggle] button {
+            @apply text-gray-400 border-transparent;
+            transition: all 0.3s ease;
+        }
+
+        [data-tabs-toggle] button:hover {
+            @apply text-gray-300 border-gray-300;
+        }
+
+        [data-tabs-toggle] button.text-teal-400 {
+            @apply border-teal-400;
+        }
+
+        .teal-glow-hover:hover {
+            box-shadow: 0 0 20px rgba(0, 230, 216, 0.3);
+        }
+
+        input:focus, select:focus {
+            box-shadow: 0 0 0 3px rgba(0, 230, 216, 0.1);
+        }
+
+        /* Animações suaves */
+        .tab-content {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Barras de progresso */
+        .progress-bar {
+            transition: width 0.5s ease-in-out;
+        }
+    </style>
+@endpush
+
 @section('content_dashboard')
     <div class="min-h-screen bg-slate-900 py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -14,19 +55,7 @@
             </div>
 
             <!-- Alertas -->
-            @if(session('success'))
-                <div class="bg-green-500/20 border border-green-500/50 text-green-400 px-4 py-3 rounded-xl mb-6">
-                    <i class="fas {{ __('profile.alerts.success.icon') }} mr-2"></i> 
-                    {{ session('success') ?: __('profile.alerts.success.default') }}
-                </div>
-            @endif
-
-            @if(session('error'))
-                <div class="bg-red-500/20 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl mb-6">
-                    <i class="fas {{ __('profile.alerts.error.icon') }} mr-2"></i> 
-                    {{ session('error') ?: __('profile.alerts.error.default') }}
-                </div>
-            @endif
+            @include('components.alerts.alert')
 
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 <!-- Coluna Lateral - Informações do Usuário -->
@@ -116,6 +145,12 @@
                                         {{ __('profile.tabs.password.label') }}
                                     </button>
                                 </li>
+                                <li class="me-2" role="presentation">
+                                    <button class="inline-block p-4 border-b-2 rounded-t-lg hover:text-gray-300 hover:border-gray-300" id="account-tab" data-tabs-target="#account" type="button" role="tab" aria-controls="account" aria-selected="false">
+                                        <i class="fas fa-cog mr-2"></i>
+                                        Configurações da Conta
+                                    </button>
+                                </li>
                             </ul>
                         </div>
 
@@ -163,13 +198,57 @@
                                             <label for="email" class="block text-sm font-medium text-gray-400 mb-2">
                                                 {{ __('profile.forms.personal_info.email.label') }}
                                             </label>
-                                            <input type="email" id="email" name="email" value="{{ old('email', Auth::user()->email) }}"
-                                                class="w-full bg-slate-700 border {{ $errors->has('email') ? 'border-red-500' : 'border-slate-600' }} rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-colors"
-                                                placeholder="{{ __('profile.forms.personal_info.email.placeholder') }}">
+                                            
+                                            <div class="flex space-x-3">
+                                                <div class="flex-1">
+                                                    <input type="email" id="email" name="email" value="{{ old('email', Auth::user()->email) }}"
+                                                        class="w-full bg-slate-700 border {{ $errors->has('email') ? 'border-red-500' : 'border-slate-600' }} rounded-xl py-3 px-4 text-slate-400 placeholder-gray-500 outline-transparent focus:border-transparent transition-colors"
+                                                        placeholder="{{ __('profile.forms.personal_info.email.placeholder') }}"
+                                                        readonly>
+                                                </div>
+                                                
+                                                <button type="button" 
+                                                        data-modal-target="email-change-modal" 
+                                                        data-modal-toggle="email-change-modal"
+                                                        class="flex-shrink-0 px-4 py-3 bg-teal-600 hover:bg-teal-500 text-white rounded-xl transition-colors duration-200 flex items-center space-x-2">
+                                                    <i class="fas fa-edit"></i>
+                                                    <span>Alterar</span>
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- Status de confirmação do email -->
+                                            <div class="mt-3 flex items-center justify-between">
+                                                <div class="flex items-center space-x-2">
+                                                    @if(Auth::user()->email_verified_at)
+                                                        <div class="flex items-center text-green-400 text-sm">
+                                                            <i class="fas fa-check-circle mr-1"></i>
+                                                            <span>Email confirmado</span>
+                                                        </div>
+                                                    @else
+                                                        <div class="flex items-center text-amber-400 text-sm">
+                                                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                                                            <span>Email não confirmado</span>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                                
+                                                @unless(Auth::user()->email_verified_at)
+                                                    <form action="{{ route('verification.send') }}" method="POST" class="inline">
+                                                        @csrf
+                                                        <button type="submit" 
+                                                                class="text-cyan-400 hover:text-cyan-300 text-sm flex items-center space-x-1 transition-colors duration-200">
+                                                            <i class="fas fa-paper-plane mr-1"></i>
+                                                            <span>Reenviar confirmação</span>
+                                                        </button>
+                                                    </form>
+                                                @endunless
+                                            </div>
+                                            
                                             @error('email')
                                                 <span class="text-red-400 text-sm mt-1">{{ $message }}</span>
                                             @enderror
                                         </div>
+
 
                                         <!-- Telefone -->
                                         <div class="mb-6">
@@ -279,16 +358,53 @@
                                     </form>
                                 </div>
                             </div>
+
+                            <!-- Aba Configurações da Conta -->
+                            <div class="hidden p-6 rounded-b-2xl flex justify-center" id="account" role="tabpanel" aria-labelledby="account-tab">
+                                <div class="max-w-2xl w-full">
+                                    <h2 class="text-xl font-semibold text-white mb-6">Configurações da Conta</h2>
+
+                                    <!-- Seção de Deletar Conta -->
+                                    <div class="bg-slate-700/50 rounded-xl p-6 border border-red-500/20">
+                                        <div class="flex items-start space-x-4">
+                                            <div class="flex-shrink-0">
+                                                <div class="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
+                                                    <i class="fas fa-exclamation-triangle text-red-400 text-xl"></i>
+                                                </div>
+                                            </div>
+                                            <div class="flex-1">
+                                                <h3 class="text-lg font-medium text-white mb-2">Deletar Conta</h3>
+                                                <p class="text-gray-400 text-sm mb-4">
+                                                    Uma vez que você deletar sua conta, não há como voltar atrás. Por favor, tenha certeza.
+                                                </p>
+                                                
+                                                <!-- Botão para abrir o modal -->
+                                                <button type="button" 
+                                                        data-modal-target="delete-account-modal" 
+                                                        data-modal-toggle="delete-account-modal"
+                                                        class="bg-red-600 hover:bg-red-500 text-white font-medium py-2 px-4 rounded-xl transition-colors duration-200 flex items-center space-x-2">
+                                                    <i class="fas fa-trash mr-2"></i>
+                                                    <span>Deletar Minha Conta</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+@endsection
 
-    <!-- Flowbite Tabs Script -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+@push('modals')
+    @include('components.modals.modal-change-email')
+    @include('components.modals.modal-delete-account')
+@endpush
 
+@push('scripts')
     <script>
         // Inicializar tabs do Flowbite com a primeira aba ativa
         document.addEventListener('DOMContentLoaded', function() {
@@ -355,43 +471,4 @@
             }
         }
     </script>
-
-    <style>
-        /* Estilos customizados para as tabs do Flowbite */
-        [data-tabs-toggle] button {
-            @apply text-gray-400 border-transparent;
-            transition: all 0.3s ease;
-        }
-
-        [data-tabs-toggle] button:hover {
-            @apply text-gray-300 border-gray-300;
-        }
-
-        [data-tabs-toggle] button.text-teal-400 {
-            @apply border-teal-400;
-        }
-
-        .teal-glow-hover:hover {
-            box-shadow: 0 0 20px rgba(0, 230, 216, 0.3);
-        }
-
-        input:focus, select:focus {
-            box-shadow: 0 0 0 3px rgba(0, 230, 216, 0.1);
-        }
-
-        /* Animações suaves */
-        .tab-content {
-            animation: fadeIn 0.3s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Barras de progresso */
-        .progress-bar {
-            transition: width 0.5s ease-in-out;
-        }
-    </style>
-@endsection
+@endpush

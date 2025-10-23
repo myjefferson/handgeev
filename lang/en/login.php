@@ -30,6 +30,7 @@ return [
         'email_not_verified' => 'Please verify your email before accessing the dashboard.',
         'account_inactive' => 'Your account is inactive. Please contact support.',
         'account_suspended' => 'Your account has been suspended. Please contact support.',
+        'account_deactivated' => 'Sua conta foi desativada.',
         'logout' => 'Logout successful',
         'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
     ],

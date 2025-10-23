@@ -29,7 +29,7 @@ class VerificationEmail extends Mailable implements ShouldQueue
     public function build()
     {
         return $this->subject('🔐 Código de Verificação - Handgeev')
-                    ->view('email.email-verification-code')
+                    ->view('sendmail.verification-code')
                     ->with([
                         'user' => $this->user,
                         'verificationCode' => $this->verificationCode,

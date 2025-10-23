@@ -91,23 +91,38 @@
             <div class="tab-content active" id="workspace-content" role="tabpanel">
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden max-w-3xl mx-auto">
                     @if($workspace)
-                        @forelse($workspace->topics as $topic)
-                            <div class="border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+                        <div id="topics-accordion" data-accordion="open">
+                            @forelse($workspace->topics as $index => $topic)
                                 <!-- Header do Tópico -->
-                                <button onclick="toggleTopic({{ $topic->id }})" class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                                    <div class="flex items-center space-x-3">
-                                        <i class="fas fa-folder text-teal-500"></i>
-                                        <span class="font-medium text-gray-900 dark:text-white">{{ $topic->title }}</span>
-                                        <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded-full">
-                                            {{ $topic->fields->count() }} campo(s)
-                                        </span>
-                                    </div>
-                                    <i class="fas fa-chevron-down text-gray-400 transform transition-transform" id="icon-{{ $topic->id }}"></i>
-                                </button>
+                                <h2 id="accordion-heading-{{ $topic->id }}">
+                                    <button type="button"
+                                            class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3"
+                                            data-accordion-target="#accordion-body-{{ $topic->id }}"
+                                            aria-expanded="{{ $index === 0 ? 'true' : 'false' }}"
+                                            aria-controls="accordion-body-{{ $topic->id }}">
+                                        <div class="flex items-center space-x-3">
+                                            <i class="fas fa-folder text-teal-500"></i>
+                                            <span class="font-medium text-gray-900 dark:text-white">{{ $topic->title }}</span>
+                                            <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded-full">
+                                                {{ $topic->fields->count() }} campo(s)
+                                            </span>
+                                        </div>
+                                        <svg data-accordion-icon 
+                                            class="w-3 h-3 {{ $index === 0 ? 'rotate-180' : '' }} shrink-0 transition-transform"
+                                            aria-hidden="true" 
+                                            xmlns="http://www.w3.org/2000/svg" 
+                                            fill="none" 
+                                            viewBox="0 0 10 6">
+                                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
+                                        </svg>
+                                    </button>
+                                </h2>
 
                                 <!-- Campos do Tópico -->
-                                <div id="topic-{{ $topic->id }}" class="hidden">
-                                    <div class="border-t border-gray-200 dark:border-gray-700">
+                                <div id="accordion-body-{{ $topic->id }}" 
+                                    class="{{ $index === 0 ? '' : 'hidden' }}" 
+                                    aria-labelledby="accordion-heading-{{ $topic->id }}">
+                                    <div class="p-0 border border-b-0 border-gray-200 dark:border-gray-700 dark:bg-gray-900">
                                         <div class="overflow-x-auto">
                                             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                                                 <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
@@ -152,7 +167,7 @@
                                                         </tr>
                                                     @empty
                                                         <tr>
-                                                            <td colspan="3" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                                                            <td colspan="4" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                                                                 <div class="flex flex-col items-center justify-center">
                                                                     <i class="fas fa-inbox text-3xl mb-2 text-gray-400"></i>
                                                                     <p class="text-sm">Nenhum campo visível encontrado</p>
@@ -165,13 +180,13 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        @empty
-                            <div class="p-8 text-center text-gray-500 dark:text-gray-400">
-                                <i class="fas fa-inbox text-4xl mb-4"></i>
-                                <p class="text-lg">Nenhum tópico encontrado</p>
-                            </div>
-                        @endforelse
+                            @empty
+                                <div class="p-8 text-center text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                    <i class="fas fa-inbox text-4xl mb-4"></i>
+                                    <p class="text-lg">Nenhum tópico encontrado</p>
+                                </div>
+                            @endforelse
+                        </div>
                     @else
                         <p class="p-4 text-red-500">Workspace não encontrado.</p>
                     @endif
@@ -435,6 +450,19 @@ $data = json_decode($response, true);
     .rotate-180 {
         transform: rotate(180deg);
     }
+    /* Estilo para o último item do accordion */
+    #topics-accordion h2:last-child button {
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .dark #topics-accordion h2:last-child button {
+        border-bottom-color: #374151;
+    }
+
+    /* Transição suave para o ícone */
+    [data-accordion-icon] {
+        transition: transform 0.2s ease-in-out;
+    }
 </style>
 
 <script type="module">
@@ -524,11 +552,12 @@ $data = json_decode($response, true);
         iconElement.classList.toggle('rotate-180');
     }
 
-    function copyToClipboard(text, message = 'Copiado!') {
-        navigator.clipboard.writeText(text).then(() => {
+    function copyToClipboard(text, message) {
+        navigator.clipboard.writeText(text).then(function() {
+            // Mostrar notificação de sucesso
             showNotification(message, 'success');
-        }).catch(err => {
-            console.error('Erro ao copiar:', err);
+        }).catch(function(err) {
+            console.error('Erro ao copiar: ', err);
             showNotification('Erro ao copiar', 'error');
         });
     }

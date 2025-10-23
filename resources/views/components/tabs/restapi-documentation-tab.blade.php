@@ -1,6 +1,9 @@
 <div class="hidden p-6 rounded-lg bg-slate-800/50 border border-slate-700" id="documentation-tab" role="tabpanel">
     <div class="flex justify-between items-center mb-6">
-        <h3 class="text-xl font-semibold text-white">📚 Documentação da API</h3>
+        <h3 class="text-xl font-semibold text-white">
+            <i class="fas fa-book mr-2 text-cyan-400"></i>
+            Documentação da API
+        </h3>
         <div class="flex items-center space-x-4">
             <!-- Indicador do Tipo de Autenticação -->
             <div class="flex items-center space-x-2 px-3 py-1 rounded-full {{ $workspace->api_jwt_required ? 'bg-amber-500/20 border border-amber-500/50' : 'bg-green-500/20 border border-green-500/50' }}">
@@ -11,14 +14,17 @@
             </div>
             
             <div class="flex space-x-2">
-                <button onclick="exportDocumentation('json')" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors">
+                <button onclick="exportDocumentation('json')" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors flex items-center">
+                    <i class="fas fa-file-export mr-2"></i>
                     Exportar JSON
                 </button>
                 @if(auth()->user()->isPro() || auth()->user()->isPremium())
-                <button onclick="exportDocumentation('yaml')" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors">
+                <button onclick="exportDocumentation('yaml')" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors flex items-center">
+                    <i class="fas fa-file-code mr-2"></i>
                     Exportar YAML
                 </button>
-                <button onclick="exportOpenAPI()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm transition-colors">
+                <button onclick="exportOpenAPI()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm transition-colors flex items-center">
+                    <i class="fas fa-api mr-2"></i>
                     OpenAPI Spec
                 </button>
                 @endif
@@ -30,7 +36,10 @@
         <!-- Autenticação Dinâmica -->
         <div class="bg-slate-800 border border-slate-700 mb-6 rounded-lg p-6">
             <div class="flex items-center justify-between mb-4">
-                <h4 class="text-cyan-400 text-lg font-semibold">🔑 Autenticação</h4>
+                <h4 class="text-cyan-400 text-lg font-semibold">
+                    <i class="fas fa-key mr-2"></i>
+                    Autenticação
+                </h4>
                 <span class="px-2 py-1 text-xs rounded {{ $workspace->api_jwt_required ? 'bg-amber-500/20 text-amber-300' : 'bg-green-500/20 text-green-300' }}">
                     {{ $workspace->api_jwt_required ? 'JWT Required' : 'Workspace Key' }}
                 </span>
@@ -42,7 +51,10 @@
                 <p class="text-slate-300">Esta workspace requer autenticação JWT. Primeiro obtenha um token JWT:</p>
                 
                 <div class="bg-slate-800 rounded p-4">
-                    <h5 class="text-cyan-300 font-semibold mb-2">Obter Token JWT:</h5>
+                    <h5 class="text-cyan-300 font-semibold mb-2">
+                        <i class="fas fa-token mr-1"></i>
+                        Obter Token JWT:
+                    </h5>
                     <div class="bg-black rounded p-3 mb-3">
                         <code class="text-green-300 font-mono text-sm">
                             POST {{ url('/api/auth/token') }}
@@ -65,22 +77,18 @@
                         </code>
                     </pre>
                     <button onclick="copyToClipboard(this.parentNode.querySelector('code').textContent)" class="mt-2 text-cyan-400 hover:text-cyan-300 text-sm flex items-center">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                        </svg>
+                        <i class="fas fa-copy mr-1"></i>
                         Copiar
                     </button>
                 </div>
 
                 <p class="text-slate-300 mt-4">Use o token JWT em todas as requisições:</p>
-                <div class="bg-slate-800 rounded p-3">
+                <div class="bg-slate-800 rounded p-3 flex items-center justify-between">
                     <code class="text-cyan-300 font-mono text-sm">
                         Authorization: Bearer <span id="authKeyExample">SEU_TOKEN_JWT_AQUI</span>
                     </code>
-                    <button onclick="copyToClipboard('Bearer SEU_TOKEN_JWT_AQUI')" class="ml-2 text-cyan-400 hover:text-cyan-300">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                        </svg>
+                    <button onclick="copyToClipboard('Bearer SEU_TOKEN_JWT_AQUI')" class="text-cyan-400 hover:text-cyan-300">
+                        <i class="fas fa-copy"></i>
                     </button>
                 </div>
             </div>
@@ -88,18 +96,17 @@
             <!-- Documentação Workspace Key -->
             <div class="space-y-4">
                 <p class="text-slate-300">Use sua Workspace Key em todas as requisições:</p>
-                <div class="bg-slate-800 rounded p-3">
+                <div class="bg-slate-800 rounded p-3 flex items-center justify-between">
                     <code class="text-cyan-300 font-mono text-sm">
                         Authorization: Bearer <span id="authKeyExample">{{ $workspace->email_api ?: 'SUA_WORKSPACE_KEY' }}</span>
                     </code>
-                    <button onclick="copyToClipboard('Bearer {{ $workspace->email_api }}')" class="ml-2 text-cyan-400 hover:text-cyan-300">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                        </svg>
+                    <button onclick="copyToClipboard('Bearer {{ $workspace->email_api }}')" class="text-cyan-400 hover:text-cyan-300">
+                        <i class="fas fa-copy"></i>
                     </button>
                 </div>
                 <p class="text-slate-300 text-sm bg-blue-500/10 border border-blue-500/20 rounded p-3">
-                    💡 <strong>Dica:</strong> Esta é sua chave permanente. Mantenha-a segura!
+                    <i class="fas fa-lightbulb text-yellow-400 mr-2"></i>
+                    <strong>Dica:</strong> Esta é sua chave permanente. Mantenha-a segura!
                 </p>
             </div>
             @endif
@@ -108,7 +115,10 @@
         <!-- Estrutura de Resposta -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="bg-slate-900 rounded-lg p-6">
-                <h4 class="text-cyan-400 text-lg font-semibold mb-3">📋 Estrutura de Resposta</h4>
+                <h4 class="text-cyan-400 text-lg font-semibold mb-3">
+                    <i class="fas fa-code mr-2"></i>
+                    Estrutura de Resposta
+                </h4>
                 <pre class="text-slate-300 text-sm font-mono overflow-x-auto">
                     <code id="responseStructure">
 {
@@ -128,15 +138,16 @@
                     </code>
                 </pre>
                 <button onclick="copyToClipboard(document.getElementById('responseStructure').textContent)" class="mt-2 text-cyan-400 hover:text-cyan-300 text-sm flex items-center">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                    </svg>
+                    <i class="fas fa-copy mr-1"></i>
                     Copiar
                 </button>
             </div>
 
             <div class="bg-slate-900 rounded-lg p-6">
-                <h4 class="text-cyan-400 text-lg font-semibold mb-3">📊 Códigos de Status</h4>
+                <h4 class="text-cyan-400 text-lg font-semibold mb-3">
+                    <i class="fas fa-list-alt mr-2"></i>
+                    Códigos de Status
+                </h4>
                 <ul class="text-slate-300 space-y-2 text-sm">
                     <li class="flex items-center"><span class="text-green-400 font-mono mr-2">200</span> Sucesso</li>
                     <li class="flex items-center"><span class="text-blue-400 font-mono mr-2">201</span> Criado</li>
@@ -149,7 +160,10 @@
                 </ul>
                 
                 <div class="mt-4 p-3 bg-slate-800 rounded">
-                    <h5 class="text-cyan-300 text-sm font-semibold mb-2">Headers de Rate Limit:</h5>
+                    <h5 class="text-cyan-300 text-sm font-semibold mb-2">
+                        <i class="fas fa-tachometer-alt mr-1"></i>
+                        Headers de Rate Limit:
+                    </h5>
                     <ul class="text-slate-300 text-xs space-y-1">
                         <li><code class="text-cyan-300">X-RateLimit-Limit: 60</code></li>
                         <li><code class="text-cyan-300">X-RateLimit-Remaining: 59</code></li>
@@ -161,11 +175,17 @@
 
         <!-- Exemplo de Uso Dinâmico -->
         <div class="bg-slate-900 rounded-lg p-6">
-            <h4 class="text-cyan-400 text-lg font-semibold mb-3">🚀 Exemplo de Uso</h4>
+            <h4 class="text-cyan-400 text-lg font-semibold mb-3">
+                <i class="fas fa-rocket mr-2"></i>
+                Exemplo de Uso
+            </h4>
             <div class="space-y-4">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Selecione a linguagem:</label>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">
+                            <i class="fas fa-code mr-1"></i>
+                            Selecione a linguagem:
+                        </label>
                         <select id="selectDocExample" class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5">
                             <option value="javascript" selected>JavaScript</option>
                             <option value="php">PHP</option>
@@ -174,7 +194,10 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Endpoint:</label>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">
+                            <i class="fas fa-link mr-1"></i>
+                            Endpoint:
+                        </label>
                         <select id="selectEndpoint" class="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block w-full p-2.5">
                             <option value="workspace">Workspace</option>
                             <option value="topics">Topics</option>
@@ -184,9 +207,7 @@
                 </div>
                 <div class="bg-slate-800 rounded p-4 relative">
                     <button onclick="copyToClipboard(document.getElementById('docCodeOutput').textContent)" class="absolute top-2 right-2 text-slate-400 hover:text-white">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                        </svg>
+                        <i class="fas fa-copy"></i>
                     </button>
                     <pre id="docCodeOutput" class="text-slate-300 text-sm font-mono whitespace-pre-wrap overflow-x-auto"></pre>
                 </div>
@@ -195,26 +216,35 @@
 
         <!-- Dicas de Segurança -->
         <div class="bg-slate-900 rounded-lg p-6">
-            <h4 class="text-cyan-400 text-lg font-semibold mb-3">🛡️ Melhores Práticas</h4>
+            <h4 class="text-cyan-400 text-lg font-semibold mb-3">
+                <i class="fas fa-shield-alt mr-2"></i>
+                Melhores Práticas
+            </h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="bg-slate-800 rounded p-4">
-                    <h5 class="text-green-400 font-semibold mb-2">✅ O que fazer:</h5>
+                    <h5 class="text-green-400 font-semibold mb-2">
+                        <i class="fas fa-check-circle mr-1"></i>
+                        O que fazer:
+                    </h5>
                     <ul class="text-slate-300 text-sm space-y-1">
-                        <li>• Armazene chaves em variáveis de ambiente</li>
-                        <li>• Use HTTPS em produção</li>
-                        <li>• Valide respostas da API</li>
-                        <li>• Implemente retry com backoff exponencial</li>
-                        <li>• Monitore seus rate limits</li>
+                        <li><i class="fas fa-chevron-right text-green-400 mr-2 text-xs"></i>Armazene chaves em variáveis de ambiente</li>
+                        <li><i class="fas fa-chevron-right text-green-400 mr-2 text-xs"></i>Use HTTPS em produção</li>
+                        <li><i class="fas fa-chevron-right text-green-400 mr-2 text-xs"></i>Valide respostas da API</li>
+                        <li><i class="fas fa-chevron-right text-green-400 mr-2 text-xs"></i>Implemente retry com backoff exponencial</li>
+                        <li><i class="fas fa-chevron-right text-green-400 mr-2 text-xs"></i>Monitore seus rate limits</li>
                     </ul>
                 </div>
                 <div class="bg-slate-800 rounded p-4">
-                    <h5 class="text-red-400 font-semibold mb-2">❌ O que evitar:</h5>
+                    <h5 class="text-red-400 font-semibold mb-2">
+                        <i class="fas fa-times-circle mr-1"></i>
+                        O que evitar:
+                    </h5>
                     <ul class="text-slate-300 text-sm space-y-1">
-                        <li>• Não comite chaves no versionamento</li>
-                        <li>• Não exponha chaves no client-side</li>
-                        <li>• Não ignore erros de autenticação</li>
-                        <li>• Não faça requisições sem rate limiting</li>
-                        <li>• Não use métodos HTTP incorretos</li>
+                        <li><i class="fas fa-chevron-right text-red-400 mr-2 text-xs"></i>Não comite chaves no versionamento</li>
+                        <li><i class="fas fa-chevron-right text-red-400 mr-2 text-xs"></i>Não exponha chaves no client-side</li>
+                        <li><i class="fas fa-chevron-right text-red-400 mr-2 text-xs"></i>Não ignore erros de autenticação</li>
+                        <li><i class="fas fa-chevron-right text-red-400 mr-2 text-xs"></i>Não faça requisições sem rate limiting</li>
+                        <li><i class="fas fa-chevron-right text-red-400 mr-2 text-xs"></i>Não use métodos HTTP incorretos</li>
                     </ul>
                 </div>
             </div>

@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sucesso - Handgeev</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+@extends('template.template-site')
+
+@section('title', __('subscription.title'))
+@section('description', __('subscription.description'))
+
+@push('style')    
     <style>
         body {
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
@@ -44,11 +42,12 @@
             }
         }
     </style>
-</head>
-<body class="font-sans antialiased text-white">
+@endpush
+
+@section('content_site')
     <div class="min-h-screen flex items-center justify-center px-4">
         <div class="max-w-md w-full text-center">
-            <!-- Ícone de Sucesso -->
+            <!-- Success Icon -->
             <div class="mb-8">
                 <div class="success-checkmark">
                     <svg class="check-icon" viewBox="0 0 24 24">
@@ -57,51 +56,52 @@
                 </div>
             </div>
 
-            <h1 class="text-3xl font-bold mb-4">Pagamento Confirmado!</h1>
+            <h1 class="text-3xl font-bold mb-4">{{ __('subscription.payment_confirmed') }}</h1>
             <p class="text-gray-400 mb-8">
-                Sua assinatura Pro foi ativada com sucesso. Agora você tem acesso a todos os recursos premium do Handgeev.
+                {{ __('subscription.pro_activated') }}
             </p>
 
-            <div class="bg-slate-800/50 rounded-2xl p-6 mb-8">
-                <h2 class="text-xl font-semibold mb-4">O que você ganhou:</h2>
+            {{-- <div class="bg-slate-800/50 rounded-2xl p-6 mb-8">
+                <h2 class="text-xl font-semibold mb-4">{{ __('subscription.what_you_got') }}</h2>
                 <ul class="text-left space-y-3">
                     <li class="flex items-center">
                         <i class="fas fa-check-circle text-green-400 mr-3"></i>
-                        <span>5 Workspaces</span>
+                        <span>{{ __('subscription.features.workspaces') }}</span>
                     </li>
                     <li class="flex items-center">
                         <i class="fas fa-check-circle text-green-400 mr-3"></i>
-                        <span>Tópicos e Campos Ilimitados</span>
+                        <span>{{ __('subscription.features.unlimited_topics') }}</span>
                     </li>
                     <li class="flex items-center">
                         <i class="fas fa-check-circle text-green-400 mr-3"></i>
-                        <span>API Completa</span>
+                        <span>{{ __('subscription.features.complete_api') }}</span>
                     </li>
                     <li class="flex items-center">
                         <i class="fas fa-check-circle text-green-400 mr-3"></i>
-                        <span>Domínio Personalizado</span>
+                        <span>{{ __('subscription.features.custom_domain') }}</span>
                     </li>
                     <li class="flex items-center">
                         <i class="fas fa-check-circle text-green-400 mr-3"></i>
-                        <span>Exportação de Dados</span>
+                        <span>{{ __('subscription.features.data_export') }}</span>
                     </li>
                 </ul>
-            </div>
+            </div> --}}
 
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
                 <a href="{{ route('dashboard.home') }}" class="bg-teal-500 hover:bg-teal-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
-                    <i class="fas fa-rocket mr-2"></i>Começar a Usar
+                    <i class="fas fa-rocket mr-2"></i>{{ __('subscription.buttons.start_using') }}
                 </a>
-                <a href="{{ route('billing.portal') }}" class="border border-gray-600 hover:border-gray-500 text-gray-300 hover:text-white font-semibold py-3 px-6 rounded-lg transition-colors">
-                    <i class="fas fa-receipt mr-2"></i>Ver Faturas
+                <a href="{{ route('billing.show') }}" class="border border-gray-600 hover:border-gray-500 text-gray-300 hover:text-white font-semibold py-3 px-6 rounded-lg transition-colors">
+                    <i class="fas fa-receipt mr-2"></i>{{ __('subscription.buttons.view_invoices') }}
                 </a>
             </div>
 
             <p class="text-sm text-gray-500 mt-8">
-                Problemas com sua assinatura? 
-                <a href="mailto:support@handgeev.com" class="text-teal-400 hover:text-teal-300">Entre em contato com o suporte</a>
+                {{ __('subscription.support.problems') }} 
+                <a href="mailto:support@handgeev.com" class="text-teal-400 hover:text-teal-300">{{ __('subscription.support.contact') }}</a>
             </p>
         </div>
     </div>
-</body>
-</html>
+    
+    @include('components.footer.footer')
+@endsection
