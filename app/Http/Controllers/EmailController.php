@@ -46,7 +46,7 @@ class EmailController extends Controller
             ]);
             
             // Enviar email de confirmação
-            Mail::to($request->email)->send(new EmailChangeConfirmation($user, $token, $request->email));
+            Mail::to($request->email)->queue(new EmailChangeConfirmation($user, $token, $request->email));
             
             \Log::info('Link de confirmação de email enviado', [
                 'user_id' => $user->id,
@@ -240,7 +240,7 @@ class EmailController extends Controller
 
         // Envia email
         try {
-            Mail::to($user->email)->send(new PasswordResetMail($user, $token));
+            Mail::to($user->email)->queue(new PasswordResetMail($user, $token));
             
             // Log para auditoria
             \Log::info('Email de recuperação enviado', [
@@ -434,7 +434,7 @@ class EmailController extends Controller
             'email_verification_sent_at' => now(),
         ]);
         // Enviar email
-        Mail::to($user->email)->send(new VerificationEmail($user, $verificationCode));
+        Mail::to($user->email)->queue(new VerificationEmail($user, $verificationCode));
 
         // Log para debug (remova em produção)
         \Log::info("Código de verificação para {$user->email}: {$verificationCode}");
