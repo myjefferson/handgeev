@@ -56,13 +56,13 @@ Route::middleware(['languages'])->group(function(){
     });
     
     Route::controller(EmailController::class)->group(function(){
-        Route::get('/verify-code-email', 'showVerifyCodeEmail')->name('verify.code.email.show');
-        Route::get('/email/confirm-form', 'showEmailConfirmForm')->name('email.confirm.form');
+        Route::get('/email/verify/code/form', 'showVerifyCodeEmail')->name('verify.code.email.show');
+        Route::get('/email/confirm/form', 'showEmailConfirmForm')->name('email.confirm.form');
         Route::get('/email/confirm/{token}', 'confirmEmailChange')->name('email.confirm');
         Route::put('/email/update', 'updateEmail')->name('email.update');
         Route::post('/recovery-password/email', 'sendRecoveryAccountEmail')->name('recovery.password.email');
-        Route::post('/verify-code-email', 'verifyEmail')->name('verification.verify');
-        Route::post('/reenviar-codigo', 'resendVerifyEmail')->name('verification.resend');
+        Route::post('/email/verify/code', 'verifyEmail')->name('verification.verify');
+        Route::post('/email/resend/code', 'resendVerifyEmail')->name('verification.resend');
         Route::post('/alterar-email', 'updateVerifyEmail')->name('verification.update-email');
     });
 

@@ -22,13 +22,20 @@ class EmailController extends Controller
      */
     public function updateEmail(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email|unique:users,email,' . Auth::id(),
-            'current_password' => 'required|current_password'
-        ]);
-
+        if(!Auth::check()){
+            abort(403);
+        }
+        
+        if(!isset($request->email_confirm)){
+            $request->validate([
+                'email' => 'required|email|unique:users,email,' . Auth::id(),
+                'current_password' => 'required|current_password'
+            ]);
+        }
+        
         $user = Auth::user();
-
+        $newEmail = !isset($request->email_confirm) ? $request->email : $user->email;
+        
         try {
             // Gerar token de confirmação
             $token = Str::random(64);
@@ -36,23 +43,29 @@ class EmailController extends Controller
             
             // Deletar tokens antigos
             DB::table('password_reset_tokens')
-                ->where('email', $tokenKey)
-                ->delete();
+            ->where('email', $tokenKey)
+            ->delete();
             
             DB::table('password_reset_tokens')->insert([
                 'email' => $tokenKey,
-                'token' => $token . '|' . $request->email,
+                'token' => $token . '|' . $newEmail,
                 'created_at' => now()
             ]);
             
-            // Enviar email de confirmação
-            Mail::to($request->email)->queue(new EmailChangeConfirmation($user, $token, $request->email));
+            Mail::to($newEmail)->queue(new EmailChangeConfirmation($user, $token, $newEmail));
             
             \Log::info('Link de confirmação de email enviado', [
                 'user_id' => $user->id,
                 'old_email' => $user->email,
-                'new_email' => $request->email
+                'new_email' => $newEmail
             ]);
+
+            if(isset($request->email_confirm)){
+                return response()->json([
+                    'success' => 'Confirmação de email enviado.',
+                    'message' => 'Enviamos um link de confirmação para seu novo email! O link expira em 24 horas.'
+                ], 200);
+            }
 
             return redirect()->back()
                 ->with('status', 'Enviamos um link de confirmação para seu novo email! O link expira em 24 horas.');
@@ -62,6 +75,13 @@ class EmailController extends Controller
                 'user_id' => $user->id,
                 'error' => $e->getMessage()
             ]);
+
+            if(isset($request->email_confirm)){
+                return response()->json([
+                    'error' => 'Erro ao enviar link de confirmação.',
+                    'message' => 'Erro ao enviar link de confirmação. Tente novamente.'
+                ], 500);
+            }
 
             return redirect()->back()
                 ->withErrors(['error' => 'Erro ao enviar link de confirmação. Tente novamente.']);

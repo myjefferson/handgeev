@@ -216,7 +216,6 @@
                                                 </button>
                                             </div>
                                             
-                                            <!-- Status de confirmação do email -->
                                             <div class="mt-3 flex items-center justify-between">
                                                 <div class="flex items-center space-x-2">
                                                     @if(Auth::user()->email_verified_at)
@@ -233,14 +232,13 @@
                                                 </div>
                                                 
                                                 @unless(Auth::user()->email_verified_at)
-                                                    <form action="{{ route('verification.send') }}" method="POST" class="inline">
-                                                        @csrf
-                                                        <button type="submit" 
-                                                                class="text-cyan-400 hover:text-cyan-300 text-sm flex items-center space-x-1 transition-colors duration-200">
+                                                    <div class="inline">
+                                                        <button type="button"
+                                                                class="email_confirm text-cyan-400 hover:text-cyan-300 text-sm flex items-center space-x-1 transition-colors duration-200">
                                                             <i class="fas fa-paper-plane mr-1"></i>
                                                             <span>Reenviar confirmação</span>
                                                         </button>
-                                                    </form>
+                                                    </div>
                                                 @endunless
                                             </div>
                                             
@@ -405,7 +403,8 @@
 @endpush
 
 @push('scripts')
-    <script>
+    <script type="module">
+        import '/js/modules/alert.js'
         // Inicializar tabs do Flowbite com a primeira aba ativa
         document.addEventListener('DOMContentLoaded', function() {
             // Ativar a primeira aba por padrão
@@ -431,6 +430,40 @@
                     // Adicionar classes ativas na tab clicada
                     this.classList.add('text-teal-400', 'border-teal-400');
                     this.classList.remove('hover:text-gray-300', 'hover:border-gray-300');
+                });
+            });
+
+
+            $('.email_confirm').on('click', function(){
+                const submitBtn = $('.email_confirm');
+                $.ajax({
+                    url: '{{ route("email.update") }}',
+                    method: 'PUT',
+                    data: { 'email_confirm': true },
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    },
+                    success: function(response) {
+                        const originalText = submitBtn.html();
+                        
+                        submitBtn.html('<i class="fas {{ __('profile.processing.icon') }} mr-2"></i> {{ __('profile.processing.text') }}');
+                        submitBtn.prop('disabled', true);
+
+                        alertManager.show('Confirmação de email enviada.', 'success');
+                        
+                        setTimeout(() => {
+                            submitBtn.prop('disabled', false);
+                            submitBtn.html(originalText);
+                        }, 3000);
+                    },
+                    error: function(xhr) {                    
+                        let errorMessage = 'Erro ao enviar email. Tente novamente.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        
+                        alertManager.show(errorMessage, 'error');
+                    }
                 });
             });
         });
@@ -463,12 +496,6 @@
             });
         });
 
-        // Função para navegar entre abas
-        function showTab(tabName) {
-            const tabButton = document.getElementById(tabName + '-tab');
-            if (tabButton) {
-                tabButton.click();
-            }
-        }
+        
     </script>
 @endpush
