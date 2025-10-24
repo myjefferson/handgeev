@@ -328,7 +328,7 @@ class AccountController extends Controller
                 // Calcular dias restantes
                 $daysRemaining = 30;
 
-                Mail::to($user->email)->send(new AccountDeactivatedMail(
+                Mail::to($user->email)->queue(new AccountDeactivatedMail(
                     $user, 
                     now(), 
                     $daysRemaining

@@ -133,7 +133,7 @@ class CollaboratorController extends Controller
             }
 
             // Enviar email sempre - usando queue se configurado
-            Mail::to($request->email)->send(
+            Mail::to($request->email)->queue(
                 new WorkspaceInvitation($collaborator, $workspace, auth()->user())
             );
             
