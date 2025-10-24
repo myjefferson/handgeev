@@ -9,3 +9,11 @@ startCommand = "php artisan serve --host=0.0.0.0 --port=$PORT"
 [deploy.healthcheck]
 path = "/"
 timeout = 300
+
+[services]
+  
+[services.web]
+startCommand = "php artisan serve --host=0.0.0.0 --port=$PORT"
+
+[services.worker]
+startCommand = "php artisan queue:work --tries=3 --timeout=90 --sleep=3 --queue=default"
