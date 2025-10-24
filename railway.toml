@@ -1,11 +1,12 @@
-[build]
-
-[build.commands]
-build = "npm install && npm run build && composer install --optimize-autoloader --no-scripts --no-interaction && php artisan optimize && php artisan view:clear"
-
 [deploy]
+buildCommand = "composer install --no-dev --optimize-autoloader --no-interaction && php artisan optimize:clear && php artisan optimize"
 startCommand = "php artisan serve --host=0.0.0.0 --port=$PORT"
 
-[deploy.healthcheck]
-path = "/"
-timeout = 300
+[[services]]
+name = "web"
+type = "web"
+
+[[services]]
+name = "worker"
+type = "worker"
+startCommand = "php artisan queue:work --sleep=3 --tries=3 --max-time=3600"

@@ -107,7 +107,7 @@ class UserController extends Controller
             }
 
             // Enviar email de verificação
-            Mail::to($user->email)->send(new VerificationEmail($user, $verificationCode));
+            Mail::to($user->email)->queue(new VerificationEmail($user, $verificationCode));
 
             // Logar o usuário
             Auth::login($user);
