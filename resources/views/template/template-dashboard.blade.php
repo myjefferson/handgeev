@@ -123,7 +123,12 @@
         </div>
 
         <!-- Mobile sidebar toggle -->
-        <button data-drawer-target="cta-button-sidebar" data-drawer-toggle="cta-button-sidebar" aria-controls="cta-button-sidebar" type="button" class="fixed top-2 left-4 z-50 inline-flex items-center py-1 px-2 mt-2 text-sm text-gray-400 rounded-lg md:hidden hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-600 teal-glow">
+        <button 
+            data-drawer-target="cta-button-sidebar" 
+            data-drawer-toggle="cta-button-sidebar" 
+            aria-controls="cta-button-sidebar" 
+            type="button" 
+            class="fixed top-2 left-4 z-50 inline-flex items-center py-1 px-2 mt-2 text-sm text-gray-400 rounded-lg md:hidden hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-600 bg-slate-700">
             <span class="sr-only">{{ __('dashboard.navigation.toggle') }}</span>
             <i class="fas fa-bars text-lg"></i>
         </button>
@@ -247,7 +252,7 @@
 
         <!-- Main content -->
         <div class="main-content bg-gray-900 min-h-screen p-5">
-            <div class="backdrop-blur-sm rounded-2xl p-2 sm:p-3 md:p-5 lg:p-8 xl:p-8 animate-fade-in mt-5">
+            <div class="backdrop-blur-sm rounded-2xl p-1 sm:p-3 md:p-5 lg:p-8 xl:p-8 animate-fade-in mt-5">
                 @if (Auth::check())
                     @yield('content_dashboard')
                 @else

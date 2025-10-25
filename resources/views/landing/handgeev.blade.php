@@ -110,13 +110,14 @@
 
 @section('content_site')
     <!-- Header/Navigation -->
-    <header class="fixed w-full bg-slate-900 bg-opacity-90 backdrop-blur-sm z-50 border-b border-slate-700">
-        <div class="container mx-auto px-4 py-4">
+    <header class="fixed w-full bg-slate-900 bg-opacity-95 z-50 border-b border-slate-700">
+        <div class="container mx-auto px-2 sm:px-4 py-4">
             <div class="flex justify-between items-center">
                 <div class="flex items-center">
                     <img class="w-40" src="{{ asset('assets/images/logo.png') }}" alt="Handgeev">
                 </div>
                 
+                <!-- Menu Desktop -->
                 <nav class="hidden md:flex space-x-10">
                     <a href="#features" class="nav-link text-slate-300 hover:text-teal-400 transition-colors">
                         {{ __('site.navigation.features') }}
@@ -136,13 +137,35 @@
                     <a href="{{ route('login.show') }}" class="hidden md:inline-block text-teal-400 hover:text-teal-300 font-medium">
                         {{ __('site.navigation.login') }}
                     </a>
-                    <a href="#pricing" class="bg-teal-500 hover:bg-teal-400 text-slate-900 px-5 py-2 rounded-lg font-medium transition-colors teal-glow-hover">
+                    <a href="#pricing" class="text-[13px] sm:text-[16px] bg-teal-500 hover:bg-teal-400 text-slate-900 px-2 sm:px-5 py-1 sm:py-2 rounded-lg font-medium transition-colors teal-glow-hover">
                         {{ __('site.navigation.get_started') }}
                     </a>
                     
-                    <button class="md:hidden text-slate-300">
-                        <i class="fas fa-bars"></i>
+                    <!-- Botão do menu mobile com data attributes do Flowbite -->
+                    <button data-collapse-toggle="mobile-menu" type="button" class="md:hidden text-slate-300 p-2" aria-controls="mobile-menu" aria-expanded="false">
+                        <i class="fas fa-bars text-xl"></i>
                     </button>
+                </div>
+            </div>
+
+            <!-- Menu Mobile com data attribute do Flowbite -->
+            <div id="mobile-menu" class="hidden md:hidden mt-4 px-3 py-4 border-t border-slate-700">
+                <div class="flex flex-col space-y-4">
+                    <a href="#features" class="nav-link text-slate-300 hover:text-teal-400 transition-colors py-2">
+                        {{ __('site.navigation.features') }}
+                    </a>
+                    <a href="#how-it-works" class="nav-link text-slate-300 hover:text-teal-400 transition-colors py-2">
+                        {{ __('site.navigation.how_it_works') }}
+                    </a>
+                    <a href="#pricing" class="nav-link text-slate-300 hover:text-teal-400 transition-colors py-2">
+                        {{ __('site.navigation.pricing') }}
+                    </a>
+                    <a href="#use-cases" class="nav-link text-slate-300 hover:text-teal-400 transition-colors py-2">
+                        {{ __('site.navigation.use_cases') }}
+                    </a>
+                    <a href="{{ route('login.show') }}" class="text-teal-400 hover:text-teal-300 font-medium py-2">
+                        {{ __('site.navigation.login') }}
+                    </a>
                 </div>
             </div>
         </div>

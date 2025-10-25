@@ -63,7 +63,7 @@
 @endpush
 
 @section('content_dashboard')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="max-w-7xl mx-auto p-0 sm:p-0 md:p-6">
     <!-- Header do Perfil -->
     <a href="{{ url()->previous() }}" class="block w-max text-sm text-gray-300 hover:text-teal-400 transition-colors mb-8">
         <i class="fas fa-arrow-left mr-1"></i> Voltar
@@ -123,7 +123,7 @@
     <!-- Navegação por Tabs -->
     <div class="bg-slate-800 rounded-xl border border-slate-700 mb-8">
         <div class="border-b border-slate-700">
-            <nav class="flex space-x-8 px-6" aria-label="Tabs">
+            <nav class="flex flex-col sm:flex-col space-x-8 px-6" aria-label="Tabs">
                 <button onclick="switchTab('overview')" 
                     class="tab-button py-4 px-1 border-b-2 font-medium text-sm transition-colors border-blue-500 text-white">
                     <i class="fas fa-chart-bar mr-2"></i>Visão Geral

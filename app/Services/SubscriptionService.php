@@ -256,6 +256,24 @@ class SubscriptionService
         }
     }
 
+    public function getInvoices($user)
+    {
+        try {
+            if (!$user->stripe_id) {
+                return collect([]); // Retorna coleção vazia se não tem stripe_id
+            }
+            
+            return $user->invoices();
+        } catch (\Stripe\Exception\InvalidRequestException $e) {
+            if ($e->getHttpStatus() === 404) {
+                // Customer não existe no Stripe, limpar o stripe_id
+                $user->update(['stripe_id' => null]);
+                return collect([]);
+            }
+            throw $e;
+        }
+    }
+
     /**
      * Obter próxima fatura estimada
      */

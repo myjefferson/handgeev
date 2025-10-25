@@ -5,7 +5,7 @@
 
 @section('content_dashboard')
 <div class="min-h-screen">
-    <div class="container mx-auto px-4 max-w-7xl">
+    <div class="max-w-7xl mx-auto p-0 sm:p-0 md:p-6">
         
         <!-- Header -->
         <div class="flex justify-between items-center mb-8">

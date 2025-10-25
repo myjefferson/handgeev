@@ -34,7 +34,7 @@ class EmailController extends Controller
         }
         
         $user = Auth::user();
-        $newEmail = !isset($request->email_confirm) ? $request->email : $user->email;
+        $newEmail = isset($request->email_confirm) ? $request->email_confirm : $request->email;
         
         try {
             // Gerar token de confirmação
@@ -318,6 +318,8 @@ class EmailController extends Controller
             if ($user->hasVerifiedEmail()) {
                 return redirect()->route('dashboard.home');
             }
+
+            $this->sendVerificationCode($user);
     
             return view('pages.auth.verify-email', [
                 'email' => $user->email

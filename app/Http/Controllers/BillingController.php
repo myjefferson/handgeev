@@ -18,9 +18,11 @@ class BillingController extends Controller
     public function index()
     {
         $user = Auth::user();
+        //customer válido no Stripe
+        $this->ensureStripeCustomer($user);
         $planInfo = $this->subscriptionService->getUserPlanInfo($user);
         $paymentMethod = $this->subscriptionService->getPaymentMethod($user);
-        $invoices = $user->invoices();
+        $invoices = $this->subscriptionService->getInvoices($user);
         $upcomingInvoice = $this->subscriptionService->getUpcomingInvoice($user);
         $subscriptionHistory = $this->subscriptionService->getSubscriptionHistory($user);
 
@@ -55,6 +57,23 @@ class BillingController extends Controller
             'subscriptionHistory',
             'availablePlans'
         ));
+    }
+
+    private function ensureStripeCustomer($user)
+    {
+        if (!$user->stripe_id) {
+            $user->createAsStripeCustomer();
+            return;
+        }
+        
+        try {
+            \Stripe\Customer::retrieve($user->stripe_id);
+        } catch (\Stripe\Exception\InvalidRequestException $e) {
+            if ($e->getHttpStatus() === 404) {
+                $user->stripe_id = null;
+                $user->createAsStripeCustomer();
+            }
+        }
     }
 
     public function addPaymentMethod(Request $request)

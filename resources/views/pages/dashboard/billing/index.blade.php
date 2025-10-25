@@ -4,7 +4,7 @@
 
 @section('content_dashboard')
 <div class="min-h-screen bg-slate-900">
-    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto p-0 sm:p-0 md:p-6">
         
         <!-- Header -->
         <div class="mb-8">

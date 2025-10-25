@@ -46,7 +46,7 @@
 
 @section('content_dashboard')
     <div class="min-h-screen bg-slate-900 py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto p-0 sm:p-0 md:p-6">
             <!-- Cabeçalho -->
             <div class="mb-8">
                 <h1 class="text-3xl font-bold text-white mb-2">{{ __('profile.header.title') }}</h1>
@@ -132,21 +132,21 @@
                     <div class="bg-slate-800 rounded-2xl shadow-lg border border-slate-700">
                         <!-- Abas Flowbite -->
                         <div class="border-b border-slate-700">
-                            <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="default-tab" data-tabs-toggle="#default-tab-content" role="tablist">
-                                <li class="me-2" role="presentation">
-                                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="profile-tab" data-tabs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="false">
+                            <ul class="flex flex-col sm:flex-row -mb-px text-sm font-medium text-center" id="default-tab" data-tabs-toggle="#default-tab-content" role="tablist">
+                                <li class="me-2 w-full" role="presentation">
+                                    <button class="inline-block p-4 border-b-2 rounded-t-lg w-full" id="profile-tab" data-tabs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="false">
                                         <i class="fas {{ __('profile.tabs.personal_info.icon') }} mr-2"></i>
                                         {{ __('profile.tabs.personal_info.label') }}
                                     </button>
                                 </li>
-                                <li class="me-2" role="presentation">
-                                    <button class="inline-block p-4 border-b-2 rounded-t-lg hover:text-gray-300 hover:border-gray-300" id="password-tab" data-tabs-target="#password" type="button" role="tab" aria-controls="password" aria-selected="false">
+                                <li class="me-2 w-full" role="presentation">
+                                    <button class="inline-block p-4 border-b-2 rounded-t-lg hover:text-gray-300 hover:border-gray-300 w-full" id="password-tab" data-tabs-target="#password" type="button" role="tab" aria-controls="password" aria-selected="false">
                                         <i class="fas {{ __('profile.tabs.password.icon') }} mr-2"></i>
                                         {{ __('profile.tabs.password.label') }}
                                     </button>
                                 </li>
-                                <li class="me-2" role="presentation">
-                                    <button class="inline-block p-4 border-b-2 rounded-t-lg hover:text-gray-300 hover:border-gray-300" id="account-tab" data-tabs-target="#account" type="button" role="tab" aria-controls="account" aria-selected="false">
+                                <li class="me-2 w-full" role="presentation">
+                                    <button class="inline-block p-4 border-b-2 rounded-t-lg hover:text-gray-300 hover:border-gray-300 w-full" id="account-tab" data-tabs-target="#account" type="button" role="tab" aria-controls="account" aria-selected="false">
                                         <i class="fas fa-cog mr-2"></i>
                                         Configurações da Conta
                                     </button>

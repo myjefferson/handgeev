@@ -91,8 +91,8 @@
 
 @section('content_dashboard')
     <!-- Header -->
-    <header>
-        <div class="max-w-7xl mx-auto px-3 sm:px-5 lg:px-7 py-4">
+    <div class="max-w-7xl mx-auto p-0 sm:p-0 md:p-6">
+        <header class="mb-8">
             <div class="flex items-center justify-between">
                 <div class="flex items-center">
                     <a href="{{ route('workspace.show', ['id' => $workspace->id]) }}" class="mr-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
@@ -104,40 +104,39 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </header>
+        </header>
 
-    <!-- Navegação por Abas -->
-    <div class="max-w-7xl mx-auto px-3 sm:px-5 lg:px-7 border-b border-gray-200 dark:border-gray-700">
-        <div class="flex space-x-8">
-            <button class="tab-button relative py-4 px-1 text-sm font-medium text-gray-700 dark:text-gray-300" 
-                    data-tab="tab-overview">
-                <i class="fas fa-chart-bar mr-2"></i>Visão Geral
-                <div class="tab-border absolute bottom-0 left-0 w-full h-0.5 bg-teal-500"></div>
-            </button>
-            <button class="tab-button relative py-4 px-1 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300" 
-                    data-tab="tab-security">
-                <i class="fas fa-shield-alt mr-2"></i>Segurança & API
-            </button>
-            <button class="tab-button relative py-4 px-1 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300" 
-                    data-tab="tab-access">
-                <i class="fas fa-users mr-2"></i>Controle de Acesso @free @include("components.badges.upgrade-badge")@endfree
-            </button>
+        <!-- Navegação por Abas -->
+        <div class="border-b border-gray-200 dark:border-gray-700 mb-8">
+            <div class="flex space-x-8">
+                <button class="tab-button relative py-4 px-1 text-sm font-medium text-gray-700 dark:text-gray-300" 
+                        data-tab="tab-overview">
+                    <i class="fas fa-chart-bar mr-2"></i>Visão Geral
+                    <div class="tab-border absolute bottom-0 left-0 w-full h-0.5 bg-teal-500"></div>
+                </button>
+                <button class="tab-button relative py-4 px-1 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300" 
+                        data-tab="tab-security">
+                    <i class="fas fa-shield-alt mr-2"></i>Segurança & API
+                </button>
+                <button class="tab-button relative py-4 px-1 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300" 
+                        data-tab="tab-access">
+                    <i class="fas fa-users mr-2"></i>Controle de Acesso @free @include("components.badges.upgrade-badge")@endfree
+                </button>
+            </div>
         </div>
+
+        {{-- Conteúdo Principal --}}
+        
+            @include('components.alerts.alert')
+            {{-- Aba 1: Visão geral --}}
+            @include('components.tabs.workspace-settings-overview-tab', $workspace)
+
+            <!-- Aba 2: Segurança & API -->
+            @include('components.tabs.workspace-settings-security-tab', $workspace)
+
+            <!-- Aba 2: Controle de Acesso -->
+            @include('components.tabs.workspace-settings-control-access-tab', [$workspace, $hasPasswordWorkspace])
     </div>
-
-    {{-- Conteúdo Principal --}}
-    <main class="max-w-7xl mx-auto px-3 sm:px-5 lg:px-7 py-8">
-        @include('components.alerts.alert')
-        {{-- Aba 1: Visão geral --}}
-        @include('components.tabs.workspace-settings-overview-tab', $workspace)
-
-        <!-- Aba 2: Segurança & API -->
-        @include('components.tabs.workspace-settings-security-tab', $workspace)
-
-        <!-- Aba 2: Controle de Acesso -->
-        @include('components.tabs.workspace-settings-control-access-tab', [$workspace, $hasPasswordWorkspace])
-    </main>
 @endsection
 
 @push('modals')

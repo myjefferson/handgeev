@@ -5,7 +5,7 @@
 
 @section('content_dashboard')
     <div class="min-h-screen">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+        <div class="max-w-4xl mx-auto p-0 sm:p-0 md:p-6 py-2">
 
             <a href="{{ route('workspaces.index') }}" class="block w-max text-sm text-gray-300 hover:text-teal-400 transition-colors mb-8">
                 <i class="fas {{ __('import.breadcrumb.icon') }} mr-1"></i> {{ __('import.breadcrumb.back') }}

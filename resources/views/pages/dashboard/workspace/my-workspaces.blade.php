@@ -43,52 +43,50 @@
 @endpush
 
 @section('content_dashboard')
-    <div class="min-h-screen">
+    <div class="min-h-screen max-w-7xl mx-auto">
         <!-- Header -->
-        <div>
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center py-6">
-                    <div>
-                        <h1 class="text-2xl font-bold text-white">Meus Workspaces</h1>
-                        <p class="text-slate-400 mt-1">Gerencie seus workspaces</p>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        @if (auth()->user()->canCreateWorkspace())
-                            <button id="modal-add-workspace-btn" data-modal-target="modal-add-workspace" data-modal-toggle="modal-add-workspace"
-                                class="flex items-center px-4 py-2 text-white rounded-lg bg-teal-500 hover:bg-teal-700 transition-colors teal-glow-hover">
-                                <i class="fas fa-plus mr-2"></i>
-                                Novo Workspace
-                            </button>
-                        @else
-                            <div>
-                                @include('components.upsell.button-upgrade-pro', [
-                                    'title' => 'Workspaces? Upgrade to',
-                                    'iconPrincipal' => false,
-                                    'iconLeft' => '<i class="fas fa-plus mx-2"></i>'
-                                ])
-                            </div>
-                        @endif
-                        {{-- Botão de Importação apenas para Start, Pro, Premium e Admin --}}
-                        @if(auth()->user()->isStart() || auth()->user()->isPro() || auth()->user()->isPremium() || auth()->user()->isAdmin())
-                            <a href="{{ route('workspace.import.form') }}" 
-                                class="flex items-center px-4 py-2 text-white rounded-lg bg-slate-600 hover:bg-slate-700 transition-colors purple-glow-hover">
-                                <i class="fas fa-upload mr-2"></i>
-                                Importar
-                            </a>
-                        @else
+        <div class="p-0 sm:p-0 md:p-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-6">
+                <div class="w-full sm:w-auto">
+                    <h1 class="text-xl sm:text-2xl font-bold text-white">Meus Workspaces</h1>
+                    <p class="text-slate-400 mt-1 text-sm sm:text-base">Gerencie seus workspaces</p>
+                </div>
+                <div class="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full md:w-max">
+                    @if (auth()->user()->canCreateWorkspace())
+                        <button id="modal-add-workspace-btn" data-modal-target="modal-add-workspace" data-modal-toggle="modal-add-workspace"
+                            class="flex items-center justify-center px-4 py-2 text-white rounded-lg bg-teal-500 hover:bg-teal-700 transition-colors teal-glow-hover w-full md:w-auto">
+                            <i class="fas fa-plus mr-2"></i>
+                            <span>Novo Workspace</span>
+                        </button>
+                    @else
+                        <div class="w-full md:w-auto">
+                            @include('components.upsell.button-upgrade-pro', [
+                                'title' => 'Workspaces? Upgrade to',
+                                'iconPrincipal' => false,
+                                'iconLeft' => '<i class="fas fa-plus mx-2"></i>'
+                            ])
+                        </div>
+                    @endif
+                    {{-- Botão de Importação apenas para Start, Pro, Premium e Admin --}}
+                    @if(auth()->user()->isStart() || auth()->user()->isPro() || auth()->user()->isPremium() || auth()->user()->isAdmin())
+                        <a href="{{ route('workspace.import.form') }}" 
+                            class="flex items-center justify-center px-4 py-2 text-white rounded-lg bg-slate-600 hover:bg-slate-700 transition-colors purple-glow-hover w-full md:w-auto">
+                            <i class="fas fa-upload mr-2"></i>
+                            <span>Importar</span>
+                        </a>
+                    @else
+                        <div class="w-full md:w-auto">
                             @include('components.upsell.button-upgrade-pro', [
                                 'title' => 'Import', 
                                 'iconPrincipal' => false,
                                 'iconLeft' => '<i class="fas fa-upload mx-2"></i>'
                             ])
-                        @endif
-                    </div>
+                        </div>
+                    @endif
                 </div>
             </div>
-        </div>
+        
 
-        <!-- Main Content -->
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <!-- Stats Cards -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
@@ -151,21 +149,23 @@
                         </div>
 
                         <!-- Filtros -->
-                        <div class="flex gap-2">
-                            <select id="filter-status" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 px-3 py-2">
-                                <option value="all">Todos</option>
-                                <option value="active">API Ativa</option>
-                                <option value="inactive">API Inativa</option>
-                                <option value="public">Públicos</option>
-                                <option value="private">Privados</option>
-                            </select>
+                        <div class="flex flex-col sm:flex-initial md:flex-row gap-2">
+                            <div class="grid sm:grid md:block space-x-2 grid-cols-2 ">
+                                <select id="filter-status" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 px-3 py-2">
+                                    <option value="all">Todos</option>
+                                    <option value="active">API Ativa</option>
+                                    <option value="inactive">API Inativa</option>
+                                    <option value="public">Públicos</option>
+                                    <option value="private">Privados</option>
+                                </select>
 
-                            <select id="filter-sort" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 px-3 py-2">
-                                <option value="newest">Mais Recentes</option>
-                                <option value="oldest">Mais Antigos</option>
-                                <option value="name_asc">A-Z</option>
-                                <option value="name_desc">Z-A</option>
-                            </select>
+                                <select id="filter-sort" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 px-3 py-2">
+                                    <option value="newest">Mais Recentes</option>
+                                    <option value="oldest">Mais Antigos</option>
+                                    <option value="name_asc">A-Z</option>
+                                    <option value="name_desc">Z-A</option>
+                                </select>
+                            </div>
 
                             <button onclick="window.workspaceManager.resetFilters()" 
                                     class="px-3 py-2 text-sm text-slate-400 hover:text-white border border-slate-600 rounded-lg hover:bg-slate-700 transition-colors">
@@ -243,6 +243,7 @@
             </div>
         </div>
     </div>
+</div>
 
 @endsection
 

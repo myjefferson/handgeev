@@ -4,16 +4,16 @@
 @section('description', 'Início do HandGeev')
 
 @section('content_dashboard')
-    <div class="max-w-7xl mx-auto min-h-screen p-6">
+    <div class="max-w-7xl mx-auto min-h-screen p-0 sm:p-0 md:p-6">
 
         @include('components.alerts.alert')
         
         <!-- Header com Saudação Personalizada -->
         <div class="mb-8">
-            <h1 class="text-3xl font-bold text-white mb-2">
+            <h1 class="text-2xl sm:text-3xl md:text-3xl font-bold text-white mb-2">
                 Olá, {{ auth()->user()->name }}! 👋
             </h1>
-            <p class="text-gray-400">
+            <p class="text-sm sm:text-sm md:text-lg text-gray-400">
                 {{ $greetingMessage }}
             </p>
             <div class="w-20 h-1 bg-teal-400 rounded-full mt-3"></div>
