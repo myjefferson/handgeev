@@ -98,7 +98,7 @@
     </div>
 @endsection
 
-@push('scripts')
+@push('scripts_end')
     <script>
         $(document).ready(function () {
             // Função para mostrar mensagens

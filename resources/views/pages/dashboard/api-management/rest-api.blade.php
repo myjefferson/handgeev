@@ -13,12 +13,12 @@
                 <h1 class="text-3xl font-bold text-white">API REST - {{ $workspace->title }}</h1>
                 <p class="text-slate-400 mt-2">Gerencie e integre seus dados através de API</p>
             </div>
-            <a href="{{ route('workspace.show', $workspace->id) }}" 
+            <a href="{{ url()->previous() }}" 
                class="flex items-center text-cyan-400 hover:text-cyan-300 transition-colors">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
-                Voltar ao Workspace
+                Voltar
             </a>
         </div>
 

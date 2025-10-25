@@ -158,7 +158,7 @@
     </div>
 @endsection
 
-@push('scripts')
+@push('scripts_end')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Funcionalidade de pesquisa

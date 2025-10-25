@@ -217,7 +217,7 @@
     @include('components.modals.modal-admin-editar-usuario')
 @endpush
 
-@push('scripts')
+@push('scripts_end')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // --- Lógica do Modal de Edição ---

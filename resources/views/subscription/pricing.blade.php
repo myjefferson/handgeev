@@ -567,7 +567,7 @@
     @include('components.footer.footer')
 @endsection
 
-@push('scripts')
+@push('scripts_end')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const planButtons = document.querySelectorAll('.teal-button, .outline-button, .purple-button, .-button');

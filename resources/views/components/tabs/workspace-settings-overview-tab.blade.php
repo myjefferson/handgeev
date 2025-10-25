@@ -1,3 +1,7 @@
+@push('scripts_start')
+    <script type="module" src="{{ asset('js/modules/api-management/api-management-ajax.js') }}"></script>
+@endpush
+
 <div id="tab-overview" class="hidden tab-content">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Coluna principal -->
@@ -271,14 +275,12 @@
                                 </p>
                             </div>
                         </div>
-                        <form action="{{ route('workspace.api.access.toggle', $workspace) }}" method="POST" class="flex items-center">
-                            @csrf @method('PUT')
-                            <button type="submit" class="relative inline-flex items-center h-6 rounded-full w-11 
-                                @if($workspace->api_enabled) bg-blue-500 @else bg-gray-300 dark:bg-gray-600 @endif transition-colors">
-                                <span class="inline-block w-4 h-4 transform bg-white rounded-full transition 
-                                    @if($workspace->api_enabled) translate-x-6 @else translate-x-1 @endif" />
-                            </button>
-                        </form>
+                        <!-- Botão Ativar/Inativar -->
+                        <button onclick="toggleApiStatus(`{{ route('management.api.access.toggle', $workspace->id) }}`, {{ !$workspace->api_enabled }})" class="relative inline-flex items-center h-6 rounded-full w-11 
+                            @if($workspace->api_enabled) bg-blue-500 @else bg-gray-300 dark:bg-gray-600 @endif transition-colors">
+                            <span class="inline-block w-4 h-4 transform bg-white rounded-full transition 
+                                @if($workspace->api_enabled) translate-x-6 @else translate-x-1 @endif" />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -361,6 +363,7 @@
 
 @push('modals')
     @include('components.modals.modal-merge-confirmation')
+    @include('components.modals.modal-confirm')
 @endpush
 
 <script type="module">
@@ -372,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const topicsCount = {{ $workspace->topics->count() }};
     const fieldsCount = {{ $workspace->getFieldsCountAttribute() }};
     const updateAction = '{{ route("workspace.update", $workspace->id) }}';
-    const mergeAction = " {{route('workspace.merge-topics', $workspace->id)}} ";
+    const mergeAction = " {{ route('workspace.merge-topics', $workspace->id) }} ";
 
     // Short helpers
     const $ = sel => document.querySelector(sel);

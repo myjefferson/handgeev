@@ -170,7 +170,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{route('workspaces.index')}}" class="nav-item button-item flex items-center justify-between px-5 py-3 text-gray-300 rounded-lg group {{ request()->routeIs('workspaces.index') ? 'active' : '' }}">
+                        <a href="{{route('workspaces.show')}}" class="nav-item button-item flex items-center justify-between px-5 py-3 text-gray-300 rounded-lg group {{ request()->routeIs('workspaces.show') ? 'active' : '' }}">
                             <div class="flex items-center">
                                 <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
                                     <i class="fas fa-layer-group text-teal-400"></i>
@@ -180,6 +180,16 @@
                             {{-- <div class="bg-teal-800 h-5 w-5 flex justify-center items-center rounded-full">
                                 <span class="text-sm font-semibold">{{ auth()->user()->workspaces()->count() }}</span>
                             </div> --}}
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('management.apis.show') }}" class="nav-item button-item flex items-center justify-between px-5 py-3 text-gray-300 rounded-lg group {{ request()->routeIs('my-apis.index') ? 'active' : '' }}">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mr-3">
+                                    <i class="fas fa-code text-teal-400"></i>
+                                </div>
+                                <span class="font-medium">Minhas APIs</span>
+                            </div>
                         </a>
                     </li>
                     <li>
@@ -250,30 +260,33 @@
             </div>
         </aside>
 
-        <!-- Main content -->
-        <div class="main-content bg-gray-900 min-h-screen p-5">
-            <div class="backdrop-blur-sm rounded-2xl p-1 sm:p-3 md:p-5 lg:p-8 xl:p-8 animate-fade-in mt-5">
-                @if (Auth::check())
-                    @yield('content_dashboard')
-                @else
-                    <div class="flex items-center justify-center h-64">
-                        <div class="text-center">
-                            <i class="fas fa-exclamation-triangle text-yellow-400 text-4xl mb-4"></i>
-                            <p class="text-gray-400">{{ __('dashboard.auth.login_required') }}</p>
-                            <a href="{{ route('login.show') }}" class="inline-block mt-4 px-4 py-2 bg-teal-400 text-slate-900 rounded-lg font-medium hover:bg-teal-300 transition-colors">
-                                {{ __('dashboard.auth.login_button') }}
-                            </a>
+        {{-- Stack para scripts iniciais --}}
+        @stack('scripts_start')
+
+            <!-- Main content -->
+            <div class="main-content bg-gray-900 min-h-screen p-5">
+                <div class="backdrop-blur-sm rounded-2xl p-1 sm:p-3 md:p-5 lg:p-8 xl:p-8 animate-fade-in mt-5">
+                    @if (Auth::check())
+                        @yield('content_dashboard')
+                    @else
+                        <div class="flex items-center justify-center h-64">
+                            <div class="text-center">
+                                <i class="fas fa-exclamation-triangle text-yellow-400 text-4xl mb-4"></i>
+                                <p class="text-gray-400">{{ __('dashboard.auth.login_required') }}</p>
+                                <a href="{{ route('login.show') }}" class="inline-block mt-4 px-4 py-2 bg-teal-400 text-slate-900 rounded-lg font-medium hover:bg-teal-300 transition-colors">
+                                    {{ __('dashboard.auth.login_button') }}
+                                </a>
+                            </div>
                         </div>
-                    </div>
-                @endif
+                    @endif
+                </div>
             </div>
-        </div>
 
         {{-- Stack para modais --}}
         @stack('modals')
 
-        {{-- Stack para scripts --}}
-        @stack('scripts')
+        {{-- Stack para scripts finais --}}
+        @stack('scripts_end')
 
         @include('components.modals.modal-input-text')
 

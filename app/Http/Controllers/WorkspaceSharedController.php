@@ -37,7 +37,7 @@ class WorkspaceSharedController extends Controller
 
         $rateLimitInfo = RateLimitService::getRateLimitStatus($user);
 
-        return view('pages.dashboard.workspace-shared.interface-api', compact(
+        return view('pages.dashboard.api-management.interface-api', compact(
             'user', 
             'workspace', 
             'rateLimitInfo',
@@ -64,7 +64,7 @@ class WorkspaceSharedController extends Controller
 
             $apiKey = $workspace->workspace_key_api;
 
-            return view('pages.dashboard.workspace-shared.rest-api', compact(
+            return view('pages.dashboard.api-management.rest-api', compact(
                 'workspace',
                 'apiKey',
             ));
@@ -96,7 +96,7 @@ class WorkspaceSharedController extends Controller
             return redirect()->route('workspace.api-rest.show', $dataKey);
         }
 
-        return view('pages.dashboard.workspace-shared.workspace-password', compact('workspace', 'user', 'globalHash', 'workspaceKey'));
+        return view('pages.dashboard.api-management.workspace-password', compact('workspace', 'user', 'globalHash', 'workspaceKey'));
     }
 
     /**

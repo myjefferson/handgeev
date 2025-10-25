@@ -146,7 +146,7 @@ class CheckPlanLimits
         $dashboardRoutes = [
             'dashboard.home',
             'dashboard.overview',
-            'workspaces.index',
+            'workspaces.show',
             'workspaces.show'
         ];
 

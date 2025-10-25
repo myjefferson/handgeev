@@ -7,7 +7,7 @@
     <div class="min-h-screen">
         <div class="max-w-4xl mx-auto p-0 sm:p-0 md:p-6 py-2">
 
-            <a href="{{ route('workspaces.index') }}" class="block w-max text-sm text-gray-300 hover:text-teal-400 transition-colors mb-8">
+            <a href="{{ route('workspaces.show') }}" class="block w-max text-sm text-gray-300 hover:text-teal-400 transition-colors mb-8">
                 <i class="fas {{ __('import.breadcrumb.icon') }} mr-1"></i> {{ __('import.breadcrumb.back') }}
             </a>
 
@@ -127,7 +127,7 @@
 
                     <!-- Botões de Ação -->
                     <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-600">
-                        <a href="{{ route('workspaces.index') }}" 
+                        <a href="{{ route('workspaces.show') }}" 
                         class="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                             {{ __('import.forms.buttons.cancel') }}
                         </a>
@@ -159,7 +159,7 @@
     </div>
     @endsection
 
-    @push('scripts')
+    @push('scripts_end')
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const fileInput = document.getElementById('workspace_file');

@@ -402,7 +402,7 @@
     @include('components.modals.modal-delete-account')
 @endpush
 
-@push('scripts')
+@push('scripts_end')
     <script type="module">
         import '/js/modules/alert.js'
         // Inicializar tabs do Flowbite com a primeira aba ativa

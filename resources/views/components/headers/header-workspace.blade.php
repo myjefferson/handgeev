@@ -56,7 +56,7 @@
     </div>
 </div>
 
-@push('scripts')
+@push('scripts_end')
     <script>
     document.addEventListener('DOMContentLoaded', function() {
 

@@ -487,7 +487,7 @@
 </div>
 @endpush
 
-@push('scripts')
+@push('scripts_end')
 <script>
     // Sistema de Tabs
     function switchTab(tabName) {

@@ -90,21 +90,6 @@ class ApiDomainController extends Controller
     }
 
     /**
-     * Ativar/desativar API
-     */
-    public function toggleAccessApi(Workspace $workspace)
-    {
-        try {
-            $workspace->update(['api_enabled' => !$workspace->api_enabled]);
-            
-            $status = $workspace->api_enabled ? 'ativada' : 'desativada';
-            return back()->with('success', "API {$status} com sucesso!");
-        } catch (\Exception $e) {
-            return back()->with('error', 'Erro ao alterar status da API.');
-        }
-    }
-
-    /**
      * Toggle para controle de restrição por domínio
      */
     public function toggleDomainRestriction(Request $request, Workspace $workspace)

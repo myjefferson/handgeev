@@ -20,6 +20,7 @@ use App\Http\Controllers\BillingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\LanguageController;
+use App\Http\Controllers\ApiManagementController;
 
 use App\Http\Controllers\StripeWebhookController;
 
@@ -99,7 +100,7 @@ Route::middleware([
     'check.user.suspended'
 ])->group(function(){
     Route::controller(WorkspaceController::class)->group(function(){
-        Route::get('/workspaces', 'indexWorkspaces')->name('workspaces.index');
+        Route::get('/workspaces', 'indexWorkspaces')->name('workspaces.show');
         Route::get('/workspace/{id}', 'index')->name('workspace.show');
         Route::post('/workspace/store', 'store')->name('workspace.store')->middleware('throttle:create-resources');
         Route::put('/workspace/{id}/update', 'update')->name('workspace.update');
@@ -219,6 +220,11 @@ Route::middleware([
         Route::post('/billing/resume', 'resumeSubscription')->name('billing.resume');
     });
 
+    Route::controller(ApiManagementController::class)->group(function () {
+        Route::get('/dashboard/my-apis', 'showMyApis')->name('management.apis.show');
+        Route::put('/access/api/{workspace}/toggle', 'toggleAccessApi')->name('management.api.access.toggle');
+    });
+
     // Rotas de Administração
     Route::prefix('admin')->middleware(['role:admin'])->group(function () {
         Route::controller(AdminController::class)->group(function () {
@@ -244,7 +250,6 @@ Route::middleware([
             Route::delete('/domains/remove', 'removeDomain')->name('workspace.api.domains.remove');
             Route::put('/domain-restriction/toggle', 'toggleDomainRestriction')->name('workspace.api.domain-restriction.toggle');
             Route::put('/domains/activate', 'activateDomain')->name('workspace.api.domains.activate');
-            Route::put('/access/toggle', 'toggleAccessApi')->name('workspace.api.access.toggle');
             Route::put('/jwt-requirement/toggle', 'toggleJwtRequirement')->name('workspace.api.jwt-requirement.toggle');
         });
     });

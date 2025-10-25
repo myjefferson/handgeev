@@ -13,7 +13,7 @@
 
 @section('content_dashboard')
     <div class="max-w-full sm:max-w-6xl md:max-w-7xl xl:max-w-7xl mx-auto">
-        <a href="{{ route('workspaces.index') }}" class="block w-max text-sm text-gray-300 hover:text-teal-400 transition-colors mb-8">
+        <a href="{{ route('workspaces.show') }}" class="block w-max text-sm text-gray-300 hover:text-teal-400 transition-colors mb-8">
             <i class="fas fa-arrow-left mr-1"></i> {{ __('workspace.navigation.back_to_workspaces') }}
         </a>
         <div class="flex bg-slate-900 rounded-xl min-h-dvh">
@@ -213,7 +213,7 @@
     @include('components.modals.modal-export-topic')
 @endpush
 
-@push('scripts')
+@push('scripts_end')
     <script>
         window.topicsWithLimits = @json($topicsWithLimits ?? []);
         window.globalCanAddMoreFields = @json($globalCanAddMoreFields ?? true);

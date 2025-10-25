@@ -329,7 +329,7 @@
     </div>
 @endsection
 
-@push('scripts')
+@push('scripts_end')
     <script>
         // Dados de exemplo (em produção viriam do backend)
         const articles = [

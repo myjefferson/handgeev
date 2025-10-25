@@ -97,7 +97,7 @@
     @include('components.footer.footer')
 @endsection
 
-@push('scripts')
+@push('scripts_end')
     <script>
         function togglePassword() {
             const passwordInput = document.getElementById('password');

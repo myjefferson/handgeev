@@ -64,7 +64,7 @@
     @include('components.footer.footer')
 @endsection
 
-@push('scripts')
+@push('scripts_end')
     <script>
         // Contador para recarregar automaticamente
         let countdown = 10;

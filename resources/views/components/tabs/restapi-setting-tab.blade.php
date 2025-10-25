@@ -1,3 +1,7 @@
+@push('scripts_start')
+    <script type="module" src="{{ asset('js/modules/api-management/api-management-ajax.js') }}"></script>
+@endpush
+
 <div class="hidden p-6 rounded-lg bg-slate-800/50 border border-slate-700" id="settings-tab" role="tabpanel">
     <h3 class="text-xl font-semibold text-white mb-6">⚙️ Configurações de Segurança</h3>
     @if($workspace->api_domain_restriction && $workspace->allowedDomains->where('is_active', true)->count() === 0)
@@ -27,17 +31,11 @@
                         <h4 class="text-lg font-semibold text-white">Status do Acesso API</h4>
                         <p class="text-slate-400 text-sm">Controle o acesso à API deste workspace</p>
                     </div>
-                    <form action="{{ route('workspace.api.access.toggle', $workspace) }}" method="POST" class="flex items-center">
-                        @csrf @method('PUT')
-                        <span class="mr-3 text-sm font-medium text-white">
-                            {{ $workspace->api_enabled ? 'Ativada' : 'Desativada' }}
-                        </span>
-                        <button type="submit" class="relative inline-flex items-center h-6 rounded-full w-11 
-                            @if($workspace->api_enabled) bg-teal-500 @else bg-gray-600 @endif transition-colors">
-                            <span class="inline-block w-4 h-4 transform bg-white rounded-full transition 
-                                @if($workspace->api_enabled) translate-x-6 @else translate-x-1 @endif" />
-                        </button>
-                    </form>
+                    <button onclick="toggleApiStatus(`{{ route('management.api.access.toggle', $workspace->id) }}`, {{ !$workspace->api_enabled }})" class="relative inline-flex items-center h-6 rounded-full w-11 
+                        @if($workspace->api_enabled) bg-blue-500 @else bg-gray-300 dark:bg-gray-600 @endif transition-colors">
+                        <span class="inline-block w-4 h-4 transform bg-white rounded-full transition 
+                            @if($workspace->api_enabled) translate-x-6 @else translate-x-1 @endif" />
+                    </button>
                 </div>
                 
                 @if(!$workspace->api_enabled)
@@ -403,3 +401,7 @@
         </div>
     </div>
 </div>
+
+@push('modals')
+    @include('components.modals.modal-confirm')
+@endpush

@@ -76,7 +76,7 @@
             <div class="bg-slate-800 rounded-2xl shadow-lg p-6">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-xl font-semibold text-white">Workspaces Recentes</h2>
-                    <a href="{{ route('workspaces.index') }}" class="text-teal-400 hover:text-teal-300 text-sm font-medium flex items-center">
+                    <a href="{{ route('workspaces.show') }}" class="text-teal-400 hover:text-teal-300 text-sm font-medium flex items-center">
                         Ver todos <i class="fas fa-arrow-right ml-1"></i>
                     </a>
                 </div>
@@ -108,7 +108,7 @@
                     <div class="text-center py-8 text-gray-400">
                         <i class="fas fa-layer-group text-4xl mb-3 opacity-50"></i>
                         <p>Nenhum workspace criado ainda</p>
-                        <a href="{{ route('workspaces.index') }}" class="text-teal-400 hover:text-teal-300 text-sm mt-2 inline-block">
+                        <a href="{{ route('workspaces.show') }}" class="text-teal-400 hover:text-teal-300 text-sm mt-2 inline-block">
                             Criar primeiro workspace
                         </a>
                     </div>

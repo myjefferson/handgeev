@@ -265,7 +265,7 @@ class WorkspaceController extends Controller
             // Terceiro: deletar o workspace
             $workspace->delete();
 
-            return redirect(route('workspaces.index'))->with([
+            return redirect(route('workspaces.show'))->with([
                 'success' => true,
                 'message' => 'Workspace excluído com sucesso',
                 'deleted_topics' => $workspace->topics->count(),
@@ -304,7 +304,7 @@ class WorkspaceController extends Controller
             !auth()->user()->isPremium() && 
             !auth()->user()->isAdmin()
         ) {
-            return redirect()->route('workspaces.index')
+            return redirect()->route('workspaces.show')
                 ->with('error', 'A importação de workspaces está disponível apenas para usuários Pro.');
         }
 
@@ -469,7 +469,7 @@ class WorkspaceController extends Controller
             !auth()->user()->isPremium() && 
             !auth()->user()->isAdmin()
         ) {
-            return redirect()->route('workspaces.index')
+            return redirect()->route('workspaces.show')
                 ->with('error', 'A importação de workspaces está disponível apenas para usuários Pro.');
         }
 

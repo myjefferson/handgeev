@@ -251,7 +251,7 @@
     @include('components.modals.modal-create-workspace')
 @endpush
 
-@push('scripts')
+@push('scripts_end')
     <script>
         // Sistema corrigido de gerenciamento
         class SimpleWorkspaceManager {
