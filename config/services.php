@@ -39,6 +39,7 @@ return [
         'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'currency' => env('STRIPE_CURRENCY', 'usd'),
         'prices' => [
             'start' => env('STRIPE_START_PRICE_ID'),
             'pro' => env('STRIPE_PRO_PRICE_ID'),

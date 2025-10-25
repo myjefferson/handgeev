@@ -13,7 +13,9 @@ class AppServiceProvider extends ServiceProvider
 {
     public function boot()
     {
-        // Força o esquema HTTPS para todos os URLs gerados, exceto em ambiente 'local'.
+        // Configurar a API key do Stripe globalmente
+        Stripe::setApiKey(config('services.stripe.secret'));
+        
         if(env('APP_ENV') == 'production'){
             if (! $this->app->environment('local')) {
                 URL::forceScheme('https');
@@ -21,16 +23,8 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Cashier::calculateTaxes(false);
-        
         Cashier::useSubscriptionModel(\App\Models\Subscription::class);
         
-        // Definir preços dos planos
-        config(['services.stripe.prices' => [
-            'start' => env('STRIPE_START_PRICE_ID'),
-            'pro' => env('STRIPE_PRO_PRICE_ID'),
-            'premium' => env('STRIPE_PREMIUM_PRICE_ID'),
-        ]]);
-
         // Configurar rate limiting personalizado
         $this->configureRateLimiting();
     }
