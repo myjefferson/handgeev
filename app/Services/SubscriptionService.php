@@ -18,9 +18,13 @@ class SubscriptionService
         ]);
         
         try {
-            // ✅ ADICIONE ESTAS LINHAS AQUI
-            if (!$user->hasStripeId()) {
-                \Log::info('Usuário sem stripe_id, criando customer no Stripe');
+            if (empty($user->stripe_id)) {
+                \Log::info('Usuário sem stripe_id válido, criando customer no Stripe');
+                
+                // Limpa o stripe_id vazio antes de criar
+                $user->stripe_id = null;
+                $user->save();
+                
                 $user->createAsStripeCustomer([
                     'email' => $user->email,
                     'name' => $user->name,
