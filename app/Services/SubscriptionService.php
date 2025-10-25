@@ -16,12 +16,21 @@ class SubscriptionService
             'price_id' => $priceId,
             'locale_atual' => app()->getLocale()
         ]);
-
+        
         try {
-            $locale = $this->getStripeLocale();
+            // ✅ ADICIONE ESTAS LINHAS AQUI
+            if (!$user->hasStripeId()) {
+                \Log::info('Usuário sem stripe_id, criando customer no Stripe');
+                $user->createAsStripeCustomer([
+                    'email' => $user->email,
+                    'name' => $user->name,
+                ]);
+            }
             
+            $locale = $this->getStripeLocale();
+        
             \Log::info('Locale formatado para Stripe', ['locale' => $locale]);
-
+            
             return $user->newSubscription('default', $priceId)
                 ->checkout([
                     'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
@@ -30,7 +39,7 @@ class SubscriptionService
                     'locale' => $locale,
                     'automatic_tax' => ['enabled' => false]
                 ]);
-                
+            
         } catch (\Exception $e) {
             \Log::error('Erro ao criar sessão de checkout: ' . $e->getMessage());
             throw $e;
