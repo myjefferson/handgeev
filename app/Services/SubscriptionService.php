@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Plan;
 use App\Models\Subscription;
 use Laravel\Cashier\Exceptions\IncompletePayment;
+use Stripe\Stripe;
 
 class SubscriptionService
 {
@@ -55,7 +56,7 @@ class SubscriptionService
         \Log::info('Processando pagamento bem-sucedido', ['session_id' => $sessionId]);
 
         try {
-            \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+            Stripe::setApiKey(config('services.stripe.secret'));
             
             $session = \Stripe\Checkout\Session::retrieve($sessionId);
             $user = User::where('stripe_id', $session->customer)->first();
@@ -273,13 +274,12 @@ class SubscriptionService
     {
         try {
             if (!$user->stripe_id) {
-                return collect([]); // Retorna coleção vazia se não tem stripe_id
+                return collect([]);
             }
             
             return $user->invoices();
         } catch (\Stripe\Exception\InvalidRequestException $e) {
             if ($e->getHttpStatus() === 404) {
-                // Customer não existe no Stripe, limpar o stripe_id
                 $user->update(['stripe_id' => null]);
                 return collect([]);
             }
@@ -760,7 +760,7 @@ class SubscriptionService
 
         try {
             // CONFIGURAR API KEY AQUI
-            \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+            Stripe::setApiKey(config('services.stripe.secret'));
 
             $session = \Stripe\Checkout\Session::retrieve($sessionId);
             $user = User::where('stripe_id', $session->customer)->first();

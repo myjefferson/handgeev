@@ -8,13 +8,14 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Cashier\Cashier;
+use Stripe\Stripe;
 
 class AppServiceProvider extends ServiceProvider
 {
     public function boot()
     {
         // Configurar a API key do Stripe globalmente
-        \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+        Stripe::setApiKey(config('services.stripe.secret'));
         
         if(env('APP_ENV') == 'production'){
             if (! $this->app->environment('local')) {
