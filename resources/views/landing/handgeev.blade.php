@@ -137,7 +137,7 @@
                     <a href="{{ route('login.show') }}" class="hidden md:inline-block text-teal-400 hover:text-teal-300 font-medium">
                         {{ __('site.navigation.login') }}
                     </a>
-                    <a href="#pricing" class="text-[13px] sm:text-[16px] bg-teal-500 hover:bg-teal-400 text-slate-900 px-2 sm:px-5 py-1 sm:py-2 rounded-lg font-medium transition-colors teal-glow-hover">
+                    <a href="{{ route('register.show') }}" class="text-[13px] sm:text-[16px] bg-teal-500 hover:bg-teal-400 text-slate-900 px-2 sm:px-5 py-1 sm:py-2 rounded-lg font-medium transition-colors teal-glow-hover">
                         {{ __('site.navigation.get_started') }}
                     </a>
                     
@@ -555,7 +555,7 @@
                             <span class="text-sm">Acesso à Interface API REST</span>
                         </li>
                     </ul>
-                    <a href="{{ route('register.index') }}" 
+                    <a href="{{ route('register.show') }}" 
                         class="block w-full bg-slate-700 hover:bg-slate-600 text-white text-center py-3 rounded-lg font-medium transition-colors">
                         {{ __('site.pricing.free.button') }}
                     </a>
@@ -598,7 +598,7 @@
                             <span class="text-sm">Acesso à API</span>
                         </li>
                     </ul>
-                    <a href="{{ route('register.index', ['plan' => 'start']) }}" 
+                    <a href="{{ route('register.show', ['plan' => 'start']) }}" 
                         class="block w-full bg-teal-500 hover:bg-teal-400 text-slate-900 text-center py-3 rounded-lg font-medium transition-colors">
                         {{ __('site.pricing.start.button') }}
                     </a>
@@ -646,7 +646,7 @@
                             <span class="text-sm">Suporte prioritário</span>
                         </li>
                     </ul>
-                    <a href="{{ route('register.index', ['plan' => 'pro']) }}" 
+                    <a href="{{ route('register.show', ['plan' => 'pro']) }}" 
                         class="block w-full bg-purple-600 hover:bg-purple-500 text-white text-center py-3 rounded-lg font-medium transition-colors pulse">
                         {{ __('site.pricing.pro.button') }}
                     </a>
@@ -694,7 +694,7 @@
                             <span class="text-sm">Suporte 24/7</span>
                         </li>
                     </ul>
-                    <a href="{{ route('register.index', ['plan' => 'premium']) }}" 
+                    <a href="{{ route('register.show', ['plan' => 'premium']) }}" 
                         class="block w-full bg-blue-600 hover:bg-blue-500 text-white text-center py-3 rounded-lg font-medium transition-colors">
                         {{ __('site.pricing.premium.button') }}
                     </a>
@@ -790,7 +790,7 @@
             <p class="text-slate-800 text-lg mb-8">
                 {{ __('site.cta.description') }}
             </p>
-            <a href="{{ route('register.index') }}" class="bg-slate-900 text-teal-400 hover:bg-slate-800 px-8 py-3 rounded-lg font-medium text-lg inline-block transition-colors teal-glow-hover">
+            <a href="{{ route('register.show') }}" class="bg-slate-900 text-teal-400 hover:bg-slate-800 px-8 py-3 rounded-lg font-medium text-lg inline-block transition-colors teal-glow-hover">
                 <i class="fas fa-rocket mr-2"></i>{{ __('site.cta.button') }}
             </a>
             <p class="text-slate-800 text-sm mt-4">

@@ -85,7 +85,7 @@
                 <div class="mt-6 text-center">
                     <p class="text-sm text-slate-400">
                         {{ __('login.login.no_account') }}
-                        <a href="{{ route('register.index') }}" class="font-medium text-primary-500 hover:text-primary-400 transition-colors ml-1">
+                        <a href="{{ route('register.show') }}" class="font-medium text-primary-500 hover:text-primary-400 transition-colors ml-1">
                             {{ __('login.login.signup_link') }}
                         </a>
                     </p>

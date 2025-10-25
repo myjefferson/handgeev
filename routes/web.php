@@ -49,7 +49,7 @@ Route::middleware(['languages'])->group(function(){
         Route::get('/login', 'indexLogin')->name('login.show');
         Route::post('/login/auth', 'authLogin')->name('login.auth');
         Route::get('/logout', 'logout')->name('logout');
-        Route::get('/signup', 'indexRegister')->name('register.index');
+        Route::get('/signup', 'indexRegister')->name('register.show');
         Route::get('/support/recovery-account', 'showRecovery')->name('recovery.account.show');
         Route::get('/support/recovery-password/{token}','showResetForm')->name('recovery.password.show');
         Route::post('/support/recovery-password','updatePasswordRecovery')->name('recovery.password.update');
