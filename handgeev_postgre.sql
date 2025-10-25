@@ -93,12 +93,12 @@ CREATE TYPE field_type_enum AS ENUM (
 
 -- Função para atualizar automaticamente a coluna updated_at
 CREATE OR REPLACE FUNCTION update_timestamp()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER AS '
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+' LANGUAGE plpgsql;
 
 --------------------------------------------------------------------------------
 -- 3. CRIAÇÃO DAS TABELAS (DDL)
