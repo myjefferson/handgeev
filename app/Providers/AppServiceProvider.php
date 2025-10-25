@@ -14,7 +14,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         // Configurar a API key do Stripe globalmente
-        Stripe::setApiKey(config('services.stripe.secret'));
+        \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
         
         if(env('APP_ENV') == 'production'){
             if (! $this->app->environment('local')) {
