@@ -20,18 +20,20 @@ class SubscriptionService
         try {
             // Garantir que o usuário tem customer no Stripe
             if (!$user->stripe_id) {
-                $user->createAsStripeCustomer();
+                \Log::info('Criando customer no Stripe');
+                $user->createAsStripeCustomer([
+                    'email' => $user->email,
+                    'name' => $user->name,
+                ]);
             }
             
-            // Configuração universal que funciona globalmente
+            // ✅ Configuração simplificada e universal
             $checkoutConfig = [
                 'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('subscription.pricing'),
                 'locale' => 'auto',
                 'automatic_tax' => ['enabled' => false],
-                // 'payment_method_types' => ['card'],
-                // 'allow_promotion_codes' => true,
-                'billing_address_collection' => 'required'
+                'billing_address_collection' => 'auto', // Mude para 'auto' ao invés de 'required'
             ];
 
             \Log::info('Checkout config final', $checkoutConfig);
