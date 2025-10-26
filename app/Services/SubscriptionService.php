@@ -12,37 +12,38 @@ class SubscriptionService
 {
     public function createCheckoutSession(User $user, string $priceId)
     {
-        \Log::info('Criando checkout session', [
+        Log::info('Criando checkout session', [
             'user' => $user->email,
             'price_id' => $priceId
         ]);
         
         try {
-            // Garantir que o usuário tem customer no Stripe
+            // 1. Garantir que o usuário tem customer no Stripe
             if (!$user->stripe_id) {
-                \Log::info('Criando customer no Stripe');
+                Log::info('Criando customer no Stripe');
                 $user->createAsStripeCustomer([
                     'email' => $user->email,
                     'name' => $user->name,
                 ]);
             }
             
-            // ✅ Configuração simplificada e universal
+            // 2. Configuração do Checkout
             $checkoutConfig = [
                 'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('subscription.pricing'),
                 'locale' => 'auto',
                 'automatic_tax' => ['enabled' => false],
-                'billing_address_collection' => 'auto', // Mude para 'auto' ao invés de 'required'
+                'billing_address_collection' => 'auto', 
             ];
-
-            \Log::info('Checkout config final', $checkoutConfig);
             
+            Log::info('Checkout config final', $checkoutConfig);
+            
+            // newSubscription cria a sessão de checkout com o Price ID e as configurações
             return $user->newSubscription('default', $priceId)
                 ->checkout($checkoutConfig);
             
         } catch (\Exception $e) {
-            \Log::error('Erro ao criar sessão de checkout: ' . $e->getMessage());
+            Log::error('Erro ao criar sessão de checkout: ' . $e->getMessage());
             throw $e;
         }
     }
