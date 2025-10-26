@@ -35,25 +35,27 @@ class SubscriptionService
         
             \Log::info('Locale formatado para Stripe', ['locale' => $locale]);
             
-            return $user->newSubscription('default', $priceId)
-            ->checkout([
+            // Configuração simplificada e correta para subscription
+            $checkoutOptions = [
                 'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('subscription.pricing'),
                 'customer_update' => [
-                    'address' => 'auto',
-                    'name' => 'auto'
+                    'address' => 'auto'
                 ],
                 'locale' => $locale,
-                'automatic_tax' => [
-                    'enabled' => true
-                ],
-                'tax_id_collection' => [
-                    'enabled' => true
-                ],
-                'invoice_creation' => [
-                    'enabled' => true
-                ]
-            ]);
+            ];
+
+            // Adicionar automatic_tax apenas se necessário e suportado
+            if (config('services.stripe.currency') === 'usd') {
+                $checkoutOptions['automatic_tax'] = ['enabled' => true];
+            } else {
+                $checkoutOptions['automatic_tax'] = ['enabled' => false];
+            }
+
+            \Log::info('Checkout options final', $checkoutOptions);
+            
+            return $user->newSubscription('default', $priceId)
+                ->checkout($checkoutOptions);
             
         } catch (\Exception $e) {
             \Log::error('Erro ao criar sessão de checkout: ' . $e->getMessage());
@@ -707,13 +709,12 @@ class SubscriptionService
                 'locale' => $locale
             ]);
 
-            // Configuração específica para upgrade
+            // Configuração simplificada para upgrade
             $checkoutData = [
                 'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}&upgrade=true',
                 'cancel_url' => route('subscription.pricing'),
                 'customer_update' => ['address' => 'auto'],
                 'locale' => $locale,
-                'automatic_tax' => ['enabled' => false],
                 'mode' => 'subscription',
                 'line_items' => [[
                     'price' => $newPriceId,
@@ -725,6 +726,13 @@ class SubscriptionService
                     'existing_subscription_id' => $subscription->stripe_id
                 ]
             ];
+
+            // Adicionar automatic_tax apenas se necessário
+            if (config('services.stripe.currency') === 'usd') {
+                $checkoutData['automatic_tax'] = ['enabled' => true];
+            } else {
+                $checkoutData['automatic_tax'] = ['enabled' => false];
+            }
 
             // Usa customer existente se disponível
             if ($user->stripe_id) {
