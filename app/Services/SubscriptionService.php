@@ -31,8 +31,7 @@ class SubscriptionService
                 'automatic_tax' => ['enabled' => false],
                 // 'payment_method_types' => ['card'],
                 // 'allow_promotion_codes' => true,
-                'billing_address_collection' => 'required',
-                'customer_creation' => 'always',
+                'billing_address_collection' => 'required'
             ];
 
             \Log::info('Checkout config final', $checkoutConfig);
@@ -680,7 +679,6 @@ class SubscriptionService
         ]);
 
         try {
-            $subscription = $user->getStripeSubscription();
             $planoAtual = $this->getUserPlanInfo($user);
 
             // Configuração universal para upgrade
@@ -689,23 +687,17 @@ class SubscriptionService
                 'cancel_url' => route('subscription.pricing'),
                 'locale' => 'auto',
                 'automatic_tax' => ['enabled' => false],
-                // 'payment_method_types' => ['card'],
+                'billing_address_collection' => 'required',
                 'mode' => 'subscription',
                 'line_items' => [[
                     'price' => $newPriceId,
                     'quantity' => 1,
                 ]],
-                'billing_address_collection' => 'required',
                 'metadata' => [
                     'upgrade_from' => $planoAtual['plan_name'],
                     'upgrade_to' => $this->getPlanByStripePriceId($newPriceId)->name,
                 ]
             ];
-
-            // Usa customer existente
-            if ($user->stripe_id) {
-                $checkoutData['customer'] = $user->stripe_id;
-            }
 
             $session = $user->checkout($checkoutData);
             
