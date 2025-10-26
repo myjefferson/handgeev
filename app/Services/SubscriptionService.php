@@ -31,7 +31,7 @@ class SubscriptionService
                 ]);
             }
             
-            $locale = 'en';
+            $locale = 'auto';
         
             \Log::info('Locale formatado para Stripe', ['locale' => $locale]);
             
