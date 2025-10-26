@@ -31,7 +31,7 @@ class SubscriptionService
                 ]);
             }
             
-            $locale = 'auto';
+            $locale = 'en';
         
             \Log::info('Locale formatado para Stripe', ['locale' => $locale]);
             
@@ -40,7 +40,7 @@ class SubscriptionService
                     'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
                     'cancel_url' => route('subscription.pricing'),
                     'customer_update' => ['address' => 'auto'],
-                    'locale' => $locale, // 'auto' ou 'en'
+                    'locale' => $locale,
                     'automatic_tax' => ['enabled' => false]
                 ]);
             

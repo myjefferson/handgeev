@@ -156,15 +156,8 @@ class UserController extends Controller
             $updateData = [
                 'name' => $validated['name'],
                 'surname' => $validated['surname'],
-                'email' => $validated['email'],
                 'phone' => $validated['phone'] ?? null,
             ];
-
-            // Verificar se o email foi alterado
-            if ($user->email !== $validated['email']) {
-                $updateData['email_verified_at'] = null;
-                // Aqui você pode adicionar lógica para reenviar verificação de email
-            }
 
             // Atualizar usuário
             $user->update($updateData);
