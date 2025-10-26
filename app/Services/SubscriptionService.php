@@ -14,48 +14,31 @@ class SubscriptionService
     {
         \Log::info('Criando checkout session', [
             'user' => $user->email,
-            'price_id' => $priceId,
-            'locale_atual' => app()->getLocale()
+            'price_id' => $priceId
         ]);
         
         try {
-            if (empty($user->stripe_id)) {
-                \Log::info('Usuário sem stripe_id válido, criando customer no Stripe');
-                
-                $user->stripe_id = null;
-                $user->save();
-                
-                $user->createAsStripeCustomer([
-                    'email' => $user->email,
-                    'name' => $user->name,
-                ]);
+            // Garantir que o usuário tem customer no Stripe
+            if (!$user->stripe_id) {
+                $user->createAsStripeCustomer();
             }
             
-            $locale = $this->getStripeLocale();
-        
-            \Log::info('Locale formatado para Stripe', ['locale' => $locale]);
-            
-            // Configuração simplificada e correta para subscription
-            $checkoutOptions = [
+            // Configuração universal que funciona globalmente
+            $checkoutConfig = [
                 'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('subscription.pricing'),
-                'customer_update' => [
-                    'address' => 'auto'
-                ],
-                'locale' => $locale,
+                'locale' => 'auto',
+                'automatic_tax' => ['enabled' => false],
+                // 'payment_method_types' => ['card'],
+                // 'allow_promotion_codes' => true,
+                'billing_address_collection' => 'required',
+                'customer_creation' => 'always',
             ];
 
-            // Adicionar automatic_tax apenas se necessário e suportado
-            if (config('services.stripe.currency') === 'usd') {
-                $checkoutOptions['automatic_tax'] = ['enabled' => true];
-            } else {
-                $checkoutOptions['automatic_tax'] = ['enabled' => false];
-            }
-
-            \Log::info('Checkout options final', $checkoutOptions);
+            \Log::info('Checkout config final', $checkoutConfig);
             
             return $user->newSubscription('default', $priceId)
-                ->checkout($checkoutOptions);
+                ->checkout($checkoutConfig);
             
         } catch (\Exception $e) {
             \Log::error('Erro ao criar sessão de checkout: ' . $e->getMessage());
@@ -699,61 +682,41 @@ class SubscriptionService
         try {
             $subscription = $user->getStripeSubscription();
             $planoAtual = $this->getUserPlanInfo($user);
-            $novoPlano = $this->getFriendlyPlanName($newPriceId);
-            $locale = $this->getStripeLocale();
 
-            \Log::info('Detalhes do upgrade', [
-                'de' => $planoAtual['friendly_name'],
-                'para' => $novoPlano,
-                'subscription_id' => $subscription->stripe_id,
-                'locale' => $locale
-            ]);
-
-            // Configuração simplificada para upgrade
+            // Configuração universal para upgrade
             $checkoutData = [
                 'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}&upgrade=true',
                 'cancel_url' => route('subscription.pricing'),
-                'customer_update' => ['address' => 'auto'],
-                'locale' => $locale,
+                'locale' => 'auto',
+                'automatic_tax' => ['enabled' => false],
+                // 'payment_method_types' => ['card'],
                 'mode' => 'subscription',
                 'line_items' => [[
                     'price' => $newPriceId,
                     'quantity' => 1,
                 ]],
+                'billing_address_collection' => 'required',
                 'metadata' => [
                     'upgrade_from' => $planoAtual['plan_name'],
                     'upgrade_to' => $this->getPlanByStripePriceId($newPriceId)->name,
-                    'existing_subscription_id' => $subscription->stripe_id
                 ]
             ];
 
-            // Adicionar automatic_tax apenas se necessário
-            if (config('services.stripe.currency') === 'usd') {
-                $checkoutData['automatic_tax'] = ['enabled' => true];
-            } else {
-                $checkoutData['automatic_tax'] = ['enabled' => false];
-            }
-
-            // Usa customer existente se disponível
+            // Usa customer existente
             if ($user->stripe_id) {
                 $checkoutData['customer'] = $user->stripe_id;
-                \Log::info('Usando customer existente do Stripe', ['stripe_customer_id' => $user->stripe_id]);
             }
 
             $session = $user->checkout($checkoutData);
             
             \Log::info('Sessão de upgrade criada com sucesso', [
-                'session_id' => $session->id,
-                'url' => $session->url
+                'session_id' => $session->id
             ]);
 
             return $session;
 
         } catch (\Exception $e) {
-            \Log::error('Erro ao criar sessão de upgrade: ' . $e->getMessage(), [
-                'user' => $user->email,
-                'price_id' => $newPriceId
-            ]);
+            \Log::error('Erro ao criar sessão de upgrade: ' . $e->getMessage());
             throw $e;
         }
     }
@@ -831,31 +794,32 @@ class SubscriptionService
      */
     private function getStripeLocale(): string
     {
-        $locale = app()->getLocale();
+        return 'auto';
+        // $locale = app()->getLocale();
         
-        // Se estiver cobrando em USD, usa locale neutro
-        $currency = config('cashier.currency', 'usd');
-        if (strtolower($currency) === 'usd') {
-            return 'en'; // ou 'auto'
-        }
+        // // Se estiver cobrando em USD, usa locale neutro
+        // $currency = config('cashier.currency', 'usd');
+        // if (strtolower($currency) === 'usd') {
+        //     return 'en'; // ou 'auto'
+        // }
         
-        // Converte pt_BR para pt-BR
-        if (str_contains($locale, '_')) {
-            $locale = str_replace('_', '-', $locale);
-        }
+        // // Converte pt_BR para pt-BR
+        // if (str_contains($locale, '_')) {
+        //     $locale = str_replace('_', '-', $locale);
+        // }
         
-        // Lista de locales válidos do Stripe
-        $validLocales = [
-            'auto', 'bg', 'cs', 'da', 'de', 'el', 'en', 'en-GB', 'es', 'es-419', 
-            'et', 'fi', 'fil', 'fr', 'fr-CA', 'hr', 'hu', 'id', 'it', 'ja', 'ko', 
-            'lt', 'lv', 'ms', 'mt', 'nb', 'nl', 'pl', 'pt', 'pt-BR', 'ro', 'ru', 
-            'sk', 'sl', 'sv', 'th', 'tr', 'vi', 'zh', 'zh-HK', 'zh-TW'
-        ];
+        // // Lista de locales válidos do Stripe
+        // $validLocales = [
+        //     'auto', 'bg', 'cs', 'da', 'de', 'el', 'en', 'en-GB', 'es', 'es-419', 
+        //     'et', 'fi', 'fil', 'fr', 'fr-CA', 'hr', 'hu', 'id', 'it', 'ja', 'ko', 
+        //     'lt', 'lv', 'ms', 'mt', 'nb', 'nl', 'pl', 'pt', 'pt-BR', 'ro', 'ru', 
+        //     'sk', 'sl', 'sv', 'th', 'tr', 'vi', 'zh', 'zh-HK', 'zh-TW'
+        // ];
         
-        if (!in_array($locale, $validLocales)) {
-            return 'auto';
-        }
+        // if (!in_array($locale, $validLocales)) {
+        //     return 'auto';
+        // }
         
-        return $locale;
+        // return $locale;
     }
 }
