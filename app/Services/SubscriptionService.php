@@ -31,18 +31,29 @@ class SubscriptionService
                 ]);
             }
             
-            $locale = 'auto';
+            $locale = $this->getStripeLocale();
         
             \Log::info('Locale formatado para Stripe', ['locale' => $locale]);
             
             return $user->newSubscription('default', $priceId)
-                ->checkout([
-                    'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
-                    'cancel_url' => route('subscription.pricing'),
-                    'customer_update' => ['address' => 'auto'],
-                    'locale' => $locale,
-                    'automatic_tax' => ['enabled' => false]
-                ]);
+            ->checkout([
+                'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => route('subscription.pricing'),
+                'customer_update' => [
+                    'address' => 'auto',
+                    'name' => 'auto'
+                ],
+                'locale' => $locale,
+                'automatic_tax' => [
+                    'enabled' => true
+                ],
+                'tax_id_collection' => [
+                    'enabled' => true
+                ],
+                'invoice_creation' => [
+                    'enabled' => true
+                ]
+            ]);
             
         } catch (\Exception $e) {
             \Log::error('Erro ao criar sessão de checkout: ' . $e->getMessage());
