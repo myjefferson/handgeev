@@ -22,7 +22,6 @@ class SubscriptionService
             if (empty($user->stripe_id)) {
                 \Log::info('Usuário sem stripe_id válido, criando customer no Stripe');
                 
-                // Limpa o stripe_id vazio antes de criar
                 $user->stripe_id = null;
                 $user->save();
                 
@@ -32,7 +31,7 @@ class SubscriptionService
                 ]);
             }
             
-            $locale = $this->getStripeLocale();
+            $locale = 'auto';
         
             \Log::info('Locale formatado para Stripe', ['locale' => $locale]);
             
@@ -41,7 +40,7 @@ class SubscriptionService
                     'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
                     'cancel_url' => route('subscription.pricing'),
                     'customer_update' => ['address' => 'auto'],
-                    'locale' => $locale,
+                    'locale' => $locale, // 'auto' ou 'en'
                     'automatic_tax' => ['enabled' => false]
                 ]);
             
@@ -815,6 +814,12 @@ class SubscriptionService
     {
         $locale = app()->getLocale();
         
+        // Se estiver cobrando em USD, usa locale neutro
+        $currency = config('cashier.currency', 'usd');
+        if (strtolower($currency) === 'usd') {
+            return 'en'; // ou 'auto'
+        }
+        
         // Converte pt_BR para pt-BR
         if (str_contains($locale, '_')) {
             $locale = str_replace('_', '-', $locale);
@@ -828,9 +833,7 @@ class SubscriptionService
             'sk', 'sl', 'sv', 'th', 'tr', 'vi', 'zh', 'zh-HK', 'zh-TW'
         ];
         
-        // Se não for válido, usa 'auto'
         if (!in_array($locale, $validLocales)) {
-            \Log::warning('Locale inválido para Stripe, usando auto', ['locale' => $locale]);
             return 'auto';
         }
         
