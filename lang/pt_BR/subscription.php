@@ -5,7 +5,7 @@ return [
     'description' => 'Sua assinatura foi realizada com sucesso!',
     
     'payment_confirmed' => 'Pagamento Confirmado!',
-    'pro_activated' => 'Sua assinatura Pro foi ativada com sucesso.',
+    'pro_activated' => 'Sua assinatura foi ativada com sucesso.',
     
     'what_you_got' => 'O que você ganhou:',
     'features' => [

@@ -5,7 +5,7 @@ return [
     'description' => 'Your subscription has been successfully completed!',
     
     'payment_confirmed' => 'Payment Confirmed!',
-    'pro_activated' => 'Your Pro subscription has been successfully activated.',
+    'pro_activated' => 'Your subscription has been successfully activated.',
     
     'what_you_got' => 'What you got:',
     'features' => [
