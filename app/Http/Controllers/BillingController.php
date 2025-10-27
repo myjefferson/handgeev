@@ -17,13 +17,11 @@ class BillingController extends Controller
         $this->subscriptionService = $subscriptionService;
     }
 
-        public function index()
+    public function index()
     {
         $user = Auth::user();
-        
-        // Customer válido no Stripe (agora a API key já está configurada globalmente)
+        //customer válido no Stripe
         $this->ensureStripeCustomer($user);
-        
         $planInfo = $this->subscriptionService->getUserPlanInfo($user);
         $paymentMethod = $this->subscriptionService->getPaymentMethod($user);
         $invoices = $this->subscriptionService->getInvoices($user);
@@ -34,19 +32,19 @@ class BillingController extends Controller
         $availablePlans = [
             'start' => [
                 'name' => 'Start',
-                'price' => 10.00,
+                'price' => 29.90,
                 'stripe_price_id' => config('services.stripe.prices.start'),
                 'current' => $planInfo['plan_name'] === 'start'
             ],
             'pro' => [
                 'name' => 'Pro', 
-                'price' => 32.00,
+                'price' => 149.00,
                 'stripe_price_id' => config('services.stripe.prices.pro'),
                 'current' => $planInfo['plan_name'] === 'pro'
             ],
             'premium' => [
                 'name' => 'Premium',
-                'price' => 70.00,
+                'price' => 320.00,
                 'stripe_price_id' => config('services.stripe.prices.premium'),
                 'current' => $planInfo['plan_name'] === 'premium'
             ]
@@ -71,11 +69,10 @@ class BillingController extends Controller
         }
         
         try {
-            Customer::retrieve($user->stripe_id);
-        } catch (InvalidRequestException $e) {
+            \Stripe\Customer::retrieve($user->stripe_id);
+        } catch (\Stripe\Exception\InvalidRequestException $e) {
             if ($e->getHttpStatus() === 404) {
                 $user->stripe_id = null;
-                $user->save();
                 $user->createAsStripeCustomer();
             }
         }
