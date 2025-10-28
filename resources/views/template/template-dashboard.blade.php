@@ -106,11 +106,13 @@
                                     <i class="fas fa-cog mr-2"></i> {{ __('dashboard.user.settings') }}
                                 </a>
                             </li>
-                            <li>
-                                <a href="{{ route('billing.show') }}" class="user-dropdown-option block px-4 py-2">
-                                    <i class="fas fa-crown mr-2 p-0"></i> {{ __('dashboard.user.billing') }}
-                                </a>
-                            </li>
+                            @if(!auth()->user()->isAdmin())
+                                <li>
+                                    <a href="{{ route('billing.show') }}" class="user-dropdown-option block px-4 py-2">
+                                        <i class="fas fa-crown mr-2 p-0"></i> {{ __('dashboard.user.billing') }}
+                                    </a>
+                                </li>
+                            @endif
                             <li>
                                 <a href="{{ route('logout') }}" class="user-dropdown-option block px-4 py-2">
                                     <i class="fas fa-sign-out-alt mr-2"></i> {{ __('dashboard.user.logout') }}
