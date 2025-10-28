@@ -801,8 +801,9 @@ class User extends Authenticatable implements JWTSubject
                 // Verificar se é um objeto do Cashier ou nosso objeto custom
                 if (method_exists($subscription, 'active')) {
                     return $subscription->active();
-                } elseif (is_object($subscription) && isset($subscription->stripe_status)) {
-                    return in_array($subscription->stripe_status, ['active', 'trialing']);
+                } elseif (isset($subscription->stripe_status)) {
+                    // Considerar ativa se status é 'active' (mesmo com cancel_at_period_end = true)
+                    return $subscription->stripe_status === 'active';
                 }
             }
             
@@ -855,46 +856,42 @@ class User extends Authenticatable implements JWTSubject
         try {
             Stripe::setApiKey(config('services.stripe.secret'));
             
-            // Buscar subscriptions do customer no Stripe
+            // Buscar subscriptions do customer no Stripe (incluindo canceladas em grace period)
             $subscriptions = \Stripe\Subscription::all([
                 'customer' => $this->stripe_id,
-                'status' => 'active',
-                'limit' => 1
+                'status' => 'all', // Buscar todas para incluir canceladas em grace period
+                'limit' => 5
             ]);
             
-            if (count($subscriptions->data) > 0) {
-                $stripeSubscription = $subscriptions->data[0];
-                \Log::info('✅ Subscription encontrada diretamente no Stripe:', [
-                    'id' => $stripeSubscription->id,
-                    'status' => $stripeSubscription->status,
-                    'cancel_at_period_end' => $stripeSubscription->cancel_at_period_end,
-                    'current_period_end' => $stripeSubscription->current_period_end
-                ]);
-                
-                // Criar um objeto compatível com todas as propriedades necessárias
-                return (object) [
-                    'stripe_id' => $stripeSubscription->id,
-                    'stripe_status' => $stripeSubscription->status,
-                    'stripe_price' => $stripeSubscription->items->data[0]->price->id,
-                    'ends_at' => $stripeSubscription->current_period_end ? 
-                        \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end) : null,
-                    'current_period_end' => $stripeSubscription->current_period_end,
-                    'cancel_at_period_end' => $stripeSubscription->cancel_at_period_end,
-                    'onGracePeriod' => function() use ($stripeSubscription) {
-                        return $stripeSubscription->cancel_at_period_end && 
-                            $stripeSubscription->current_period_end > time();
-                    },
-                    'active' => function() use ($stripeSubscription) {
-                        return $stripeSubscription->status === 'active' || 
-                            $stripeSubscription->status === 'trialing';
-                    }
-                ];
+            // Encontrar a subscription mais recente que está ativa ou em grace period
+            foreach ($subscriptions->data as $stripeSubscription) {
+                // Considerar subscriptions ativas ou canceladas mas ainda no período
+                if ($stripeSubscription->status === 'active' || 
+                    ($stripeSubscription->status === 'canceled' && 
+                    $stripeSubscription->cancel_at_period_end &&
+                    $stripeSubscription->current_period_end > time())) {
+                    
+                    \Log::info('✅ Subscription encontrada no Stripe:', [
+                        'id' => $stripeSubscription->id,
+                        'status' => $stripeSubscription->status,
+                        'cancel_at_period_end' => $stripeSubscription->cancel_at_period_end,
+                        'current_period_end' => $stripeSubscription->current_period_end
+                    ]);
+                    
+                    // Criar objeto com todas as propriedades necessárias
+                    return (object) [
+                        'stripe_id' => $stripeSubscription->id,
+                        'stripe_status' => $stripeSubscription->status,
+                        'stripe_price' => $stripeSubscription->items->data[0]->price->id,
+                        'ends_at' => $stripeSubscription->current_period_end ? 
+                            \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end) : null,
+                        'current_period_end' => $stripeSubscription->current_period_end,
+                        'cancel_at_period_end' => $stripeSubscription->cancel_at_period_end,
+                    ];
+                }
             }
             
-            \Log::info('Nenhuma subscription ativa encontrada no Stripe para customer:', [
-                'stripe_customer_id' => $this->stripe_id
-            ]);
-            
+            \Log::info('Nenhuma subscription ativa ou em grace period encontrada no Stripe');
             return null;
             
         } catch (\Exception $e) {

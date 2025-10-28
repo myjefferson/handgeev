@@ -27,12 +27,22 @@ class BillingController extends Controller
                 ->with('info', 'Administradores não precisam gerenciar assinaturas.');
         }
 
-        //customer válido no Stripe
+        // Garantir customer válido no Stripe
         $this->ensureStripeCustomer($user);
+        
         $planInfo = $this->subscriptionService->getUserPlanInfo($user);
         $paymentMethod = $this->subscriptionService->getPaymentMethod($user);
         $invoices = $this->subscriptionService->getInvoices($user);
-        $upcomingInvoice = $this->subscriptionService->getUpcomingInvoice($user);
+        
+        // Próxima fatura com tratamento de erro robusto
+        $upcomingInvoice = null;
+        try {
+            $upcomingInvoice = $this->subscriptionService->getUpcomingInvoice($user);
+        } catch (\Exception $e) {
+            \Log::error('Erro ao carregar próxima fatura: ' . $e->getMessage());
+            // Não quebrar a página se houver erro na próxima fatura
+        }
+
         $subscriptionHistory = $this->subscriptionService->getSubscriptionHistory($user);
 
         return view('pages.dashboard.billing.index', compact(
@@ -182,10 +192,19 @@ class BillingController extends Controller
         }
 
         try {
+            // FALTAVA ESTA LINHA - Cancelar a assinatura no serviço
             $this->subscriptionService->cancelSubscription($user);
             
+            $periodEnd = $planInfo['current_period_end'] ?? null;
+
+            if ($periodEnd instanceof \Carbon\Carbon || $periodEnd instanceof \DateTime) {
+                $endDate = $periodEnd->format('d/m/Y');
+            } else {
+                $endDate = 'o final do período atual';
+            }
+
             return redirect()->route('billing.show')
-                ->with('success', 'Assinatura cancelada com sucesso. Você terá acesso até ' . $planInfo['current_period_end']->format('d/m/Y'));
+                ->with('success', "Assinatura cancelada com sucesso. Você terá acesso até {$endDate}");
                 
         } catch (\Exception $e) {
             \Log::error('Erro ao cancelar assinatura: ' . $e->getMessage());
@@ -199,9 +218,10 @@ class BillingController extends Controller
     {
         $user = Auth::user();
         
+        // Verificar se pode reativar (usando apenas Stripe)
         if (!$this->subscriptionService->canResumeSubscription($user)) {
             return redirect()->route('billing.show')
-                ->with('error', 'Não é possível reativar a assinatura. O período de cortesia já expirou.');
+                ->with('error', 'Não é possível reativar a assinatura. A assinatura não está em período de cortesia ou já expirou.');
         }
 
         try {
@@ -214,7 +234,7 @@ class BillingController extends Controller
             \Log::error('Erro ao reativar assinatura: ' . $e->getMessage());
             
             return redirect()->route('billing.show')
-                ->with('error', 'Erro ao reativar assinatura. Tente novamente.');
+                ->with('error', 'Erro ao reativar assinatura: ' . $e->getMessage());
         }
     }
 }
