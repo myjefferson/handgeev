@@ -21,6 +21,12 @@ class BillingController extends Controller
     public function index()
     {
         $user = Auth::user();
+
+        if ($user->isAdmin()) {
+            return redirect()->route('dashboard')
+                ->with('info', 'Administradores não precisam gerenciar assinaturas.');
+        }
+
         //customer válido no Stripe
         $this->ensureStripeCustomer($user);
         $planInfo = $this->subscriptionService->getUserPlanInfo($user);
