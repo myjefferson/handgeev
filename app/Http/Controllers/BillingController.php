@@ -23,7 +23,7 @@ class BillingController extends Controller
         $user = Auth::user();
 
         if ($user->isAdmin()) {
-            return redirect()->route('dashboard')
+            return redirect()->route('dashboard.home')
                 ->with('info', 'Administradores não precisam gerenciar assinaturas.');
         }
 
