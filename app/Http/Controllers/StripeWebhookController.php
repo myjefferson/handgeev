@@ -145,6 +145,7 @@ class StripeWebhookController extends CashierController
         
         try {
             $user = $this->getUserByStripeId($payload['data']['object']['customer']);
+            
             if ($user) {
                 \Log::info('Sincronizando subscription updated para usuário:', [
                     'user_id' => $user->id,
@@ -152,7 +153,16 @@ class StripeWebhookController extends CashierController
                     'status_anterior' => $user->status
                 ]);
                 
-                $user->syncStripeSubscriptionStatus();
+                // VERIFICAR SE É UMA INSTÂNCIA VÁLIDA DO MODEL USER
+                if ($user instanceof \App\Models\User) {
+                    $user->syncStripeSubscriptionStatus();
+                } else {
+                    \Log::error('Objeto user não é uma instância válida do Model User', [
+                        'tipo_objeto' => get_class($user),
+                        'user_data' => $user
+                    ]);
+                    return $this->successMethod();
+                }
                 
                 // Log da mudança
                 if (isset($payload['data']['object']['items']['data'][0]['price']['id'])) {
@@ -160,13 +170,18 @@ class StripeWebhookController extends CashierController
                     $plan = $this->subscriptionService->getPlanByStripePriceId($priceId);
                     \Log::info("Assinatura atualizada para {$plan->name} para usuário: {$user->email}");
                 }
+            } else {
+                \Log::warning('Usuário não encontrado para customer: ' . $payload['data']['object']['customer']);
             }
 
             $this->logPaymentEvent($payload);
             return $this->successMethod();
             
         } catch (\Exception $e) {
-            \Log::error('Erro no handleCustomerSubscriptionUpdated: ' . $e->getMessage());
+            \Log::error('Erro no handleCustomerSubscriptionUpdated: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
             return $this->successMethod();
         }
     }
@@ -186,6 +201,31 @@ class StripeWebhookController extends CashierController
             
         } catch (\Exception $e) {
             Log::error('Erro ao logar evento de pagamento: ' . $e->getMessage());
+        }
+    }
+
+    protected function getUserByStripeId($stripeId)
+    {
+        if (!$stripeId) {
+            return null;
+        }
+        
+        try {
+            $user = User::where('stripe_id', $stripeId)->first();
+            
+            if ($user && !($user instanceof User)) {
+                \Log::error('getUserByStripeId retornou objeto inválido', [
+                    'stripe_id' => $stripeId,
+                    'tipo_retornado' => gettype($user),
+                    'valor_retornado' => $user
+                ]);
+                return null;
+            }
+            
+            return $user;
+        } catch (\Exception $e) {
+            \Log::error('Erro ao buscar usuário por stripe_id: ' . $e->getMessage());
+            return null;
         }
     }
 }

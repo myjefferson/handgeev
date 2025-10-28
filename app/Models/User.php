@@ -797,14 +797,22 @@ class User extends Authenticatable implements JWTSubject
         try {
             $subscription = $this->getStripeSubscription();
             
-            if ($subscription) {
-                // Verificar se é um objeto do Cashier ou nosso objeto custom
-                if (method_exists($subscription, 'active')) {
-                    return $subscription->active();
-                } elseif (isset($subscription->stripe_status)) {
-                    // Considerar ativa se status é 'active' (mesmo com cancel_at_period_end = true)
-                    return $subscription->stripe_status === 'active';
-                }
+            if (!$subscription) {
+                return false;
+            }
+            
+            // VERIFICAÇÃO SEGURA SEM DEPENDER DE active()
+            if (method_exists($subscription, 'active')) {
+                return $subscription->active();
+            }
+            
+            if (isset($subscription->stripe_status)) {
+                $isActive = $subscription->stripe_status === 'active';
+                $isInGracePeriod = $subscription->stripe_status === 'canceled' && 
+                                $subscription->cancel_at_period_end &&
+                                $subscription->current_period_end > time();
+                
+                return $isActive || $isInGracePeriod;
             }
             
             return false;
@@ -959,76 +967,72 @@ class User extends Authenticatable implements JWTSubject
     {
         \Log::info('Sincronizando status do Stripe para usuário: ' . $this->email);
 
-        if (!$this->hasActiveStripeSubscription()) {
-            \Log::info('Usuário não tem assinatura ativa no Stripe - verificando se deve ser FREE');
-            
-            // Verificar se tem subscription cancelada mas ainda no período
-            $localSubscription = \App\Models\Subscription::where('user_id', $this->id)
-                ->where('status', 'active')
-                ->where('canceled_at', '!=', null)
-                ->where('current_period_end', '>', now())
-                ->first();
-
-            if ($localSubscription) {
-                // Está no grace period - manter ativo com plano atual
-                \Log::info('Usuário em grace period - mantendo plano atual');
-                $this->update(['status' => self::STATUS_ACTIVE]);
-            } else {
-                // Não tem subscription ativa - mudar para FREE mas manter ATIVO
-                \Log::info('Usuário sem subscription ativa - definindo como FREE ativo');
-                $this->update([
-                    'status' => self::STATUS_ACTIVE, // ✅ MANTÉM ATIVO
-                ]);
-                $this->syncRoles([self::ROLE_FREE]);
-            }
-            return;
-        }
-
         try {
             $subscription = $this->getStripeSubscription();
             
             if (!$subscription) {
-                \Log::warning('Subscription não encontrada no syncStripeSubscriptionStatus');
+                \Log::info('Usuário não tem assinatura ativa no Stripe - definindo como FREE ativo');
+                $this->update([
+                    'status' => self::STATUS_ACTIVE,
+                ]);
+                $this->syncRoles([self::ROLE_FREE]);
                 return;
             }
-            
-            $priceId = $subscription->stripe_price;
-            $plan = $this->getPlanByStripePriceId($priceId);
-            
-            \Log::info('Dados da subscription no sync:', [
-                'status' => $subscription->stripe_status,
-                'price_id' => $priceId,
-                'current_period_end' => $subscription->ends_at
-            ]);
-            
-            if ($plan && $subscription->active()) {
-                \Log::info('Atualizando usuário para plano ativo: ' . $plan->name);
-                
-                // CALCULAR EXPIRAÇÃO DE FORMA SEGURA
-                $expiresAt = $subscription->ends_at ?: now()->addMonth();
-                
-                // USAR activateSubscription
-                $this->activateSubscription($plan, $expiresAt);
-                
-                \Log::info('Usuário ativado via syncStripeSubscriptionStatus');
 
-            } else {
-                \Log::warning('Plano não encontrado ou assinatura inativa no sync', [
-                    'plano_encontrado' => $plan ? 'sim' : 'não',
-                    'subscription_ativa' => $subscription->active() ? 'sim' : 'não'
+            // VERIFICAÇÃO SEGURA DO STATUS - SEM CHAMAR active()
+            $isActive = false;
+            
+            if (method_exists($subscription, 'active')) {
+                $isActive = $subscription->active();
+            } elseif (isset($subscription->stripe_status)) {
+                $isActive = $subscription->stripe_status === 'active' || 
+                        ($subscription->stripe_status === 'canceled' && 
+                            $subscription->cancel_at_period_end &&
+                            $subscription->current_period_end > time());
+            }
+
+            if ($isActive) {
+                $priceId = $subscription->stripe_price;
+                $plan = $this->getPlanByStripePriceId($priceId);
+                
+                \Log::info('Dados da subscription no sync:', [
+                    'status' => $subscription->stripe_status,
+                    'price_id' => $priceId,
+                    'current_period_end' => $subscription->ends_at
                 ]);
                 
-                // Garantir que usuários com subscription ativa no Stripe fiquem ativos
-                if ($subscription->active()) {
-                    $freePlan = Plan::where('name', self::ROLE_FREE)->first();
+                if ($plan) {
+                    \Log::info('Atualizando usuário para plano ativo: ' . $plan->name);
+                    
                     $expiresAt = $subscription->ends_at ?: now()->addMonth();
-                    $this->activateSubscription($freePlan, $expiresAt);
-                    \Log::info('Usuário com subscription ativa mas plano não encontrado - definido como FREE ativo');
+                    $this->activateSubscription($plan, $expiresAt);
+                    
+                    \Log::info('Usuário ativado via syncStripeSubscriptionStatus');
+                } else {
+                    \Log::warning('Plano não encontrado para price_id: ' . $priceId);
+                    // Fallback para FREE ativo
+                    $freePlan = Plan::where('name', self::ROLE_FREE)->first();
+                    $this->update([
+                        'status' => self::STATUS_ACTIVE,
+                    ]);
+                    $this->syncRoles([self::ROLE_FREE]);
                 }
+            } else {
+                \Log::info('Assinatura não está ativa - definindo como FREE ativo');
+                $this->update([
+                    'status' => self::STATUS_ACTIVE,
+                ]);
+                $this->syncRoles([self::ROLE_FREE]);
             }
             
         } catch (\Exception $e) {
-            \Log::error('Erro no syncStripeSubscriptionStatus: ' . $e->getMessage());
+            \Log::error('Erro no syncStripeSubscriptionStatus: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString()
+            ]);
+            // Em caso de erro, garantir que o usuário fique ativo como FREE
+            $this->update(['status' => self::STATUS_ACTIVE]);
+            $this->syncRoles([self::ROLE_FREE]);
         }
     }
 
