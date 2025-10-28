@@ -415,12 +415,13 @@ class SubscriptionService
         \Log::info('Iniciando cancelamento de assinatura', ['user' => $user->email]);
 
         try {
-            // 1. Cancelar no Stripe (se existir)
+            // 1. Cancelar no Stripe (mantém acesso até o final do período)
             $stripeSubscription = $user->getStripeSubscription();
             if ($stripeSubscription) {
-                $stripeSubscription->cancel();
-                \Log::info('Assinatura cancelada no Stripe', [
-                    'subscription_id' => $stripeSubscription->stripe_id
+                $stripeSubscription = $stripeSubscription->cancelAtPeriodEnd();
+                \Log::info('Assinatura programada para cancelamento no final do período no Stripe', [
+                    'subscription_id' => $stripeSubscription->id,
+                    'ends_at' => $stripeSubscription->current_period_end
                 ]);
             }
 
@@ -432,22 +433,22 @@ class SubscriptionService
 
             if ($localSubscription) {
                 $localSubscription->update([
-                    'status' => 'canceled',
+                    'status' => 'active', // Mantém como active até o final
                     'canceled_at' => now(),
-                    'ends_at' => $stripeSubscription ? $stripeSubscription->ends_at : now()->addMonth()
+                    'ends_at' => $stripeSubscription ? 
+                        \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end) : 
+                        now()->addMonth()
                 ]);
-                \Log::info('Subscription local atualizada para canceled');
+                \Log::info('Subscription local marcada para cancelamento no final do período');
             }
-
-            // 3. Atualizar usuário (mantém role atual até o fim do período)
-            $user->update([
-                'status' => User::STATUS_INACTIVE,
-                'plan_expires_at' => $stripeSubscription ? $stripeSubscription->ends_at : now()->addMonth()
-            ]);
-
-            \Log::info('Assinatura cancelada com sucesso', [
+            
+            \Log::info('Cancelamento processado - usuário mantido com o plano até o final do período', [
                 'user' => $user->email,
-                'acesso_ate' => $stripeSubscription ? $stripeSubscription->ends_at : now()->addMonth()
+                'status' => $user->status,
+                'role_atual' => $user->getRoleNames()->first(),
+                'acesso_ate' => $stripeSubscription ? 
+                    \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end) : 
+                    now()->addMonth()
             ]);
 
             return true;
@@ -470,24 +471,26 @@ class SubscriptionService
             // 1. Reativar no Stripe (se existir)
             $stripeSubscription = $user->getStripeSubscription();
             if ($stripeSubscription && $stripeSubscription->onGracePeriod()) {
-                $stripeSubscription->resume();
+                $stripeSubscription = $stripeSubscription->resume();
                 \Log::info('Assinatura reativada no Stripe');
             }
 
             // 2. Atualizar na SUA tabela subscriptions
             $localSubscription = \App\Models\Subscription::where('user_id', $user->id)
-                ->where('status', 'canceled')
+                ->where('status', 'active')
                 ->orderBy('created_at', 'desc')
                 ->first();
 
             if ($localSubscription) {
                 $localSubscription->update([
-                    'status' => 'active',
                     'canceled_at' => null,
-                    'ends_at' => null
+                    'ends_at' => $stripeSubscription ? 
+                        \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end) : 
+                        now()->addMonth()
                 ]);
                 \Log::info('Subscription local reativada');
             }
+
 
             // 3. Atualizar usuário
             $user->update([

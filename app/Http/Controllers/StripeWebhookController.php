@@ -93,7 +93,8 @@ class StripeWebhookController extends CashierController
         if ($user) {
             \Log::info('Processando término da assinatura para usuário:', [
                 'user_id' => $user->id,
-                'email' => $user->email
+                'email' => $user->email,
+                'status_atual' => $user->status
             ]);
             
             // 1. Atualizar subscription local para canceled
@@ -106,20 +107,27 @@ class StripeWebhookController extends CashierController
                     'status' => 'canceled',
                     'ends_at' => now()
                 ]);
+                \Log::info('Subscription local atualizada para canceled');
             }
 
             // 2. Mudar usuário para FREE apenas se não tiver outra subscription ativa
             if (!$user->hasActiveStripeSubscription()) {
                 $freePlan = \App\Models\Plan::where('name', \App\Models\User::ROLE_FREE)->first();
+                
+                // Mudar para FREE mas manter usuário ATIVO
                 $user->syncRoles([\App\Models\User::ROLE_FREE]);
                 $user->update([
-                    'status' => \App\Models\User::STATUS_ACTIVE, // Mantém ativo mas como FREE
+                    'status' => \App\Models\User::STATUS_ACTIVE, // ✅ MANTÉM ATIVO
                     'plan_expires_at' => null
                 ]);
                 
                 \Log::info('Usuário movido para plano FREE após término da assinatura', [
-                    'user' => $user->email
+                    'user' => $user->email,
+                    'novo_status' => $user->status,
+                    'nova_role' => $user->getRoleNames()->first()
                 ]);
+            } else {
+                \Log::info('Usuário tem outra assinatura ativa, mantendo plano atual');
             }
         }
 

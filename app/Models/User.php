@@ -906,14 +906,27 @@ class User extends Authenticatable implements JWTSubject
         \Log::info('Sincronizando status do Stripe para usuário: ' . $this->email);
 
         if (!$this->hasActiveStripeSubscription()) {
-            \Log::info('Usuário não tem assinatura ativa no Stripe - definindo como FREE');
+            \Log::info('Usuário não tem assinatura ativa no Stripe - verificando se deve ser FREE');
             
-            $this->update([
-                'status' => self::STATUS_INACTIVE,
-            ]);
-            
-            $this->syncRoles([self::ROLE_FREE]);
-            \Log::info('Usuário definido como FREE');
+            // Verificar se tem subscription cancelada mas ainda no período
+            $localSubscription = \App\Models\Subscription::where('user_id', $this->id)
+                ->where('status', 'active')
+                ->where('canceled_at', '!=', null)
+                ->where('current_period_end', '>', now())
+                ->first();
+
+            if ($localSubscription) {
+                // Está no grace period - manter ativo com plano atual
+                \Log::info('Usuário em grace period - mantendo plano atual');
+                $this->update(['status' => self::STATUS_ACTIVE]);
+            } else {
+                // Não tem subscription ativa - mudar para FREE mas manter ATIVO
+                \Log::info('Usuário sem subscription ativa - definindo como FREE ativo');
+                $this->update([
+                    'status' => self::STATUS_ACTIVE, // ✅ MANTÉM ATIVO
+                ]);
+                $this->syncRoles([self::ROLE_FREE]);
+            }
             return;
         }
 
