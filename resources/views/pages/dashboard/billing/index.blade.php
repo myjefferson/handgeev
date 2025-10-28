@@ -106,33 +106,7 @@
                     </div>
                     @endif
                 </div>
-
-                {{-- <!-- Alterar Plano -->
-                @if($planInfo['has_subscription'] && !$planInfo['cancel_at_period_end'])
-                <div class="bg-slate-800 rounded-2xl p-6">
-                    <h2 class="text-xl font-semibold text-white mb-4">Alterar Plano</h2>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        @foreach($availablePlans as $planKey => $plan)
-                            @if(!$plan['current'])
-                            <div class="border border-slate-600 rounded-lg p-4 hover:border-teal-500 transition-colors">
-                                <h3 class="text-white font-semibold mb-2">{{ $plan['name'] }}</h3>
-                                <p class="text-gray-400 text-sm mb-3">R$ {{ number_format($plan['price'], 2, ',', '.') }}/mês</p>
-                                <form action="{{ route('billing.plan.change') }}" method="POST">
-                                    @csrf
-                                    <input type="hidden" name="price_id" value="{{ $plan['stripe_price_id'] }}">
-                                    <button type="submit" 
-                                            class="w-full bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-lg font-medium transition-colors">
-                                        Mudar para {{ $plan['name'] }}
-                                    </button>
-                                </form>
-                            </div>
-                            @endif
-                        @endforeach
-                    </div>
-                </div>
-                @endif --}}
-
+                
                 <!-- Próxima Fatura -->
                 @if($upcomingInvoice)
                 <div class="bg-slate-800 rounded-2xl p-6">

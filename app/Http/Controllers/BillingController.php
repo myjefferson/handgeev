@@ -29,28 +29,6 @@ class BillingController extends Controller
         $upcomingInvoice = $this->subscriptionService->getUpcomingInvoice($user);
         $subscriptionHistory = $this->subscriptionService->getSubscriptionHistory($user);
 
-        // Planos disponíveis para upgrade/downgrade
-        $availablePlans = [
-            'start' => [
-                'name' => 'Start',
-                'price' => 29.90,
-                'stripe_price_id' => config('services.stripe.prices.start'),
-                'current' => $planInfo['plan_name'] === 'start'
-            ],
-            'pro' => [
-                'name' => 'Pro', 
-                'price' => 149.00,
-                'stripe_price_id' => config('services.stripe.prices.pro'),
-                'current' => $planInfo['plan_name'] === 'pro'
-            ],
-            'premium' => [
-                'name' => 'Premium',
-                'price' => 320.00,
-                'stripe_price_id' => config('services.stripe.prices.premium'),
-                'current' => $planInfo['plan_name'] === 'premium'
-            ]
-        ];
-
         return view('pages.dashboard.billing.index', compact(
             'user',
             'planInfo', 
@@ -58,7 +36,6 @@ class BillingController extends Controller
             'invoices', 
             'upcomingInvoice',
             'subscriptionHistory',
-            'availablePlans'
         ));
     }
 
@@ -70,7 +47,7 @@ class BillingController extends Controller
         }
         
         try {
-            \Stripe\Customer::retrieve($user->stripe_id);
+            Customer::retrieve($user->stripe_id);
         } catch (\Stripe\Exception\InvalidRequestException $e) {
             if ($e->getHttpStatus() === 404) {
                 $user->stripe_id = null;
