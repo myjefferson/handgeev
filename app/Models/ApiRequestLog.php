@@ -72,10 +72,8 @@ class ApiRequestLog extends Model
         return $query->whereBetween('created_at', [$startDate, $endDate]);
     }
 
-    public static function scopePeakHour($workspaceId, $startDate = null)
+    public function scopePeakHour($query, $startDate = null)
     {
-        $query = self::where('workspace_id', $workspaceId);
-        
         if ($startDate) {
             $query->whereDate('created_at', '>=', $startDate);
         }
@@ -83,20 +81,19 @@ class ApiRequestLog extends Model
         return $query
             ->selectRaw('EXTRACT(HOUR FROM created_at) as hour, COUNT(*) as count')
             ->groupByRaw('EXTRACT(HOUR FROM created_at)')
-            ->orderByDesc('count')
-            ->first();
+            ->orderByDesc('count');
     }
 
     // /**
     //  * Scope para estatísticas por hora
     //  */
-    // public function hourlyStats(Builder $query, $workspaceId, $startDate = null)
+    // public function scopeHourlyStats($query, $startDate = null)
     // {
+    //     if ($startDate) {
+    //         $query->whereDate('created_at', '>=', $startDate);
+    //     }
+
     //     return $query
-    //         ->where('workspace_id', $workspaceId)
-    //         ->when($startDate, function ($q) use ($startDate) {
-    //             $q->whereDate('created_at', '>=', $startDate);
-    //         })
     //         ->selectRaw('EXTRACT(HOUR FROM created_at) as hour, COUNT(*) as count')
     //         ->groupByRaw('EXTRACT(HOUR FROM created_at)')
     //         ->orderBy('hour');

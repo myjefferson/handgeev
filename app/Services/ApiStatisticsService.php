@@ -57,7 +57,9 @@ class ApiStatisticsService
             ->first();
 
         // Horário de pico (agrupar por hora)
-        $peakHour = ApiRequestLog::scopePeakHour($workspace->id, $lastWeek)->first();
+        $peakHour = ApiRequestLog::where('workspace_id', $workspace->id)
+            ->peakHour($lastWeek)
+            ->first();
 
         // Última requisição
         $lastRequest = ApiRequestLog::where('workspace_id', $workspace->id)

@@ -611,7 +611,7 @@
                         <span class="purple-badge text-xs font-semibold px-3 py-1 rounded-full">PRO</span>
                         <h3 class="font-semibold text-lg mb-2 text-white mt-3">{{ __('site.pricing.pro.name') }}</h3>
                         <div class="mb-4">
-                            <span class="text-4xl font-bold text-white">$32</span>
+                            <span class="text-4xl font-bold text-white">$35</span>
                             <span class="text-slate-400">{{ __('site.pricing.pro.period') }}</span>
                         </div>
                     </div>

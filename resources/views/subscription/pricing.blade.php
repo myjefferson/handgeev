@@ -330,7 +330,7 @@
                     <span class="purple-badge text-xs font-semibold px-3 py-1 rounded-full">PRO</span>
                     <h3 class="text-2xl font-bold mt-4">Profissional</h3>
                     <div class="mt-2">
-                        <span class="text-3xl font-bold">$32</span>
+                        <span class="text-3xl font-bold">$35</span>
                         <span class="text-gray-400">/mês</span>
                     </div>
                     <p class="text-gray-400 text-sm mt-2">Para negócios estabelecidos</p>
