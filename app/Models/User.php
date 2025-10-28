@@ -15,6 +15,7 @@ use Spatie\Permission\Traits\HasRoles;
 use App\Models\Field;
 use App\Models\Topic;
 use Carbon\Carbon;
+use Stripe\Stripe;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -794,13 +795,18 @@ class User extends Authenticatable implements JWTSubject
         }
         
         try {
-            $isSubscribed = $this->subscribed('default');
+            $subscription = $this->getStripeSubscription();
             
-            if ($isSubscribed) {
-                $subscription = $this->getStripeSubscription();
+            if ($subscription) {
+                // Verificar se é um objeto do Cashier ou nosso objeto custom
+                if (method_exists($subscription, 'active')) {
+                    return $subscription->active();
+                } elseif (is_object($subscription) && isset($subscription->stripe_status)) {
+                    return in_array($subscription->stripe_status, ['active', 'trialing']);
+                }
             }
             
-            return $isSubscribed;
+            return false;
             
         } catch (\Exception $e) {
             \Log::error('Erro em hasActiveStripeSubscription: ' . $e->getMessage());
@@ -814,34 +820,85 @@ class User extends Authenticatable implements JWTSubject
     public function getStripeSubscription()
     {        
         if (!$this->stripe_id) {
+            \Log::info('❌ Usuário sem stripe_id', ['user_id' => $this->id]);
             return null;
         }
         
         try {
+            // Primeiro tentar com o Cashier
             $subscription = $this->subscription('default');
             
             if ($subscription) {
-                \Log::info('✅ Subscription encontrada:', [
+                \Log::info('✅ Subscription encontrada via Cashier:', [
                     'id' => $subscription->stripe_id,
-                    'status' => $subscription->stripe_status,
-                    'price' => $subscription->stripe_price
+                    'tipo' => 'Cashier\Subscription'
                 ]);
-            } else {                
-                // Tentar buscar manualmente
-                $manualSubscription = $this->subscriptions()
-                    ->whereIn('stripe_status', ['active', 'trialing'])
-                    ->orderBy('created_at', 'desc')
-                    ->first();
-                    
-                if ($manualSubscription) {
-                    return $manualSubscription;
-                }
+                return $subscription;
             }
             
-            return $subscription;
+            \Log::warning('Nenhuma subscription encontrada via Cashier, tentando Stripe API...');
+            
+            // Fallback para API direta do Stripe
+            return $this->fetchSubscriptionFromStripe();
             
         } catch (\Exception $e) {
             \Log::error('Erro em getStripeSubscription: ' . $e->getMessage());
+            return $this->fetchSubscriptionFromStripe();
+        }
+    }
+
+    /**
+     * Buscar subscription diretamente do Stripe como fallback
+     */
+    private function fetchSubscriptionFromStripe()
+    {
+        try {
+            Stripe::setApiKey(config('services.stripe.secret'));
+            
+            // Buscar subscriptions do customer no Stripe
+            $subscriptions = \Stripe\Subscription::all([
+                'customer' => $this->stripe_id,
+                'status' => 'active',
+                'limit' => 1
+            ]);
+            
+            if (count($subscriptions->data) > 0) {
+                $stripeSubscription = $subscriptions->data[0];
+                \Log::info('✅ Subscription encontrada diretamente no Stripe:', [
+                    'id' => $stripeSubscription->id,
+                    'status' => $stripeSubscription->status,
+                    'cancel_at_period_end' => $stripeSubscription->cancel_at_period_end,
+                    'current_period_end' => $stripeSubscription->current_period_end
+                ]);
+                
+                // Criar um objeto compatível com todas as propriedades necessárias
+                return (object) [
+                    'stripe_id' => $stripeSubscription->id,
+                    'stripe_status' => $stripeSubscription->status,
+                    'stripe_price' => $stripeSubscription->items->data[0]->price->id,
+                    'ends_at' => $stripeSubscription->current_period_end ? 
+                        \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end) : null,
+                    'current_period_end' => $stripeSubscription->current_period_end,
+                    'cancel_at_period_end' => $stripeSubscription->cancel_at_period_end,
+                    'onGracePeriod' => function() use ($stripeSubscription) {
+                        return $stripeSubscription->cancel_at_period_end && 
+                            $stripeSubscription->current_period_end > time();
+                    },
+                    'active' => function() use ($stripeSubscription) {
+                        return $stripeSubscription->status === 'active' || 
+                            $stripeSubscription->status === 'trialing';
+                    }
+                ];
+            }
+            
+            \Log::info('Nenhuma subscription ativa encontrada no Stripe para customer:', [
+                'stripe_customer_id' => $this->stripe_id
+            ]);
+            
+            return null;
+            
+        } catch (\Exception $e) {
+            \Log::error('Erro ao buscar subscription do Stripe: ' . $e->getMessage());
             return null;
         }
     }

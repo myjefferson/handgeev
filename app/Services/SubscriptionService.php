@@ -286,6 +286,11 @@ class SubscriptionService
      */
     public function getUserPlanInfo(User $user)
     {
+        \Log::info('Obtendo informações do plano para usuário:', [
+            'user_id' => $user->id,
+            'email' => $user->email
+        ]);
+
         // Primeiro verificar na SUA tabela subscriptions
         $localSubscription = \App\Models\Subscription::where('user_id', $user->id)
             ->whereIn('status', ['active', 'canceled'])
@@ -295,7 +300,15 @@ class SubscriptionService
         if ($localSubscription) {
             $plan = $localSubscription->plan;
             $isCanceledButActive = $localSubscription->canceled_at !== null && 
+                                $localSubscription->current_period_end &&
                                 $localSubscription->current_period_end->isFuture();
+            
+            \Log::info('Plano encontrado na tabela local:', [
+                'plano' => $plan->name,
+                'status_local' => $localSubscription->status,
+                'canceled_at' => $localSubscription->canceled_at,
+                'is_canceled_but_active' => $isCanceledButActive
+            ]);
             
             return [
                 'has_subscription' => true,
@@ -310,10 +323,11 @@ class SubscriptionService
             ];
         }
 
-        // Fallback: verificar no Stripe (Cashier)
+        // Fallback: verificar no Stripe
         $stripeSubscription = $user->getStripeSubscription();
         
         if (!$stripeSubscription) {
+            \Log::info('Nenhuma subscription encontrada - usuário é FREE');
             return [
                 'has_subscription' => false,
                 'plan_name' => 'free',
@@ -325,15 +339,25 @@ class SubscriptionService
         $priceId = $stripeSubscription->stripe_price;
         $plan = $this->getPlanByStripePriceId($priceId);
         
+        \Log::info('Plano encontrado no Stripe:', [
+            'price_id' => $priceId,
+            'plano' => $plan ? $plan->name : 'unknown',
+            'stripe_status' => $stripeSubscription->stripe_status
+        ]);
+        
         return [
             'has_subscription' => true,
             'plan_name' => $plan ? $plan->name : 'unknown',
             'friendly_name' => $this->getFriendlyPlanName($priceId),
             'price_id' => $priceId,
-            'status' => $stripeSubscription->status,
+            'status' => $stripeSubscription->stripe_status,
             'current_period_end' => $stripeSubscription->ends_at,
-            'cancel_at_period_end' => $stripeSubscription->cancel_at_period_end,
-            'on_grace_period' => $stripeSubscription->onGracePeriod(),
+            'cancel_at_period_end' => isset($stripeSubscription->cancel_at_period_end) ? 
+                $stripeSubscription->cancel_at_period_end : false,
+            'on_grace_period' => isset($stripeSubscription->cancel_at_period_end) && 
+                                $stripeSubscription->cancel_at_period_end &&
+                                isset($stripeSubscription->current_period_end) &&
+                                $stripeSubscription->current_period_end > time(),
             'stripe_subscription' => $stripeSubscription,
         ];
     }
@@ -418,11 +442,27 @@ class SubscriptionService
             // 1. Cancelar no Stripe (mantém acesso até o final do período)
             $stripeSubscription = $user->getStripeSubscription();
             if ($stripeSubscription) {
-                $stripeSubscription = $stripeSubscription->cancelAtPeriodEnd();
-                \Log::info('Assinatura programada para cancelamento no final do período no Stripe', [
-                    'subscription_id' => $stripeSubscription->id,
-                    'ends_at' => $stripeSubscription->current_period_end
+                \Log::info('Subscription encontrada para cancelamento', [
+                    'subscription_id' => $stripeSubscription->stripe_id,
+                    'tipo_objeto' => get_class($stripeSubscription)
                 ]);
+
+                // Usar API direta do Stripe em vez de métodos do objeto
+                Stripe::setApiKey(config('services.stripe.secret'));
+                
+                // Marcar para cancelar no final do período
+                $updatedSubscription = \Stripe\Subscription::update(
+                    $stripeSubscription->stripe_id,
+                    ['cancel_at_period_end' => true]
+                );
+                
+                \Log::info('Assinatura programada para cancelamento no final do período no Stripe', [
+                    'subscription_id' => $updatedSubscription->id,
+                    'cancel_at_period_end' => $updatedSubscription->cancel_at_period_end,
+                    'current_period_end' => $updatedSubscription->current_period_end
+                ]);
+            } else {
+                \Log::warning('Nenhuma subscription encontrada para cancelar');
             }
 
             // 2. Atualizar na SUA tabela subscriptions
@@ -432,23 +472,25 @@ class SubscriptionService
                 ->first();
 
             if ($localSubscription) {
+                $endsAt = $stripeSubscription && isset($stripeSubscription->current_period_end) ? 
+                    Carbon::createFromTimestamp($stripeSubscription->current_period_end) : 
+                    now()->addMonth();
+                    
                 $localSubscription->update([
                     'status' => 'active', // Mantém como active até o final
                     'canceled_at' => now(),
-                    'ends_at' => $stripeSubscription ? 
-                        \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end) : 
-                        now()->addMonth()
+                    'ends_at' => $endsAt
                 ]);
-                \Log::info('Subscription local marcada para cancelamento no final do período');
+                \Log::info('Subscription local marcada para cancelamento no final do período', [
+                    'ends_at' => $endsAt
+                ]);
             }
-            
-            \Log::info('Cancelamento processado - usuário mantido com o plano até o final do período', [
+
+            \Log::info('Cancelamento processado - usuário mantido ativo até o final do período', [
                 'user' => $user->email,
                 'status' => $user->status,
                 'role_atual' => $user->getRoleNames()->first(),
-                'acesso_ate' => $stripeSubscription ? 
-                    \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end) : 
-                    now()->addMonth()
+                'acesso_ate' => $endsAt ?? 'desconhecido'
             ]);
 
             return true;
@@ -468,11 +510,36 @@ class SubscriptionService
         \Log::info('Tentando reativar assinatura', ['user' => $user->email]);
 
         try {
-            // 1. Reativar no Stripe (se existir)
+            // 1. Reativar no Stripe
             $stripeSubscription = $user->getStripeSubscription();
-            if ($stripeSubscription && $stripeSubscription->onGracePeriod()) {
-                $stripeSubscription = $stripeSubscription->resume();
-                \Log::info('Assinatura reativada no Stripe');
+            if ($stripeSubscription) {
+                \Log::info('Subscription encontrada para reativação', [
+                    'subscription_id' => $stripeSubscription->stripe_id
+                ]);
+
+                // Verificar se está em grace period
+                $isOnGracePeriod = false;
+                
+                if (isset($stripeSubscription->cancel_at_period_end) && 
+                    isset($stripeSubscription->current_period_end)) {
+                    $isOnGracePeriod = $stripeSubscription->cancel_at_period_end && 
+                                    $stripeSubscription->current_period_end > time();
+                }
+                
+                if ($isOnGracePeriod) {
+                    // Reativar no Stripe - remover cancel_at_period_end
+                    Stripe::setApiKey(config('services.stripe.secret'));
+                    $updatedSubscription = \Stripe\Subscription::update(
+                        $stripeSubscription->stripe_id,
+                        ['cancel_at_period_end' => false]
+                    );
+                    \Log::info('Cancelamento removido - assinatura reativada no Stripe', [
+                        'subscription_id' => $updatedSubscription->id,
+                        'cancel_at_period_end' => $updatedSubscription->cancel_at_period_end
+                    ]);
+                } else {
+                    \Log::warning('Subscription não está em grace period, não pode ser reativada');
+                }
             }
 
             // 2. Atualizar na SUA tabela subscriptions
@@ -482,21 +549,22 @@ class SubscriptionService
                 ->first();
 
             if ($localSubscription) {
+                $endsAt = $stripeSubscription && isset($stripeSubscription->current_period_end) ? 
+                    \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end) : 
+                    now()->addMonth();
+                    
                 $localSubscription->update([
                     'canceled_at' => null,
-                    'ends_at' => $stripeSubscription ? 
-                        \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end) : 
-                        now()->addMonth()
+                    'ends_at' => $endsAt
                 ]);
                 \Log::info('Subscription local reativada');
             }
 
-
-            // 3. Atualizar usuário
-            $user->update([
-                'status' => User::STATUS_ACTIVE,
-                'plan_expires_at' => $stripeSubscription ? $stripeSubscription->ends_at : now()->addMonth()
-            ]);
+            // 3. Garantir que usuário está ativo
+            if ($user->status !== User::STATUS_ACTIVE) {
+                $user->update(['status' => User::STATUS_ACTIVE]);
+                \Log::info('Status do usuário corrigido para ACTIVE');
+            }
 
             \Log::info('Assinatura reativada com sucesso', ['user' => $user->email]);
 
@@ -515,18 +583,55 @@ class SubscriptionService
     {
         // Verificar no Stripe
         $stripeSubscription = $user->getStripeSubscription();
-        if ($stripeSubscription && $stripeSubscription->onGracePeriod()) {
-            return true;
+        if ($stripeSubscription) {
+            \Log::info('Verificando se subscription pode ser reativada', [
+                'subscription_id' => $stripeSubscription->stripe_id,
+                'tipo_objeto' => get_class($stripeSubscription)
+            ]);
+
+            // Verificar grace period de forma compatível com stdClass
+            $isOnGracePeriod = false;
+            
+            if (method_exists($stripeSubscription, 'onGracePeriod')) {
+                // Se for objeto do Cashier com método onGracePeriod
+                $isOnGracePeriod = $stripeSubscription->onGracePeriod();
+            } elseif (isset($stripeSubscription->cancel_at_period_end) && 
+                    isset($stripeSubscription->current_period_end)) {
+                // Se for stdClass, verificar manualmente
+                $isOnGracePeriod = $stripeSubscription->cancel_at_period_end && 
+                                $stripeSubscription->current_period_end > time();
+                
+                \Log::info('Verificação manual de grace period', [
+                    'cancel_at_period_end' => $stripeSubscription->cancel_at_period_end,
+                    'current_period_end' => $stripeSubscription->current_period_end,
+                    'current_time' => time(),
+                    'is_future' => $stripeSubscription->current_period_end > time(),
+                    'is_on_grace_period' => $isOnGracePeriod
+                ]);
+            }
+            
+            if ($isOnGracePeriod) {
+                \Log::info('Subscription está em grace period - pode ser reativada');
+                return true;
+            }
         }
 
         // Verificar na tabela local
         $localSubscription = \App\Models\Subscription::where('user_id', $user->id)
-            ->where('status', 'canceled')
+            ->where('status', 'active') // Buscar por active com canceled_at preenchido
+            ->whereNotNull('canceled_at')
             ->where('current_period_end', '>', now())
             ->orderBy('created_at', 'desc')
             ->first();
 
-        return $localSubscription !== null;
+        $canResumeLocal = $localSubscription !== null;
+        
+        \Log::info('Verificação local de reativação', [
+            'local_subscription_encontrada' => $localSubscription ? 'sim' : 'não',
+            'pode_reativar_local' => $canResumeLocal
+        ]);
+
+        return $canResumeLocal;
     }
 
     /**
