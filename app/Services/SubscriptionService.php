@@ -8,6 +8,7 @@ use App\Models\Subscription;
 use Laravel\Cashier\Exceptions\IncompletePayment;
 use Stripe\Stripe;
 use Stripe\Customer;
+use Carbon\Carbon;
 
 class SubscriptionService
 {
@@ -91,7 +92,7 @@ class SubscriptionService
                     'cancel_url' => route('subscription.pricing'),
                     'customer_update' => ['address' => 'auto'],
                     'locale' => 'auto',
-                    'automatic_tax' => ['enabled' => true]
+                    'automatic_tax' => ['enabled' => false]
                 ]);
             
         } catch (\Exception $e) {
@@ -115,76 +116,121 @@ class SubscriptionService
             $user = User::where('stripe_id', $session->customer)->first();
 
             if (!$user) {
-                throw new \Exception('Usuário não encontrado');
+                throw new \Exception('Usuário não encontrado para customer: ' . $session->customer);
             }
 
-            \Log::info('Usuário antes da atualização:', [
+            \Log::info('Usuário encontrado:', [
+                'email' => $user->email,
+                'status_atual' => $user->status,
                 'role_atual' => $user->getRoleNames()->first()
             ]);
 
-            // OBTER DADOS DA SUBSCRIPTION
+            // VERIFICAR STATUS REAL NO STRIPE
             if ($session->subscription) {
-                $subscription = \Stripe\Subscription::retrieve($session->subscription);
+                $stripeSubscription = \Stripe\Subscription::retrieve($session->subscription);
                 
-                if (!empty($subscription->items->data)) {
-                    $firstItem = $subscription->items->data[0];
-                    $priceId = $firstItem->price->id;
-                    
-                    \Log::info('Price ID obtido:', ['price_id' => $priceId]);
-                    
-                    $plan = $this->getPlanByStripePriceId($priceId);
-                    
-                    if ($plan) {
-                        // ATUALIZAR APENAS A ROLE (não usar current_plan_id)
-                        \Log::info('Atualizando role do usuário para: ' . $plan->name);
-                        
-                        $user->syncRoles([$plan->name]);
-                        $user->update([
-                            'status' => User::STATUS_ACTIVE,
-                            'plan_expires_at' => now()->addMonth()
-                        ]);
-                        
-                        \Log::info('Role atualizada com sucesso', [
-                            'nova_role' => $plan->name,
-                            'roles_apos_update' => $user->getRoleNames()
-                        ]);
+                \Log::info('Dados completos da subscription:', [
+                    'status' => $stripeSubscription->status,
+                    'subscription_id' => $stripeSubscription->id,
+                    'current_period_start' => $stripeSubscription->current_period_start,
+                    'current_period_end' => $stripeSubscription->current_period_end,
+                    'created' => $stripeSubscription->created
+                ]);
 
-                        // Registrar assinatura no banco (apenas para histórico)
-                        Subscription::create([
-                            'user_id' => $user->id,
-                            'plan_id' => $plan->id,
-                            'stripe_subscription_id' => $session->subscription,
-                            'stripe_price_id' => $priceId,
-                            'status' => 'active',
-                            'current_period_start' => now(),
-                            'current_period_end' => now()->addMonth(),
-                        ]);
-
-                        \Log::info('Assinatura registrada no banco com sucesso');
+                // SÓ PROCESSAR SE A SUBSCRIPTION ESTIVER ATIVA
+                if ($stripeSubscription->status === 'active' || $stripeSubscription->status === 'trialing') {
+                    
+                    if (!empty($stripeSubscription->items->data)) {
+                        $firstItem = $stripeSubscription->items->data[0];
+                        $priceId = $firstItem->price->id;
                         
+                        $plan = $this->getPlanByStripePriceId($priceId);
+                        
+                        if ($plan) {
+                            // CALCULAR DATA DE EXPIRAÇÃO DE FORMA SEGURA
+                            $expiresAt = $this->calculateSubscriptionExpiry($stripeSubscription);
+                            
+                            \Log::info('Ativando subscription com dados:', [
+                                'plano' => $plan->name,
+                                'expires_at' => $expiresAt,
+                                'price_id' => $priceId
+                            ]);
+
+                            // USAR O MÉTODO EXISTENTE activateSubscription
+                            $user->activateSubscription($plan, $expiresAt);
+                            
+                            \Log::info('Usuário ativado usando activateSubscription');
+
+                            // Registrar assinatura no banco com datas seguras
+                            Subscription::updateOrCreate(
+                                [
+                                    'stripe_subscription_id' => $session->subscription,
+                                    'user_id' => $user->id
+                                ],
+                                [
+                                    'plan_id' => $plan->id,
+                                    'stripe_price_id' => $priceId,
+                                    'status' => 'active',
+                                    'current_period_start' => now(),
+                                    'current_period_end' => $expiresAt,
+                                ]
+                            );
+
+                            \Log::info('Processamento concluído com sucesso');
+                            
+                        } else {
+                            throw new \Exception('Plano não encontrado para o price ID: ' . $priceId);
+                        }
                     } else {
-                        throw new \Exception('Plano não encontrado para o price ID: ' . $priceId);
+                        throw new \Exception('Nenhum item encontrado na subscription');
                     }
                 } else {
-                    throw new \Exception('Nenhum item encontrado na subscription');
+                    \Log::warning('Subscription no Stripe não está ativa:', [
+                        'status' => $stripeSubscription->status
+                    ]);
+                    throw new \Exception('Subscription não está ativa no Stripe. Status: ' . $stripeSubscription->status);
                 }
             } else {
                 throw new \Exception('Subscription não encontrada na sessão');
             }
 
             // VERIFICAÇÃO FINAL
+            $user->refresh();
             \Log::info('VERIFICAÇÃO FINAL - Usuário após processamento:', [
                 'email' => $user->email,
-                'role_atual' => $user->getRoleNames()->first(),
-                'plano_determinado' => $user->getPlan()->name
+                'status' => $user->status,
+                'role_atual' => $user->getRoleNames()->first()
             ]);
 
             return $user;
 
         } catch (\Exception $e) {
-            \Log::error('Erro ao processar pagamento: ' . $e->getMessage());
+            \Log::error('Erro ao processar pagamento: ' . $e->getMessage(), [
+                'session_id' => $sessionId,
+                'trace' => $e->getTraceAsString()
+            ]);
             throw $e;
         }
+    }
+
+    /**
+     * Calcular data de expiração
+     */
+    private function calculateSubscriptionExpiry($stripeSubscription)
+    {
+        // Prioridade 1: current_period_end
+        if (!empty($stripeSubscription->current_period_end)) {
+            return \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end);
+        }
+        
+        // Prioridade 2: created + 30 dias (fallback)
+        if (!empty($stripeSubscription->created)) {
+            return \Carbon\Carbon::createFromTimestamp($stripeSubscription->created)->addMonth();
+        }
+        
+        // Prioridade 3: agora + 30 dias (último fallback)
+        \Log::warning('Usando fallback para data de expiração - datas do Stripe não disponíveis');
+        return now()->addMonth();
     }
 
     /**
@@ -242,21 +288,24 @@ class SubscriptionService
     {
         // Primeiro verificar na SUA tabela subscriptions
         $localSubscription = \App\Models\Subscription::where('user_id', $user->id)
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'canceled'])
             ->orderBy('created_at', 'desc')
             ->first();
 
         if ($localSubscription) {
             $plan = $localSubscription->plan;
+            $isCanceledButActive = $localSubscription->canceled_at !== null && 
+                                $localSubscription->current_period_end->isFuture();
+            
             return [
                 'has_subscription' => true,
                 'plan_name' => $plan->name,
                 'friendly_name' => $this->getFriendlyPlanName($localSubscription->stripe_price_id),
                 'price_id' => $localSubscription->stripe_price_id,
-                'status' => $localSubscription->status,
+                'status' => $isCanceledButActive ? 'active' : $localSubscription->status,
                 'current_period_end' => $localSubscription->current_period_end,
                 'cancel_at_period_end' => $localSubscription->canceled_at !== null,
-                'on_grace_period' => $localSubscription->canceled_at !== null && $localSubscription->current_period_end->isFuture(),
+                'on_grace_period' => $isCanceledButActive,
                 'local_subscription' => $localSubscription,
             ];
         }

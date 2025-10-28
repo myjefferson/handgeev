@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Mail;
 use App\Jobs\PermanentAccountDeletion;
 use App\Mail\AccountDeactivatedMail;
 use App\Mail\AccountRestoredMail;
-
 use Carbon\Carbon;
 
 class AccountController extends Controller

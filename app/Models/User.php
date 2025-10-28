@@ -14,6 +14,7 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 use Spatie\Permission\Traits\HasRoles;
 use App\Models\Field;
 use App\Models\Topic;
+use Carbon\Carbon;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -715,8 +716,26 @@ class User extends Authenticatable implements JWTSubject
     /**
      * Ativar assinatura
      */
-    public function activateSubscription(Plan $plan, \DateTime $expiresAt): void
+    public function activateSubscription(Plan $plan, $expiresAt): void
     {
+        // Garantir que expiresAt é um Carbon instance
+        if (!$expiresAt instanceof \Carbon\Carbon) {
+            if (is_numeric($expiresAt)) {
+                $expiresAt = \Carbon\Carbon::createFromTimestamp($expiresAt);
+            } else {
+                $expiresAt = \Carbon\Carbon::parse($expiresAt);
+            }
+        }
+        
+        // Garantir que a data não é no passado
+        if ($expiresAt->isPast()) {
+            $expiresAt = now()->addMonth();
+            \Log::warning('Data de expiração ajustada para futuro', [
+                'data_original' => $expiresAt,
+                'data_ajustada' => $expiresAt
+            ]);
+        }
+
         $this->update([
             'status' => self::STATUS_ACTIVE,
             'current_plan_id' => $plan->id,
@@ -724,6 +743,12 @@ class User extends Authenticatable implements JWTSubject
         ]);
         
         $this->syncRoles([$plan->name]);
+        
+        \Log::info('Usuário ativado com sucesso', [
+            'user_id' => $this->id,
+            'plano' => $plan->name,
+            'expira_em' => $expiresAt
+        ]);
     }
 
     /**
@@ -892,25 +917,51 @@ class User extends Authenticatable implements JWTSubject
             return;
         }
 
-        $subscription = $this->getStripeSubscription();
-        $priceId = $subscription->stripe_price;
-        $plan = $this->getPlanByStripePriceId($priceId);
-        
-        if ($plan && $subscription->active()) {
-            \Log::info('Atualizando usuário para plano: ' . $plan->name);
+        try {
+            $subscription = $this->getStripeSubscription();
             
-            $this->update([
-                'status' => self::STATUS_ACTIVE,
-                'plan_expires_at' => $subscription->ends_at
+            if (!$subscription) {
+                \Log::warning('Subscription não encontrada no syncStripeSubscriptionStatus');
+                return;
+            }
+            
+            $priceId = $subscription->stripe_price;
+            $plan = $this->getPlanByStripePriceId($priceId);
+            
+            \Log::info('Dados da subscription no sync:', [
+                'status' => $subscription->stripe_status,
+                'price_id' => $priceId,
+                'current_period_end' => $subscription->ends_at
             ]);
             
-            // APENAS SINCRONIZAR ROLE
-            $this->syncRoles([$plan->name]);
-            
-            \Log::info('Role atualizada para: ' . $plan->name);
+            if ($plan && $subscription->active()) {
+                \Log::info('Atualizando usuário para plano ativo: ' . $plan->name);
+                
+                // CALCULAR EXPIRAÇÃO DE FORMA SEGURA
+                $expiresAt = $subscription->ends_at ?: now()->addMonth();
+                
+                // USAR activateSubscription
+                $this->activateSubscription($plan, $expiresAt);
+                
+                \Log::info('Usuário ativado via syncStripeSubscriptionStatus');
 
-        } else {
-            \Log::warning('Plano não encontrado ou assinatura inativa');
+            } else {
+                \Log::warning('Plano não encontrado ou assinatura inativa no sync', [
+                    'plano_encontrado' => $plan ? 'sim' : 'não',
+                    'subscription_ativa' => $subscription->active() ? 'sim' : 'não'
+                ]);
+                
+                // Garantir que usuários com subscription ativa no Stripe fiquem ativos
+                if ($subscription->active()) {
+                    $freePlan = Plan::where('name', self::ROLE_FREE)->first();
+                    $expiresAt = $subscription->ends_at ?: now()->addMonth();
+                    $this->activateSubscription($freePlan, $expiresAt);
+                    \Log::info('Usuário com subscription ativa mas plano não encontrado - definido como FREE ativo');
+                }
+            }
+            
+        } catch (\Exception $e) {
+            \Log::error('Erro no syncStripeSubscriptionStatus: ' . $e->getMessage());
         }
     }
 

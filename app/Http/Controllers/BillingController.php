@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Services\SubscriptionService;
+use App\Models\User;
 use Stripe\Customer;
 use Stripe\Exception\InvalidRequestException;
 

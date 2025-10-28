@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
+use Carbon\Carbon;
 
 class CheckDeactivatedAccount
 {
@@ -19,7 +20,7 @@ class CheckDeactivatedAccount
             $deactivatedData = $request->session()->get('deactivated_account_access');
             
             // Verificar se o período expirou
-            $deletedAt = \Carbon\Carbon::parse($deactivatedData['deleted_at']);
+            $deletedAt = Carbon::parse($deactivatedData['deleted_at']);
             if ($deletedAt->diffInDays(now()) > 30) {
                 $request->session()->forget('deactivated_account_access');
                 return redirect()->route('login.show')->withErrors([

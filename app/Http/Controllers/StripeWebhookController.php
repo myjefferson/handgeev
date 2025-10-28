@@ -20,29 +20,53 @@ class StripeWebhookController extends CashierController
 
     protected function handleCustomerSubscriptionCreated(array $payload)
     {
-        \Log::info('Webhook: Assinatura criada', ['payload' => $payload]);
+        \Log::info('Webhook: Assinatura criada', [
+            'event_id' => $payload['id'],
+            'subscription_id' => $payload['data']['object']['id']
+        ]);
         
-        $user = $this->getUserByStripeId($payload['data']['object']['customer']);
-        if ($user) {
-            $priceId = $payload['data']['object']['items']['data'][0]['price']['id'];
-            $this->subscriptionService->handleSuccessfulPayment($payload['data']['object']['id']);
-        }
+        try {
+            $user = $this->getUserByStripeId($payload['data']['object']['customer']);
+            if ($user) {
+                \Log::info('Sincronizando subscription created:', [
+                    'user_id' => $user->id,
+                    'email' => $user->email
+                ]);
+                
+                // USAR O MÉTODO EXISTENTE DE SINCRONIZAÇÃO
+                $user->syncStripeSubscriptionStatus();
+            }
 
-        $this->logPaymentEvent($payload);
-        return $this->successMethod();
+            $this->logPaymentEvent($payload);
+            return $this->successMethod();
+            
+        } catch (\Exception $e) {
+            \Log::error('Erro no handleCustomerSubscriptionCreated: ' . $e->getMessage());
+            return $this->successMethod();
+        }
     }
+
 
     protected function handleInvoicePaymentSucceeded(array $payload)
     {
-        Log::info('Webhook: Pagamento de fatura bem-sucedido', ['payload' => $payload]);
+        Log::info('Webhook: Pagamento de fatura bem-sucedido', [
+            'event_id' => $payload['id']
+        ]);
         
-        $user = $this->getUserByStripeId($payload['data']['object']['customer']);
-        if ($user) {
-            $user->syncStripeSubscriptionStatus();
-        }
+        try {
+            $user = $this->getUserByStripeId($payload['data']['object']['customer']);
+            if ($user) {
+                // USAR SINCRONIZAÇÃO EXISTENTE
+                $user->syncStripeSubscriptionStatus();
+            }
 
-        $this->logPaymentEvent($payload);
-        return $this->successMethod();
+            $this->logPaymentEvent($payload);
+            return $this->successMethod();
+            
+        } catch (\Exception $e) {
+            \Log::error('Erro no handleInvoicePaymentSucceeded: ' . $e->getMessage());
+            return $this->successMethod();
+        }
     }
 
     protected function handleInvoicePaymentFailed(array $payload)
@@ -60,11 +84,43 @@ class StripeWebhookController extends CashierController
 
     protected function handleCustomerSubscriptionDeleted(array $payload)
     {
-        Log::info('Webhook: Assinatura cancelada', ['payload' => $payload]);
+        Log::info('Webhook: Assinatura finalizada (período terminou)', [
+            'subscription_id' => $payload['data']['object']['id'],
+            'status' => $payload['data']['object']['status']
+        ]);
         
         $user = $this->getUserByStripeId($payload['data']['object']['customer']);
         if ($user) {
-            $user->syncStripeSubscriptionStatus();
+            \Log::info('Processando término da assinatura para usuário:', [
+                'user_id' => $user->id,
+                'email' => $user->email
+            ]);
+            
+            // 1. Atualizar subscription local para canceled
+            $localSubscription = \App\Models\Subscription::where('user_id', $user->id)
+                ->where('stripe_subscription_id', $payload['data']['object']['id'])
+                ->first();
+
+            if ($localSubscription) {
+                $localSubscription->update([
+                    'status' => 'canceled',
+                    'ends_at' => now()
+                ]);
+            }
+
+            // 2. Mudar usuário para FREE apenas se não tiver outra subscription ativa
+            if (!$user->hasActiveStripeSubscription()) {
+                $freePlan = \App\Models\Plan::where('name', \App\Models\User::ROLE_FREE)->first();
+                $user->syncRoles([\App\Models\User::ROLE_FREE]);
+                $user->update([
+                    'status' => \App\Models\User::STATUS_ACTIVE, // Mantém ativo mas como FREE
+                    'plan_expires_at' => null
+                ]);
+                
+                \Log::info('Usuário movido para plano FREE após término da assinatura', [
+                    'user' => $user->email
+                ]);
+            }
         }
 
         $this->logPaymentEvent($payload);
@@ -73,20 +129,38 @@ class StripeWebhookController extends CashierController
 
     protected function handleCustomerSubscriptionUpdated(array $payload)
     {
-        \Log::info('Webhook: Assinatura atualizada', ['payload' => $payload]);
+        \Log::info('Webhook: Assinatura atualizada', [
+            'event_id' => $payload['id'],
+            'subscription_id' => $payload['data']['object']['id'],
+            'status' => $payload['data']['object']['status']
+        ]);
         
-        $user = $this->getUserByStripeId($payload['data']['object']['customer']);
-        if ($user) {
-            $user->syncStripeSubscriptionStatus();
-            
-            // Log da mudança
-            $priceId = $payload['data']['object']['items']['data'][0]['price']['id'];
-            $plan = $this->subscriptionService->getPlanByStripePriceId($priceId);
-            \Log::info("Assinatura atualizada para {$plan->name} para usuário: {$user->email}");
-        }
+        try {
+            $user = $this->getUserByStripeId($payload['data']['object']['customer']);
+            if ($user) {
+                \Log::info('Sincronizando subscription updated para usuário:', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'status_anterior' => $user->status
+                ]);
+                
+                $user->syncStripeSubscriptionStatus();
+                
+                // Log da mudança
+                if (isset($payload['data']['object']['items']['data'][0]['price']['id'])) {
+                    $priceId = $payload['data']['object']['items']['data'][0]['price']['id'];
+                    $plan = $this->subscriptionService->getPlanByStripePriceId($priceId);
+                    \Log::info("Assinatura atualizada para {$plan->name} para usuário: {$user->email}");
+                }
+            }
 
-        $this->logPaymentEvent($payload);
-        return $this->successMethod();
+            $this->logPaymentEvent($payload);
+            return $this->successMethod();
+            
+        } catch (\Exception $e) {
+            \Log::error('Erro no handleCustomerSubscriptionUpdated: ' . $e->getMessage());
+            return $this->successMethod();
+        }
     }
 
     private function logPaymentEvent(array $payload)

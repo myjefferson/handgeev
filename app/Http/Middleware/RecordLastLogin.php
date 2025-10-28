@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
+use Carbon\Carbon;
 
 class RecordLastLogin
 {
@@ -24,7 +25,7 @@ class RecordLastLogin
             $shouldUpdate = true;
             
             if ($user->last_login_at) {
-                $lastUpdate = \Carbon\Carbon::parse($user->last_login_at);
+                $lastUpdate = Carbon::parse($user->last_login_at);
                 $shouldUpdate = $lastUpdate->diffInMinutes(now()) > 5;
             }
             

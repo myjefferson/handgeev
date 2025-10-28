@@ -56,6 +56,12 @@
                     </div>
 
                     <!-- Ações do Plano -->
+                    @if($planInfo['cancel_at_period_end'])
+                        <div class="alert alert-warning">
+                            Sua assinatura está programada para cancelamento em {{ $planInfo['current_period_end']->format('d/m/Y') }}.
+                            Você continuará com acesso ao plano {{ $planInfo['friendly_name'] }} até esta data.
+                        </div>
+                    @endif
                     @if($planInfo['has_subscription'])
                     <div class="mt-6 flex flex-wrap gap-3">
                         @if($planInfo['cancel_at_period_end'] || $planInfo['on_grace_period'])
