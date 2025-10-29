@@ -4,29 +4,29 @@
             <i class="fas fa-book mr-2 text-cyan-400"></i>
             Documentação da API
         </h3>
-        <div class="flex flex-col sm:flex-row items-center space-x-4 space-y-5 sm:space-y-0">
+        <div class="flex flex-col sm:flex-col md:flex-row items-center space-x-4 space-y-5 sm:space-y-0">
             <!-- Indicador do Tipo de Autenticação -->
-            <div class="flex items-center space-x-2 px-3 py-1 rounded-full {{ $workspace->api_jwt_required ? 'bg-amber-500/20 border border-amber-500/50' : 'bg-green-500/20 border border-green-500/50' }}">
+            <div class="flex text-nowrap items-center space-x-2 px-3 py-1 rounded-full {{ $workspace->api_jwt_required ? 'bg-amber-500/20 border border-amber-500/50' : 'bg-green-500/20 border border-green-500/50' }}">
                 <div class="w-2 h-2 rounded-full {{ $workspace->api_jwt_required ? 'bg-amber-500' : 'bg-green-500' }}"></div>
                 <span class="text-sm font-medium {{ $workspace->api_jwt_required ? 'text-amber-300' : 'text-green-300' }}">
                     {{ $workspace->api_jwt_required ? 'JWT Authentication' : 'Workspace Key Authentication' }}
                 </span>
             </div>
             
-            <div>
-                <button onclick="exportDocumentation('json')" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors flex items-center">
+            <div class="flex items-center flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 w-full">
+                <button onclick="exportDocumentation('json')" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors flex items-center w-full md:w-max">
                     <i class="fas fa-file-export mr-2"></i>
                     Exportar JSON
                 </button>
                 @if(auth()->user()->isPro() || auth()->user()->isPremium())
-                <button onclick="exportDocumentation('yaml')" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors flex items-center">
-                    <i class="fas fa-file-code mr-2"></i>
-                    Exportar YAML
-                </button>
-                <button onclick="exportOpenAPI()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm transition-colors flex items-center">
-                    <i class="fas fa-api mr-2"></i>
-                    OpenAPI Spec
-                </button>
+                    {{-- <button onclick="exportDocumentation('yaml')" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors flex items-center w-full">
+                        <i class="fas fa-file-code mr-2"></i>
+                        Exportar YAML
+                    </button> --}}
+                    <button onclick="exportOpenAPI()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm transition-colors flex items-center w-full md:w-max">
+                        <i class="fas fa-api mr-2"></i>
+                        OpenAPI Spec
+                    </button>
                 @endif
             </div>
         </div>

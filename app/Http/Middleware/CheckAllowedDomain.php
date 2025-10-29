@@ -5,30 +5,59 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use App\Models\Workspace;
-use App\Models\WorkspaceAllowedDomain;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 
 class CheckAllowedDomain
 {
-
     use Concerns\HandlesWorkspaceRequest;
+
     /**
-     * Handle an incoming request - Verificação completa de domínios permitidos
+     * Middleware principal: validação de domínio, HTTPS e acesso do workspace.
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Ignorar rotas não pertencentes à API
         if (!$this->isApiRoute($request)) {
             return $next($request);
         }
 
-        // Para rotas API públicas - permitir sempre
+        // Ignorar rotas públicas
         if ($this->isPublicApiRoute($request)) {
             return $next($request);
         }
 
-        // Obter workspace da requisição
+        /**
+         * 🔒 1. Segurança HTTPS — apenas em produção
+         */
+        if (app()->environment('production')) {
+            if (!$request->isSecure()) {
+                return response()->json([
+                    'error' => 'Insecure connection',
+                    'message' => 'Only HTTPS requests are allowed in production.'
+                ], 403);
+            }
+
+            $originHeader = $request->header('Origin') ?? $request->header('Referer');
+            if ($originHeader && !str_starts_with($originHeader, 'https://')) {
+                return response()->json([
+                    'error' => 'Insecure origin',
+                    'message' => 'Requests must originate from a secure (HTTPS) domain.'
+                ], 403);
+            }
+        } else {
+            // 💻 Ambiente local — permitir localhost
+            $originHeader = $request->header('Origin');
+            if ($originHeader && str_contains($originHeader, 'localhost')) {
+                Log::debug('Localhost origin allowed in non-production environment', [
+                    'origin' => $originHeader
+                ]);
+            }
+        }
+
+        /**
+         * 2. Identificação do workspace
+         */
         $workspace = $this->getWorkspaceFromRequest($request);
 
         if (!$workspace) {
@@ -37,17 +66,19 @@ class CheckAllowedDomain
                 'message' => 'The requested workspace does not exist'
             ], 404);
         }
-        
-        //Se o usuário autenticado é o proprietário do workspace, permite o acesso
+
+        // 👑 Proprietário do workspace sempre pode acessar
         if (Auth::check() && Auth::id() === $workspace->user_id) {
-            \Log::debug('Owner access - bypassing domain restrictions', [
+            Log::debug('Owner access - bypassing domain restrictions', [
                 'workspace_id' => $workspace->id,
                 'user_id' => Auth::id()
             ]);
             return $next($request);
         }
 
-        // Verificar se a API está habilitada no workspace
+        /**
+         * 3. Checar se API está habilitada
+         */
         if (!$workspace->api_enabled) {
             return response()->json([
                 'error' => 'API disabled',
@@ -55,44 +86,61 @@ class CheckAllowedDomain
             ], 403);
         }
 
-        // Se a restrição de domínio está desativada, permite acesso
+        /**
+         * 4. Checar se há restrição de domínio
+         */
         if (!$workspace->api_domain_restriction) {
-            \Log::debug('Domain restriction disabled - allowing all domains', [
+            Log::debug('Domain restriction disabled - allowing all domains', [
                 'workspace_id' => $workspace->id
             ]);
             return $next($request);
         }
 
+        /**
+         * 5. Buscar domínios permitidos
+         */
         $allowedDomains = $workspace->allowedDomains()
             ->where('is_active', true)
             ->get();
 
-        \Log::debug('Domain restriction ENABLED - checking domains', [
+        Log::debug('Domain restriction ENABLED - checking domains', [
             'workspace_id' => $workspace->id,
-            'allowed_domains_count' => $allowedDomains->count() // ← AGORA $allowedDomains existe
+            'allowed_domains_count' => $allowedDomains->count()
         ]);
 
         if ($allowedDomains->isEmpty()) {
             return response()->json([
                 'error' => 'No allowed domains configured',
-                'message' => 'Domain restriction is enabled but no domains are configured. Please add domains in the workspace settings.',
+                'message' => 'Domain restriction is enabled but no domains are configured.',
                 'workspace_id' => $workspace->id,
-                'workspace_title' => $workspace->title,
                 'settings_url' => url("/workspace/{$workspace->id}/api#settings-tab")
             ], 403);
         }
 
-        // Obter domínio de origem da requisição
+        /**
+         * 6. Obter domínio de origem (com porta, se existir)
+         */
         $originDomain = $this->getOriginDomain($request);
 
-        // Verificar se o domínio de origem está permitido
+        if (empty($originDomain)) {
+            return response()->json([
+                'error' => 'Origin not detected',
+                'message' => 'Requests must include a valid Origin or Referer header.'
+            ], 403);
+        }
+
+        /**
+         * 7. Validar domínio permitido
+         */
         $isDomainAllowed = $this->isDomainAllowed($originDomain, $allowedDomains);
 
         if (!$isDomainAllowed) {
             return response()->json([
                 'error' => 'Domain not allowed',
                 'message' => 'Your domain is not authorized to access this API',
-                'workspace_id' => $workspace->id
+                'origin' => $originDomain,
+                'workspace_id' => $workspace->id,
+                'workspace_title' => $workspace->title
             ], 403);
         }
 
@@ -100,188 +148,131 @@ class CheckAllowedDomain
     }
 
     /**
-     * Extrai o domínio de origem da requisição
+     * Extrai o domínio de origem da requisição (mantendo porta).
      */
     private function getOriginDomain(Request $request): string
     {
-        // DEBUG: Log todos os headers relevantes
-        \Log::debug('Domain Check Headers', [
+        Log::debug('Domain Check Headers', [
             'origin' => $request->header('Origin'),
             'referer' => $request->header('Referer'),
-            'host' => $request->header('Host'),
-            'path' => $request->path(),
-            'method' => $request->method()
+            'host' => $request->header('Host')
         ]);
 
-        // Tentar pegar do header Origin (mais confiável para CORS)
         $origin = $request->header('Origin');
-        
         if ($origin && $this->isValidUrl($origin)) {
-            $domain = parse_url($origin, PHP_URL_HOST);
-            $port = parse_url($origin, PHP_URL_PORT);
-            if ($domain) {
-                $result = strtolower(trim($domain));
-                if ($port) {
-                    $result .= ':' . $port;
-                }
-                \Log::debug('Using Origin domain', ['domain' => $result]);
-                return $result;
-            }
+            return $this->getHostWithPort($origin);
         }
 
-        // Tentar pegar do header Referer
         $referer = $request->header('Referer');
         if ($referer && $this->isValidUrl($referer)) {
-            $domain = parse_url($referer, PHP_URL_HOST);
-            if ($domain) {
-                $result = strtolower(trim($domain));
-                \Log::debug('Using Referer domain', ['domain' => $result]);
-                return $result;
-            }
+            return $this->getHostWithPort($referer);
         }
 
-        // Host pode ser facilmente falsificado e não representa a origem real
-        $result = '';
-        \Log::debug('No valid origin domain found', ['result' => $result]);
-        return $result;
+        return '';
     }
 
     /**
-     * Verifica se uma URL é válida para extração de domínio
+     * Retorna host + porta (ex: localhost:8000)
+     */
+    private function getHostWithPort(string $url): string
+    {
+        $parsed = parse_url($url);
+        if (!isset($parsed['host'])) {
+            return '';
+        }
+
+        $host = strtolower($parsed['host']);
+        if (isset($parsed['port'])) {
+            return "{$host}:{$parsed['port']}";
+        }
+
+        return $host;
+    }
+
+    /**
+     * Verifica se a URL é válida.
      */
     private function isValidUrl(string $url): bool
     {
-        if (empty($url)) {
-            return false;
-        }
-
-        // Verificar se é uma URL válida
         $parsed = parse_url($url);
-        if (!$parsed || !isset($parsed['host'])) {
-            return false;
-        }
-
-        // Verificar formato básico de domínio
-        return (bool) preg_match('/^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$/i', $parsed['host']);
+        return $parsed && isset($parsed['host']);
     }
 
     /**
-     * Verifica se o domínio está na lista de permitidos
+     * Verifica se o domínio está permitido (com suporte a porta e wildcard).
      */
-    private function isDomainAllowed(string $domain, $allowedDomains): bool
+    private function isDomainAllowed(string $requestDomain, $allowedDomains): bool
     {
-        if (empty($domain)) {
-            \Log::warning('Empty domain detected with domain restriction active');
-            return false;
-        }
-
         foreach ($allowedDomains as $allowedDomain) {
-            if ($this->matchesDomainPattern($domain, $allowedDomain->domain)) {
-                \Log::debug('Domain matched', [
-                    'request_domain' => $domain,
+            if ($this->matchesDomainPattern($requestDomain, $allowedDomain->domain)) {
+                Log::debug('Domain matched', [
+                    'request_domain' => $requestDomain,
                     'allowed_domain' => $allowedDomain->domain
                 ]);
                 return true;
             }
         }
 
-        \Log::warning('Domain not in allowed list', [
-            'request_domain' => $domain,
+        Log::warning('Domain not in allowed list', [
+            'request_domain' => $requestDomain,
             'allowed_domains' => $allowedDomains->pluck('domain')
         ]);
+
         return false;
     }
 
     /**
-     * Encontra qual domínio permitido correspondeu (para logging)
-     */
-    private function findMatchingDomain(string $domain, $allowedDomains): ?string
-    {
-        foreach ($allowedDomains as $allowedDomain) {
-            if ($this->matchesDomainPattern($domain, $allowedDomain->domain)) {
-                return $allowedDomain->domain;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Verifica se o domínio corresponde ao padrão permitido
-     * Suporta:
-     * - Correspondência exata: exemplo.com
-     * - Wildcards: *.exemplo.com
-     * - Subdomínios: sub.exemplo.com → exemplo.com
+     * Suporte a wildcard, subdomínios e comparação com porta.
      */
     private function matchesDomainPattern(string $requestDomain, string $allowedDomain): bool
     {
         $requestDomain = strtolower(trim($requestDomain));
         $allowedDomain = strtolower(trim($allowedDomain));
 
-        // 1. Se for exatamente igual
+        // Igualdade direta
         if ($requestDomain === $allowedDomain) {
             return true;
         }
 
-        // 2. Se o domínio permitido tem wildcard no início
+        // Wildcard (*.dominio.com)
         if (strpos($allowedDomain, '*') === 0) {
-            // Converter *.exemplo.com em regex: /^.*\.exemplo\.com$/
             $pattern = '/^' . str_replace('\*', '.*', preg_quote($allowedDomain, '/')) . '$/';
             return preg_match($pattern, $requestDomain) === 1;
         }
 
-        // 3. Se o domínio permitido é um domínio base do request domain
-        // Ex: api.exemplo.com → exemplo.com
-        if ($this->getBaseDomain($requestDomain) === $allowedDomain) {
+        // 🔹 Permitir qualquer porta local se permitido "localhost"
+        if (str_starts_with($requestDomain, 'localhost') && $allowedDomain === 'localhost') {
             return true;
         }
 
-        // 4. Se o request domain é um subdomínio do allowed domain
-        // Ex: sub.exemplo.com matches exemplo.com
-        if (str_ends_with($requestDomain, '.' . $allowedDomain)) {
-            return true;
+        // Subdomínios (api.dominio.com → dominio.com)
+        return str_ends_with($requestDomain, '.' . $allowedDomain);
+    }
+
+    /**
+     * Verifica se é uma rota API.
+     */
+    private function isApiRoute(Request $request): bool
+    {
+        return str_starts_with($request->path(), 'api/');
+    }
+
+    /**
+     * Define rotas públicas que não exigem domínio.
+     */
+    private function isPublicApiRoute(Request $request): bool
+    {
+        $publicRoutes = [
+            'api/auth/login/token',
+            'api/public/',
+        ];
+
+        foreach ($publicRoutes as $route) {
+            if (str_contains($request->path(), $route)) {
+                return true;
+            }
         }
 
         return false;
-    }
-
-    /**
-     * Extrai o domínio base (ex: sub.exemplo.com → exemplo.com)
-     */
-    private function getBaseDomain(string $domain): string
-    {
-        $parts = explode('.', $domain);
-        
-        // Para domínios com pelo menos 2 partes
-        if (count($parts) >= 2) {
-            // Para TLDs com 2 partes como .co.uk, .com.br, etc
-            if ($this->isTwoPartTld($parts)) {
-                return $parts[count($parts) - 3] . '.' . $parts[count($parts) - 2] . '.' . $parts[count($parts) - 1];
-            }
-            
-            // Para TLDs comuns
-            return $parts[count($parts) - 2] . '.' . $parts[count($parts) - 1];
-        }
-        
-        return $domain;
-    }
-
-    /**
-     * Verifica se o TLD tem duas partes (como .co.uk, .com.br)
-     */
-    private function isTwoPartTld(array $domainParts): bool
-    {
-        $twoPartTlds = [
-            'co.uk', 'com.br', 'org.uk', 'net.uk', 'ac.uk', 'gov.uk',
-            'ltd.uk', 'plc.uk', 'me.uk', 'ne.jp', 'or.jp', 'go.jp',
-            'ac.jp', 'ad.jp', 'ed.jp', 'gr.jp', 'lg.jp', 'geo.jp'
-        ];
-
-        if (count($domainParts) < 3) {
-            return false;
-        }
-
-        $lastTwo = $domainParts[count($domainParts) - 2] . '.' . $domainParts[count($domainParts) - 1];
-        return in_array($lastTwo, $twoPartTlds);
     }
 }

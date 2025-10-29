@@ -167,7 +167,7 @@
             <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <h4 class="text-lg font-semibold text-white">Domínios Permitidos</h4>
+                        <h4 class="text-lg font-semibold text-white">Domínios Permitidos (Origin HTTPS)</h4>
                         <p class="text-slate-400 text-sm">
                             {{ $workspace->allowedDomains->where('is_active', true)->count() }} domínios ativos
                         </p>
@@ -177,7 +177,7 @@
                 <!-- Formulário para Adicionar Domínio -->
                 <form action="{{ route('workspace.api.domains.add', $workspace) }}" method="POST" class="mb-6">
                     @csrf
-                    <div class="flex space-x-3">
+                    <div class="flex items-start space-x-3">
                         <div class="flex-1">
                             <input type="text" name="domain" 
                                 placeholder="exemplo.com ou *.exemplo.com" 
