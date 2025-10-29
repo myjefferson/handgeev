@@ -81,19 +81,20 @@ class WorkspaceApiController extends Controller
                         'title' => $topic->title,
                         'order' => $topic->order,
                         'fields_count' => $topic->fields->count(),
-                        'fields' => $topic->fields->map(function($field) {
-                            return [
+                        'fields' => $topic->fields
+                        ->filter(function($field) {
+                            return !empty($field->key_name) && is_string($field->key_name);
+                        })
+                        ->mapWithKeys(function($field) {
+                            $key = trim($field->key_name);
+                            return [$key => [
                                 'id' => $field->id,
-                                'key' => $field->key_name,
                                 'value' => $field->value,
                                 'type' => $field->type,
-                                'visibility' => (bool) $field->is_visible,
                                 'order' => $field->order,
-                                'metadata' => [
-                                    'created' => $field->created_at->toISOString(),
-                                    'updated' => $field->updated_at->toISOString()
-                                ]
-                            ];
+                                'created_at' => $field->created_at->toISOString(),
+                                'updated_at' => $field->updated_at->toISOString()
+                            ]];
                         })
                     ];
                 }),

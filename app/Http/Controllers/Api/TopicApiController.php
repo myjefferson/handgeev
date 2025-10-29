@@ -43,14 +43,20 @@ class TopicApiController extends Controller
                         'title' => $topic->title,
                         'order' => $topic->order,
                         'fields_count' => $topic->fields->count(),
-                        'fields' => $topic->fields->map(function($field) {
-                            return [
+                        'fields' => $topic->fields
+                            ->filter(function($field) {
+                                return !empty($field->key_name) && is_string($field->key_name);
+                            })
+                            ->mapWithKeys(function($field) {
+                            $key = trim($field->key_name);
+                            return [$key => [
                                 'id' => $field->id,
-                                'key' => $field->key_name,
                                 'value' => $field->value,
                                 'type' => $field->type,
-                                'order' => $field->order
-                            ];
+                                'order' => $field->order,
+                                'created_at' => $field->created_at->toISOString(),
+                                'updated_at' => $field->updated_at->toISOString()
+                            ]];
                         }),
                         'created_at' => $topic->created_at->toISOString(),
                         'updated_at' => $topic->updated_at->toISOString()
@@ -94,17 +100,20 @@ class TopicApiController extends Controller
                         'id' => $topic->workspace->id,
                         'title' => $topic->workspace->title
                     ],
-                    'fields' => $topic->fields->map(function($field) {
-                        return [
+                    'fields' => $topic->fields
+                        ->filter(function($field) {
+                            return !empty($field->key_name) && is_string($field->key_name);
+                        })
+                        ->mapWithKeys(function($field) {
+                        $key = trim($field->key_name);
+                        return [$key => [
                             'id' => $field->id,
-                            'key' => $field->key_name,
                             'value' => $field->value,
                             'type' => $field->type,
-                            'is_visible' => (bool)$field->is_visible,
                             'order' => $field->order,
                             'created_at' => $field->created_at->toISOString(),
                             'updated_at' => $field->updated_at->toISOString()
-                        ];
+                        ]];
                     }),
                     'created_at' => $topic->created_at->toISOString(),
                     'updated_at' => $topic->updated_at->toISOString()

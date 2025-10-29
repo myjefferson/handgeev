@@ -143,19 +143,9 @@ class ApiController extends Controller
                         'title' => $topic->title,
                         'order' => $topic->order,
                         'fields_count' => $topic->fields->count(),
-                        'fields' => $topic->fields->map(function($field) {
-                            return [
-                                'id' => $field->id,
-                                'key' => $field->key_name,
-                                'value' => $field->value,
-                                'type' => $field->type,
-                                'visibility' => (bool) $field->is_visible,
-                                'order' => $field->order,
-                                'metadata' => [
-                                    'created' => $field->created_at->toISOString(),
-                                    'updated' => $field->updated_at->toISOString()
-                                ]
-                            ];
+                        'fields' => $topic->fields->mapWithKeys(function($field) {
+                            // Usando key_name como chave e value como valor
+                            return [$field->key_name => $field->value];
                         })
                     ];
                 }),
@@ -283,7 +273,7 @@ class ApiController extends Controller
             // Buscar workspace com campos visíveis apenas
             $workspace = Workspace::with(['topics.fields' => function($query) {
                     $query->where('is_visible', true)
-                          ->orderBy('order', 'asc');
+                        ->orderBy('order', 'asc');
                 }])
                 ->where('user_id', $user->id)
                 ->where('workspace_key_api', $workspace_key_api)
@@ -317,19 +307,10 @@ class ApiController extends Controller
                         'title' => $topic->title,
                         'order' => $topic->order,
                         'fields_count' => $topic->fields->count(),
-                        'fields' => $topic->fields->map(function($field) {
-                            return [
-                                'id' => $field->id,
-                                'key' => $field->key_name,
-                                'value' => $field->value,
-                                'type' => $field->type,
-                                'order' => $field->order,
-                                'metadata' => [
-                                    'created' => $field->created_at->toISOString(),
-                                    'updated' => $field->updated_at->toISOString()
-                                ]
-                            ];
-                        })
+                        'fields' => $topic->fields->mapWithKeys(function($field) {
+                        // Usando key_name como chave e value como valor
+                        return [$field->key_name => $field->value];
+                    })
                     ];
                 }),
                 'statistics' => [

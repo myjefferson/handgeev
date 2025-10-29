@@ -36,17 +36,20 @@ class FieldApiController extends Controller
                     'visible_fields' => $topic->fields->where('is_visible', true)->count(),
                     'generated_at' => now()->toISOString()
                 ],
-                'fields' => $topic->fields->map(function($field) {
-                    return [
+                'fields' => $topic->fields
+                    ->filter(function($field) {
+                        return !empty($field->key_name) && is_string($field->key_name);
+                    })
+                    ->mapWithKeys(function($field) {
+                    $key = trim($field->key_name);
+                    return [$key => [
                         'id' => $field->id,
-                        'key' => $field->key_name,
                         'value' => $field->value,
                         'type' => $field->type,
-                        'is_visible' => (bool)$field->is_visible,
                         'order' => $field->order,
                         'created_at' => $field->created_at->toISOString(),
                         'updated_at' => $field->updated_at->toISOString()
-                    ];
+                    ]];
                 })
             ]);
 
