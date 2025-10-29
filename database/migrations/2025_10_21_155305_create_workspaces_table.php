@@ -21,6 +21,7 @@ return new class extends Migration
             $table->boolean('api_enabled')->default(false);
             $table->boolean('api_domain_restriction')->default(false);
             $table->boolean('api_jwt_required')->default(false);
+            $table->boolean('api_https_required')->default(true)->after('api_jwt_required');
             $table->timestamps();
         });
     }

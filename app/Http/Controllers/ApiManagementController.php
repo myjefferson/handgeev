@@ -101,4 +101,28 @@ class ApiManagementController extends Controller
             ], 500);
         }
     }
+
+    public function toggleHttpsRequirement(Workspace $workspace)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Usuário não autenticado.'
+            ], 401);
+        }
+
+        $this->authorize('update', $workspace);
+
+        $workspace->update([
+            'api_https_required' => !$workspace->api_https_required
+        ]);
+
+        return back()->with('success', 
+            $workspace->api_https_required 
+                ? 'HTTPS agora é obrigatório para este workspace' 
+                : 'HTTP agora é permitido para este workspace'
+        );
+    }
 }

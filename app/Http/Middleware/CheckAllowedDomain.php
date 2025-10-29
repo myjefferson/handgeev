@@ -34,7 +34,7 @@ class CheckAllowedDomain
             if (!$request->isSecure()) {
                 return response()->json([
                     'error' => 'Insecure connection',
-                    'message' => 'Only HTTPS requests are allowed in production.'
+                    'message' => 'Only HTTPS requests are allowed.'
                 ], 403);
             }
 

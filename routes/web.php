@@ -223,6 +223,7 @@ Route::middleware([
     Route::controller(ApiManagementController::class)->group(function () {
         Route::get('/dashboard/my-apis', 'showMyApis')->name('management.apis.show');
         Route::put('/access/api/{workspace}/toggle', 'toggleAccessApi')->name('management.api.access.toggle');
+        Route::put('/access/api/{workspace}/https-requirement/toggle', 'toggleHttpsRequirement')->name('workspace.api.https-requirement.toggle');
     });
 
     // Rotas de Administração

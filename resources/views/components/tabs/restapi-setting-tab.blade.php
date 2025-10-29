@@ -32,7 +32,7 @@
                         <p class="text-slate-400 text-sm">Controle o acesso à API deste workspace</p>
                     </div>
                     <button onclick="toggleApiStatus(`{{ route('management.api.access.toggle', $workspace->id) }}`, {{ !$workspace->api_enabled }})" class="relative inline-flex items-center h-6 rounded-full w-11 
-                        @if($workspace->api_enabled) bg-blue-500 @else bg-gray-300 dark:bg-gray-600 @endif transition-colors">
+                        @if($workspace->api_enabled) bg-teal-500 @else bg-gray-300 dark:bg-gray-600 @endif transition-colors">
                         <span class="inline-block w-4 h-4 transform bg-white rounded-full transition 
                             @if($workspace->api_enabled) translate-x-6 @else translate-x-1 @endif" />
                     </button>
@@ -121,20 +121,62 @@
                 @endif
             </div>
 
-            <!-- Controle de Domínios -->
+            <!-- Controle HTTPS -->
             <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 mb-6">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <h4 class="text-lg font-semibold text-white">Controle de Acesso por Domínio</h4>
-                        <p class="text-slate-400 text-sm">Restringir acesso apenas a domínios específicos</p>
+                        <h4 class="text-lg font-semibold text-white">Requer Conexão HTTPS</h4>
+                        <p class="text-slate-400 text-sm">Forçar uso de conexões seguras (HTTPS)</p>
                     </div>
-                    <form action="{{ route('workspace.api.domain-restriction.toggle', $workspace) }}" method="POST" class="flex items-center">
+                    <form action="{{ route('workspace.api.https-requirement.toggle', $workspace->id) }}" method="POST" class="flex items-center">
                         @csrf @method('PUT')
                         <span class="mr-3 text-sm font-medium text-white">
-                            {{ $workspace->api_domain_restriction ? 'Apenas domínios permitidos' : 'Acesso livre' }}
+                            {{ $workspace->api_https_required ? 'HTTPS Obrigatório' : 'HTTP Permitido' }}
                         </span>
                         <button type="submit" class="relative inline-flex items-center h-6 rounded-full w-11 
-                            @if($workspace->api_domain_restriction) bg-teal-500 @else bg-gray-600 @endif transition-colors">
+                            @if($workspace->api_https_required) bg-teal-500 @else bg-gray-600 @endif transition-colors">
+                            <span class="inline-block w-4 h-4 transform bg-white rounded-full transition 
+                                @if($workspace->api_https_required) translate-x-6 @else translate-x-1 @endif" />
+                        </button>
+                    </form>
+                </div>
+
+                @if($workspace->api_https_required)
+                <div class="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+                    <p class="text-green-400 text-sm flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                        Conexões HTTPS obrigatórias. Requisições HTTP serão bloqueadas.
+                    </p>
+                </div>
+                @else
+                <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                    <p class="text-blue-400 text-sm flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Conexões HTTP são permitidas. Ideal para desenvolvimento e testes.
+                    </p>
+                </div>
+                @endif
+            </div>
+
+            <!-- Controle de Domínios -->
+            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700 mb-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-lg font-semibold text-white truncate">Controle de Acesso por Domínio</h4>
+                        <p class="text-slate-400 text-sm mt-1">Restringir acesso apenas a domínios específicos</p>
+                    </div>
+                    <form action="{{ route('workspace.api.domain-restriction.toggle', $workspace) }}" method="POST" 
+                        class="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
+                        @csrf @method('PUT')
+                        <span class="text-sm font-medium text-white whitespace-nowrap">
+                            {{ $workspace->api_domain_restriction ? 'Apenas domínios permitidos' : 'Acesso livre' }}
+                        </span>
+                        <button type="submit" class="relative inline-flex items-center h-6 rounded-full w-11 flex-shrink-0
+                            @if($workspace->api_domain_restriction) bg-teal-500 @else bg-gray-600 @endif transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:ring-offset-slate-800">
                             <span class="inline-block w-4 h-4 transform bg-white rounded-full transition 
                                 @if($workspace->api_domain_restriction) translate-x-6 @else translate-x-1 @endif" />
                         </button>
@@ -144,16 +186,16 @@
                 @if(!$workspace->api_domain_restriction)
                 <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
                     <p class="text-blue-400 text-sm flex items-center">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         A API aceita requisições de qualquer domínio. Ative a restrição para maior segurança.
                     </p>
                 </div>
                 @else
-                <div class="bg-green-500/10 border border-green-500/20 rounded-lg p-3 mb-4">
+                <div class="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
                     <p class="text-green-400 text-sm flex items-center">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                         </svg>
                         A API só aceita requisições dos domínios listados abaixo.
@@ -395,6 +437,22 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
                         Revogue acesso de domínios não utilizados
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-4 h-4 text-green-400 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span>
+                            <strong>HTTPS obrigatório:</strong> Mais seguro.
+                        </span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-4 h-4 text-green-400 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span>
+                            <strong>HTTP permitido:</strong> Use apenas para desenvolvimento local
+                        </span>
                     </li>
                 </ul>
             </div>

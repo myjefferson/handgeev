@@ -28,6 +28,7 @@ class Workspace extends Model
         'api_domain_restriction',
         'api_enabled',
         'api_jwt_required',
+        'api_https_required',
     ];
 
 
@@ -44,6 +45,7 @@ class Workspace extends Model
         'api_enabled' => 'boolean',
         'api_domain_restriction' => 'boolean',
         'api_jwt_required' => 'boolean',
+        'api_https_required' => 'boolean'
     ];
 
     // Valor padrão
@@ -51,6 +53,7 @@ class Workspace extends Model
         'api_enabled' => false,
         'api_domain_restriction' => false,
         'api_jwt_required' => false,
+        'api_https_required' => true,
     ];
 
     
