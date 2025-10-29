@@ -22,41 +22,8 @@ class CheckAllowedDomain
             return $next($request);
         }
 
-        // Ignorar rotas públicas
-        if ($this->isPublicApiRoute($request)) {
-            return $next($request);
-        }
-
         /**
-         * 🔒 1. Segurança HTTPS — apenas em produção
-         */
-        if (app()->environment('production')) {
-            if (!$request->isSecure()) {
-                return response()->json([
-                    'error' => 'Insecure connection',
-                    'message' => 'Only HTTPS requests are allowed.'
-                ], 403);
-            }
-
-            $originHeader = $request->header('Origin') ?? $request->header('Referer');
-            if ($originHeader && !str_starts_with($originHeader, 'https://')) {
-                return response()->json([
-                    'error' => 'Insecure origin',
-                    'message' => 'Requests must originate from a secure (HTTPS) domain.'
-                ], 403);
-            }
-        } else {
-            // 💻 Ambiente local — permitir localhost
-            $originHeader = $request->header('Origin');
-            if ($originHeader && str_contains($originHeader, 'localhost')) {
-                Log::debug('Localhost origin allowed in non-production environment', [
-                    'origin' => $originHeader
-                ]);
-            }
-        }
-
-        /**
-         * 2. Identificação do workspace
+         * 1. Identificação do workspace (precisamos disso primeiro para verificar a configuração HTTPS)
          */
         $workspace = $this->getWorkspaceFromRequest($request);
 
@@ -67,9 +34,43 @@ class CheckAllowedDomain
             ], 404);
         }
 
-        // 👑 Proprietário do workspace sempre pode acessar
+        /**
+         * 🔒 2. Segurança HTTPS — configurável por workspace
+         */
+        $httpsRequired = $workspace->api_https_required ?? true;
+
+        if ($httpsRequired) {
+            // Verificar se a conexão é segura
+            if (!$request->isSecure()) {
+                return response()->json([
+                    'error' => 'Insecure connection',
+                    'message' => 'Only HTTPS requests are allowed for this workspace.'
+                ], 403);
+            }
+
+            // Verificar também o header Origin/Referer
+            $originHeader = $request->header('Origin') ?? $request->header('Referer');
+            if ($originHeader && !str_starts_with($originHeader, 'https://')) {
+                return response()->json([
+                    'error' => 'Insecure origin',
+                    'message' => 'Requests must originate from a secure (HTTPS) domain for this workspace.'
+                ], 403);
+            }
+
+            Log::debug('HTTPS requirement enabled for workspace', [
+                'workspace_id' => $workspace->id,
+                'https_required' => $httpsRequired
+            ]);
+        } else {
+            Log::debug('HTTPS requirement disabled for workspace - allowing HTTP', [
+                'workspace_id' => $workspace->id,
+                'https_required' => $httpsRequired
+            ]);
+        }
+
+        // 👑 Proprietário do workspace sempre pode acessar (mesmo se HTTPS estiver desabilitado)
         if (Auth::check() && Auth::id() === $workspace->user_id) {
-            Log::debug('Owner access - bypassing domain restrictions', [
+            Log::debug('Owner access - bypassing all restrictions', [
                 'workspace_id' => $workspace->id,
                 'user_id' => Auth::id()
             ]);
@@ -105,7 +106,8 @@ class CheckAllowedDomain
 
         Log::debug('Domain restriction ENABLED - checking domains', [
             'workspace_id' => $workspace->id,
-            'allowed_domains_count' => $allowedDomains->count()
+            'allowed_domains_count' => $allowedDomains->count(),
+            'https_required' => $httpsRequired
         ]);
 
         if ($allowedDomains->isEmpty()) {
@@ -140,9 +142,16 @@ class CheckAllowedDomain
                 'message' => 'Your domain is not authorized to access this API',
                 'origin' => $originDomain,
                 'workspace_id' => $workspace->id,
-                'workspace_title' => $workspace->title
+                'workspace_title' => $workspace->title,
+                'https_required' => $httpsRequired
             ], 403);
         }
+
+        Log::debug('Request allowed', [
+            'workspace_id' => $workspace->id,
+            'origin_domain' => $originDomain,
+            'https_required' => $httpsRequired
+        ]);
 
         return $next($request);
     }
@@ -255,24 +264,5 @@ class CheckAllowedDomain
     private function isApiRoute(Request $request): bool
     {
         return str_starts_with($request->path(), 'api/');
-    }
-
-    /**
-     * Define rotas públicas que não exigem domínio.
-     */
-    private function isPublicApiRoute(Request $request): bool
-    {
-        $publicRoutes = [
-            'api/auth/login/token',
-            'api/public/',
-        ];
-
-        foreach ($publicRoutes as $route) {
-            if (str_contains($request->path(), $route)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }
