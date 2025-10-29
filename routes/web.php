@@ -156,7 +156,7 @@ Route::middleware([
 
     Route::controller(TopicController::class)->group(function(){
         Route::post('/topic/store', 'store')->name('topic.store')->middleware('throttle:create-resources');
-        Route::put('/topic/{id}/update', 'update')->name('topic.update');
+        Route::put('/topic/{id}', 'update')->name('topic.update');
         Route::delete('/topic/{id}/destroy', 'destroy')->name('topic.destroy');
         Route::post('/topic/{workspaceid}/merge-topics', 'mergeTopics')->name('workspace.merge-topics');
     

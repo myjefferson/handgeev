@@ -100,16 +100,18 @@ class TopicController extends Controller
     /**
      * Atualiza um tópico existente.
      */
-    public function update(Request $request, Topic $topic)
+    public function update(Request $request, int $topicId)
     {
         try {
             $validated = $request->validate([
-                'title' => 'string|max:100',
-                'order' => 'integer',
+                'title' => 'required|string|max:100',
+                'order' => 'sometimes|integer',
             ]);
 
+            // Encontrar o tópico pelo ID
+            $topic = Topic::findOrFail($topicId);
             $workspace = $topic->workspace;
-            
+
             // VERIFICAÇÃO DE PERMISSÃO ATUALIZADA - DONO OU COLABORADOR COM PERMISSÃO
             $user = Auth::user();
             $isOwner = $workspace->user_id === $user->id;
@@ -123,15 +125,29 @@ class TopicController extends Controller
                 ], 403);
             }
 
+            // Atualizar o tópico
             $topic->update($validated);
+
+            // Recarregar o tópico atualizado
+            $topic->refresh();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Tópico atualizado com sucesso',
-                'data' => [
-                    'topic' => $topic
+                'topic' => [
+                    'id' => $topic->id,
+                    'title' => $topic->title,
+                    'order' => $topic->order,
+                    'workspace_id' => $topic->workspace_id
                 ]
             ]);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'not_found',
+                'message' => 'Tópico não encontrado'
+            ], 404);
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,

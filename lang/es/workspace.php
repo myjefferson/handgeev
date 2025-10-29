@@ -11,14 +11,33 @@ return [
     'sidebar' => [
         'topics_count' => 'temas',
         'new_topic' => 'Nuevo Tema',
-        'fields_count' => ':count campo|:count campos',
+        'fields_count' => ':count campo|:count',
         'import_topic' => 'Importar Tema',
+        'rename_topic' => 'Renombrar Tema',
         'export_topic' => 'Exportar Tema',
         'download_topic' => 'Descargar Tema',
         'import_success' => '¡Tema importado exitosamente!',
         'export_success' => '¡Tema exportado exitosamente!',
         'import_error' => 'Error al importar el tema',
         'export_error' => 'Error al exportar el tema',
+    ],
+
+    'modals' => [
+        'delete_topic' => [
+            'message' => '¿Estás seguro de que deseas eliminar el tema ":title"? Todos los campos serán eliminados permanentemente.'
+        ],
+        'new_topic' => [
+            'prompt' => 'Ingresa el nombre para el nuevo tema:',
+            'placeholder' => 'Mi Nuevo Tema'
+        ],
+        'rename_topic' => [
+            'title' => 'Renombrar Tema',
+            'topic_title' => 'Título del Tema',
+            'characters' => 'caracteres',
+            'cancel' => 'Cancelar',
+            'save' => 'Guardar',
+            'close' => 'Cerrar modal'
+        ]
     ],
 
     'import_export' => [

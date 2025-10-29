@@ -12,6 +12,9 @@ return [
         'topics_count' => 'tópicos',
         'new_topic' => 'Novo Tópico',
         'fields_count' => ':count',
+        'rename_topic' => 'Renomear Tópico',
+        'topic_title' => 'Título do Tópico',
+        'characters' => 'caracteres',
         'import_topic' => 'Importar Tópico',
         'export_topic' => 'Exportar Tópico',
         'download_topic' => 'Download do Tópico',
@@ -19,6 +22,24 @@ return [
         'export_success' => 'Tópico exportado com sucesso!',
         'import_error' => 'Erro ao importar tópico',
         'export_error' => 'Erro ao exportar tópico',
+    ],
+
+    'modals' => [
+        'delete_topic' => [
+            'message' => 'Tem certeza que deseja excluir o tópico ":title"? Todos os campos serão permanentemente removidos.'
+        ],
+        'new_topic' => [
+            'prompt' => 'Digite o nome do novo tópico:',
+            'placeholder' => 'Meu Novo Tópico'
+        ],
+        'rename_topic' => [
+            'title' => 'Renomear Tópico',
+            'topic_title' => 'Título do Tópico',
+            'characters' => 'caracteres',
+            'cancel' => 'Cancelar',
+            'save' => 'Salvar',
+            'close' => 'Fechar modal'
+        ]
     ],
 
     'import_export' => [

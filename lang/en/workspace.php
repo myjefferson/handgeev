@@ -11,14 +11,33 @@ return [
     'sidebar' => [
         'topics_count' => 'topics',
         'new_topic' => 'New Topic',
-        'fields_count' => ':count field|:count fields',
+        'fields_count' => ':count field|:count',
         'import_topic' => 'Import Topic',
+        'rename_topic' => 'Rename Topic',
         'export_topic' => 'Export Topic',
         'download_topic' => 'Download Topic',
         'import_success' => 'Topic imported successfully!',
         'export_success' => 'Topic exported successfully!',
         'import_error' => 'Error importing topic',
         'export_error' => 'Error exporting topic',
+    ],
+
+    'modals' => [
+        'delete_topic' => [
+            'message' => 'Are you sure you want to delete the topic ":title"? All fields will be permanently removed.'
+        ],
+        'new_topic' => [
+            'prompt' => 'Enter the name for the new topic:',
+            'placeholder' => 'My New Topic'
+        ],
+        'rename_topic' => [
+            'title' => 'Rename Topic',
+            'topic_title' => 'Topic Title',
+            'characters' => 'characters',
+            'cancel' => 'Cancel',
+            'save' => 'Save',
+            'close' => 'Close modal'
+        ]
     ],
 
     'import_export' => [

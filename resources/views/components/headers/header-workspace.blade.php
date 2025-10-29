@@ -1,6 +1,5 @@
 
 <div class="flex justify-between items-center">
-    <h3 class="title-header text-2xl font-semibold">{{ $title }}</h3>
     <div class="flex gap-3 items-center">      
         <div class="flex items-center space-x-2">
             <!-- Dropdown Principal de Exportação -->

@@ -13,13 +13,28 @@
 
 @section('content_dashboard')
     <div class="max-w-full sm:max-w-6xl md:max-w-7xl xl:max-w-7xl mx-auto">
-        <a href="{{ route('workspaces.show') }}" class="block w-max text-sm text-gray-300 hover:text-teal-400 transition-colors mb-8">
-            <i class="fas fa-arrow-left mr-1"></i> {{ __('workspace.navigation.back_to_workspaces') }}
-        </a>
+        <header class="mb-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <a href="{{ route('workspaces.show', ['id' => $workspace->id]) }}" class="mr-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <i class="fas fa-arrow-left mr-1"></i>
+                    </a>
+                    <div>
+                        <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Workspace {{ $workspace->title }}</h1>
+                    </div>
+                </div>
+                <div class="block">
+                    @include('components.headers.header-workspace', [
+                        'workspace' => $workspace,
+                    ])                     
+                </div>
+            </div>
+        </header>
+
         <div class="flex bg-slate-900 rounded-xl min-h-dvh">
             <!-- Sidebar de Tópicos -->
             @if ($workspace->type_workspace_id !== 1)
-                <div class="w-64 bg-slate-800 border-r border-slate-700 overflow-y-auto rounded-xl">
+                <div class="w-64 bg-slate-800 border-r border-slate-700 rounded-xl">
                     <div class="p-4">
                         <!-- Cabeçalho do Workspace -->
                         <div class="mb-6">
@@ -89,19 +104,36 @@
                                     
                                     <!-- Menu de Ações do Tópico -->
                                     <div class="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                        <div class="flex rounded-full">
-                                            {{-- <button class="export-topic-btn p-1 text-green-400 hover:text-green-300 transition-colors" 
-                                                    data-topic-id="{{ $topic->id }}"
-                                                    data-topic-title="{{ $topic->title }}"
-                                                    title="{{ __('workspace.sidebar.export_topic') }}">
-                                                <i class="fas fa-file-export text-sm"></i>
-                                            </button> --}}
-                                            <button class="download-topic-btn flex items-center rounded-full justify-center h-8 w-8 bg-gray-800 text-blue-400 hover:text-blue-300 transition-colors"
-                                                    data-topic-id="{{ $topic->id }}"
-                                                    data-topic-title="{{ $topic->title }}"
-                                                    title="{{ __('workspace.sidebar.download_topic') }}">
-                                                <i class="fas fa-download text-sm"></i>
-                                            </button>
+                                        <button id="dropdownTopicButton-{{ $topic->id }}" 
+                                                data-dropdown-toggle="dropdownTopic-{{ $topic->id }}" 
+                                                class="flex items-center justify-center h-8 w-8 bg-gray-800 text-gray-400 hover:text-teal-300 rounded-full transition-colors"
+                                                type="button">
+                                            <i class="fas fa-ellipsis-v text-sm"></i>
+                                        </button>
+                                        
+                                        <!-- Dropdown menu -->
+                                        <div id="dropdownTopic-{{ $topic->id }}" 
+                                            class="absolute z-10 hidden bg-slate-800 divide-y divide-gray-600 rounded-lg shadow w-44 border border-slate-700 right-0 top-full mt-1">
+                                            <ul class="py-2 text-sm text-gray-200" aria-labelledby="dropdownTopicButton-{{ $topic->id }}">
+                                                <li>
+                                                    <button type="button" 
+                                                            class="rename-topic-btn w-full px-4 py-2 text-left hover:bg-slate-700 flex items-center"
+                                                            data-topic-id="{{ $topic->id }}"
+                                                            data-topic-title="{{ $topic->title }}">
+                                                        <i class="fas fa-edit mr-2 text-blue-400"></i>
+                                                        {{ __('workspace.sidebar.rename_topic') }}
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <button type="button" 
+                                                            class="download-topic-btn w-full px-4 py-2 text-left hover:bg-slate-700 flex items-center"
+                                                            data-topic-id="{{ $topic->id }}"
+                                                            data-topic-title="{{ $topic->title }}">
+                                                        <i class="fas fa-download mr-2 text-green-400"></i>
+                                                        {{ __('workspace.sidebar.download_topic') }}
+                                                    </button>
+                                                </li>
+                                            </ul>
                                         </div>
                                     </div>
                                 </div>
@@ -160,17 +192,10 @@
                             @endif
                         @endif
 
-                        <div class="block mb-8">
-                            @include('components.headers.header-workspace', [
-                                'workspace' => $workspace,
-                                'title' => __('workspace.title')
-                            ])                     
-                        </div>
-
                         <!-- Cabeçalho do tópico -->
                         @if (count($workspace->topics) > 1)
                             <div class="flex items-center justify-between mb-6">
-                                <h3 class="text-xl font-semibold text-white">{{ $topic->title }}</h3>
+                                <h3 class="topic-title text-xl font-semibold text-white">{{ $topic->title }}</h3>
                                 @if(count($workspace->topics) > 1)
                                     <button class="delete-topic-btn mr-4 p-2 text-red-400 hover:text-red-300 rounded-lg transition-colors duration-200" data-topic-id="{{ $topic->id }}" title="{{ __('workspace.actions.delete') }}">
                                         <i class="fas fa-trash"></i>
@@ -211,6 +236,7 @@
     @include('components.modals.modal-share-api-interface', ['workspace' => $workspace])
     @include('components.modals.modal-import-topic')
     @include('components.modals.modal-export-topic')
+    @include('components.modals.modal-rename-topic')
 @endpush
 
 @push('scripts_end')
@@ -257,10 +283,10 @@
         // Traduções para JavaScript
         window.translations = {
             workspace: {
-                table: {
-                    add_field: {
-                        trigger: "{{ __('workspace.table.add_field.trigger') }}"
-                    }
+                sidebar: {
+                    rename_topic: "{{ __('workspace.modals.rename_topic.title') }}",
+                    download_topic: "{{ __('workspace.sidebar.download_topic') }}",
+                    fields_count: "{{ trans_choice('workspace.sidebar.fields_count', 2, ['count' => 2]) }}".replace('2 campos', ':count')
                 },
                 modals: {
                     new_topic: {
@@ -269,12 +295,24 @@
                     },
                     delete_topic: {
                         message: "{{ __('workspace.modals.delete_topic.message') }}"
+                    },
+                    rename_topic: {
+                        title: "{{ __('workspace.modals.rename_topic.title') }}",
+                        topic_title: "{{ __('workspace.modals.rename_topic.topic_title') }}",
+                        characters: "{{ __('workspace.modals.rename_topic.characters') }}",
+                        cancel: "{{ __('workspace.modals.rename_topic.cancel') }}",
+                        save: "{{ __('workspace.modals.rename_topic.save') }}",
+                        close: "{{ __('workspace.modals.rename_topic.close') }}"
                     }
                 },
                 notifications: {
                     saving: "{{ __('workspace.notifications.saving') }}",
                     saved: "{{ __('workspace.notifications.saved') }}",
-                    deleting: "{{ __('workspace.notifications.deleting') }}"
+                    deleting: "{{ __('workspace.notifications.deleting') }}",
+                    topic_renamed: "{{ __('workspace.notifications.topic_renamed') }}",
+                    topic_rename_error: "{{ __('workspace.notifications.topic_rename_error') }}",
+                    download_started: "{{ __('workspace.notifications.download_started') }}",
+                    download_error: "{{ __('workspace.notifications.download_error') }}"
                 }
             }
         };
