@@ -57,9 +57,10 @@ class FieldController extends Controller
             
             $validated = Validator::make($request->all(), Field::getValidationRules())->validate();
             $validated['key_name'] = Field::formatKeyName($validated['key_name']);
-            $existingField = $topic->fields()
-                ->where('key_name', $validated['key_name'])
-                ->first();
+            $existingField = $existingField = Field::where([ 
+                'key_name' => $validated['key_name'],
+                'topic_id' => $validated['topic_id'],
+            ])->first();
                 
             if ($existingField) {
                 \Log::warning("Chave duplicada", [
@@ -117,7 +118,7 @@ class FieldController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => 'server_error',
-                'message' => 'Ocorreu um erro interno'
+                'message' => 'Ocorreu um erro interno: '.$e
             ], 500);
         }
     }

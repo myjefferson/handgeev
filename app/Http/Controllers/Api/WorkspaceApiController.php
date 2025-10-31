@@ -47,67 +47,13 @@ class WorkspaceApiController extends Controller
                 ], 403);
             }
 
-            $data = [
-                'metadata' => [
-                    'version' => '1.0',
-                    'generated_at' => now()->toISOString(),
-                    'workspace_id' => $workspace->id,
-                    'rate_limits' => [
-                        'remaining_minute' => RateLimiter::remaining($rateLimitKey . ':minute', $plan->api_requests_per_minute ?? 60),
-                        'plan' => $plan->name
-                    ]
-                ],
-                'workspace' => [
-                    'id' => $workspace->id,
-                    'title' => $workspace->title,
-                    'description' => $workspace->description ?? '',
-                    'type' => $workspace->typeWorkspace->description,
-                    'type_id' => $workspace->type_workspace_id,
-                    'is_published' => $workspace->is_published,
-                    'api_enabled' => $workspace->api_enabled,
-                    'owner' => [
-                        'id' => $workspace->user->id,
-                        'name' => $workspace->user->name,
-                        'email' => $workspace->user->email
-                    ],
-                    'dates' => [
-                        'created' => $workspace->created_at->toISOString(),
-                        'updated' => $workspace->updated_at->toISOString()
-                    ]
-                ],
-                'topics' => $workspace->topics->map(function($topic) {
-                    return [
-                        'id' => $topic->id,
-                        'title' => $topic->title,
-                        'order' => $topic->order,
-                        'fields_count' => $topic->fields->count(),
-                        'fields' => $topic->fields
-                        ->filter(function($field) {
-                            return !empty($field->key_name) && is_string($field->key_name);
-                        })
-                        ->mapWithKeys(function($field) {
-                            $key = trim($field->key_name);
-                            return [$key => [
-                                'id' => $field->id,
-                                'value' => $field->value,
-                                'type' => $field->type,
-                                'order' => $field->order,
-                                'created_at' => $field->created_at->toISOString(),
-                                'updated_at' => $field->updated_at->toISOString()
-                            ]];
-                        })
-                    ];
-                }),
-                'statistics' => [
-                    'total_topics' => $workspace->topics->count(),
-                    'total_fields' => $workspace->topics->sum(function($topic) {
-                        return $topic->fields->count();
-                    }),
-                    'visible_fields' => $workspace->topics->sum(function($topic) {
-                        return $topic->fields->where('is_visible', true)->count();
-                    })
-                ]
-            ];
+            $viewType = request()->get('view');
+
+            if ($viewType === 'full') {
+                $data = $this->getFullWorkspaceData($workspace, $plan, $rateLimitKey);
+            } else {
+                $data = $this->getSimpleWorkspaceData($workspace, $plan, $rateLimitKey);
+            }
 
             $response = response()->json($data);
             $this->logApiRequest($user, $workspace, $startTime, 200, 'SUCCESS');
@@ -126,6 +72,106 @@ class WorkspaceApiController extends Controller
                 'message' => 'An error occurred while processing your request'
             ], 500);
         }
+    }
+
+    /**
+     * Retorna dados completos do workspace com estrutura detalhada
+     */
+    private function getFullWorkspaceData($workspace, $plan, $rateLimitKey)
+    {
+        return [
+            'metadata' => [
+                'version' => '1.0',
+                'generated_at' => now()->toISOString(),
+                'workspace_id' => $workspace->id,
+                'view_type' => 'full',
+                'rate_limits' => [
+                    'remaining_minute' => RateLimiter::remaining($rateLimitKey . ':minute', $plan->api_requests_per_minute ?? 60),
+                    'plan' => $plan->name
+                ]
+            ],
+            'workspace' => [
+                'id' => $workspace->id,
+                'title' => $workspace->title,
+                'description' => $workspace->description ?? '',
+                'type' => $workspace->typeWorkspace->description,
+                'type_id' => $workspace->type_workspace_id,
+                'is_published' => $workspace->is_published,
+                'api_enabled' => $workspace->api_enabled,
+                'owner' => [
+                    'id' => $workspace->user->id,
+                    'name' => $workspace->user->name,
+                    'email' => $workspace->user->email
+                ],
+                'dates' => [
+                    'created' => $workspace->created_at->toISOString(),
+                    'updated' => $workspace->updated_at->toISOString()
+                ]
+            ],
+            'topics' => $workspace->topics->map(function($topic) {
+                return [
+                    'id' => $topic->id,
+                    'title' => $topic->title,
+                    'order' => $topic->order,
+                    'fields_count' => $topic->fields->count(),
+                    'fields' => $topic->fields
+                        ->filter(function($field) {
+                            return !empty($field->key_name) && is_string($field->key_name);
+                        })
+                        ->mapWithKeys(function($field) {
+                            $key = trim($field->key_name);
+                            return [$key => [
+                                'id' => $field->id,
+                                'value' => $field->value,
+                                'type' => $field->type,
+                                'order' => $field->order,
+                                'created_at' => $field->created_at->toISOString(),
+                                'updated_at' => $field->updated_at->toISOString()
+                            ]];
+                        }),
+                    'created_at' => $topic->created_at->toISOString(),
+                    'updated_at' => $topic->updated_at->toISOString()
+                ];
+            }),
+            'statistics' => [
+                'total_topics' => $workspace->topics->count(),
+                'total_fields' => $workspace->topics->sum(function($topic) {
+                    return $topic->fields->count();
+                }),
+                'visible_fields' => $workspace->topics->sum(function($topic) {
+                    return $topic->fields->where('is_visible', true)->count();
+                })
+            ]
+        ];
+    }
+
+    /**
+     * Retorna dados simplificados do workspace com estrutura chave-valor
+     */
+    private function getSimpleWorkspaceData($workspace)
+    {
+        return [
+            'workspace' => [
+                'title' => $workspace->title,
+                'description' => $workspace->description ?? '',
+            ],
+            'topics' => $workspace->topics->map(function($topic) {
+                return [
+                    'id' => $topic->id,
+                    'title' => $topic->title,
+                    'order' => $topic->order,
+                    'fields_count' => $topic->fields->count(),
+                    'fields' => $topic->fields
+                    ->filter(function($field) {
+                        return !empty($field->key_name) && is_string($field->key_name);
+                    })
+                    ->mapWithKeys(function($field) {
+                        $key = trim($field->key_name);
+                        return [$key => $field->value];
+                    })
+                ];
+            }),
+        ];
     }
 
     public function stats($workspaceId)

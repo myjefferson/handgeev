@@ -21,35 +21,43 @@ Route::get('/health', function () {
     ]);
 })->name('api.health');
 
-
 Route::middleware([
     'api.auth_token', 
     'plan.rate_limit',
     'check.api.enabled', 
     'check.api.domain'
 ])->group(function () {
-    // Workspace endpoints
+    
+    // Workspace endpoints - CRUD completo do workspace
     Route::prefix('workspaces')->middleware('check.api.method:workspace')->group(function () {
-        Route::get('/{workspaceId}', [WorkspaceApiController::class, 'show']);
+        Route::get('/{workspaceId}', [WorkspaceApiController::class, 'show']); // Completo: workspace + topics + fields
         Route::get('/{workspaceId}/stats', [WorkspaceApiController::class, 'stats']);
-        Route::get('/{workspaceId}/topics', [TopicApiController::class, 'index']);
-        Route::post('/{workspaceId}/topics', [TopicApiController::class, 'store']);
         Route::put('/{workspaceId}', [WorkspaceApiController::class, 'update']);
         Route::patch('/{workspaceId}/settings', [WorkspaceApiController::class, 'updateSettings']);
+        
+        // Topics dentro do workspace
+        Route::prefix('/{workspaceId}/topics')->group(function () {
+            Route::get('/', [TopicApiController::class, 'index']); // Lista todos os tópicos do workspace
+            Route::post('/', [TopicApiController::class, 'store']); // Cria tópico no workspace
+        });
     });
-
-    // Topic endpoints
+    
+    // Topic endpoints independentes - operações em tópicos específicos
     Route::prefix('topics')->middleware('check.api.method:topics')->group(function () {
-        Route::get('/{topicId}', [TopicApiController::class, 'show']);
+        Route::get('/{topicId}', [TopicApiController::class, 'show']); // Tópico específico com fields
         Route::put('/{topicId}', [TopicApiController::class, 'update']);
         Route::delete('/{topicId}', [TopicApiController::class, 'destroy']);
-        Route::get('/{topicId}/fields', [FieldApiController::class, 'index']);
-        Route::post('/{topicId}/fields', [FieldApiController::class, 'store']);
+        
+        // Fields dentro do tópico
+        Route::prefix('/{topicId}/fields')->group(function () {
+            Route::get('/', [FieldApiController::class, 'index']); // Todos fields do tópico
+            Route::post('/', [FieldApiController::class, 'store']); // Cria field no tópico
+        });
     });
-
-    // Field endpoints
+    
+    // Field endpoints independentes - operações em fields específicos
     Route::prefix('fields')->middleware('check.api.method:fields')->group(function () {
-        Route::get('/{fieldId}', [FieldApiController::class, 'show']);
+        Route::get('/{fieldId}', [FieldApiController::class, 'show']); // Field específico
         Route::put('/{fieldId}', [FieldApiController::class, 'update']);
         Route::patch('/{fieldId}/visibility', [FieldApiController::class, 'updateVisibility']);
         Route::delete('/{fieldId}', [FieldApiController::class, 'destroy']);

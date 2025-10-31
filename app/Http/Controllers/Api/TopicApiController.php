@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\Validator;
 
 class TopicApiController extends Controller
 {
+    /**
+     * Show topics by workspace
+     * **/
     public function index($workspaceId)
     {
         $startTime = microtime(true);
@@ -23,47 +26,20 @@ class TopicApiController extends Controller
                 ->where('user_id', $user->id)
                 ->firstOrFail();
 
-            $topics = Topic::with(['fields' => function($query) {
-                $query->where('is_visible', true)->orderBy('order');
-            }])
-            ->where('workspace_id', $workspaceId)
-            ->orderBy('order')
-            ->get();
+            $topics = Topic::where('workspace_id', $workspaceId)
+                ->orderBy('order')
+                ->get();
 
-            $response = response()->json([
-                'metadata' => [
-                    'workspace_id' => (int)$workspaceId,
-                    'workspace_title' => $workspace->title,
-                    'total_topics' => $topics->count(),
-                    'generated_at' => now()->toISOString()
-                ],
-                'topics' => $topics->map(function($topic) {
-                    return [
-                        'id' => $topic->id,
-                        'title' => $topic->title,
-                        'order' => $topic->order,
-                        'fields_count' => $topic->fields->count(),
-                        'fields' => $topic->fields
-                            ->filter(function($field) {
-                                return !empty($field->key_name) && is_string($field->key_name);
-                            })
-                            ->mapWithKeys(function($field) {
-                            $key = trim($field->key_name);
-                            return [$key => [
-                                'id' => $field->id,
-                                'value' => $field->value,
-                                'type' => $field->type,
-                                'order' => $field->order,
-                                'created_at' => $field->created_at->toISOString(),
-                                'updated_at' => $field->updated_at->toISOString()
-                            ]];
-                        }),
-                        'created_at' => $topic->created_at->toISOString(),
-                        'updated_at' => $topic->updated_at->toISOString()
-                    ];
-                })
-            ]);
+            // Verificar se é uma visualização completa
+            $viewType = request()->get('view');
 
+            if ($viewType === 'full') {
+                $responseData = $this->getFullTopicsData($topics, $workspace);
+            } else {
+                $responseData = $this->getSimpleTopicsData($topics, $workspace);
+            }
+
+            $response = response()->json($responseData);
             $this->logApiRequest($user, $workspace, $startTime, 200, 'SUCCESS');
             return $response;
 
@@ -76,6 +52,10 @@ class TopicApiController extends Controller
         }
     }
 
+
+    /**
+     * Show one topic
+     * **/
     public function show($topicId)
     {
         $startTime = microtime(true);
@@ -89,38 +69,19 @@ class TopicApiController extends Controller
             ->whereHas('workspace', function($query) use ($user) {
                 $query->where('user_id', $user->id);
             })
-            ->findOrFail($topicId);
+            ->findOrFail($topicId)->get();
 
-            $response = response()->json([
-                'topic' => [
-                    'id' => $topic->id,
-                    'title' => $topic->title,
-                    'order' => $topic->order,
-                    'workspace' => [
-                        'id' => $topic->workspace->id,
-                        'title' => $topic->workspace->title
-                    ],
-                    'fields' => $topic->fields
-                        ->filter(function($field) {
-                            return !empty($field->key_name) && is_string($field->key_name);
-                        })
-                        ->mapWithKeys(function($field) {
-                        $key = trim($field->key_name);
-                        return [$key => [
-                            'id' => $field->id,
-                            'value' => $field->value,
-                            'type' => $field->type,
-                            'order' => $field->order,
-                            'created_at' => $field->created_at->toISOString(),
-                            'updated_at' => $field->updated_at->toISOString()
-                        ]];
-                    }),
-                    'created_at' => $topic->created_at->toISOString(),
-                    'updated_at' => $topic->updated_at->toISOString()
-                ]
-            ]);
+            // Verificar se é uma visualização completa
+            $viewType = request()->get('view');
 
-            $this->logApiRequest($user, $topic->workspace, $startTime, 200, 'SUCCESS');
+            if ($viewType === 'full') {
+                $responseData = $this->getFullTopicsData($topic);
+            } else {
+                $responseData = $this->getSimpleTopicsData($topic);
+            }
+
+            $response = response()->json($responseData);
+            $this->logApiRequest($user, $startTime, 200, 'SUCCESS');
             return $response;
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -128,8 +89,95 @@ class TopicApiController extends Controller
             return response()->json(['error' => 'Topic not found'], 404);
         } catch (\Exception $e) {
             $this->logApiRequest($user ?? null, null, $startTime, 500, 'INTERNAL_ERROR');
-            return response()->json(['error' => 'Internal server error'], 500);
+            return response()->json(['error' => 'Internal server error'.$e], 500);
         }
+    }
+
+    /**
+     * Retorna dados completos dos tópicos com campos detalhados
+     */
+    private function getFullTopicsData($topics, $workspace = null)
+    {
+        // Carregar campos para todos os tópicos de uma vez (mais eficiente)
+        $topics->load(['fields' => function($query) {
+            $query->where('is_visible', true)->orderBy('order');
+        }]);
+
+        if($workspace){
+            $fullData['metadata'] = [
+                'workspace_id' => (int)$workspace->id,
+                'workspace_title' => $workspace->title,
+                'total_topics' => $topics->count(),
+                'view_type' => 'simple',
+                'generated_at' => now()->toISOString()
+            ];
+        }
+
+        $fullData['topics'] = $topics->map(function($topic) {
+            return [
+                'id' => $topic->id,
+                'title' => $topic->title,
+                'order' => $topic->order,
+                'fields_count' => $topic->fields->count(),
+                'fields' => $topic->fields
+                    ->filter(function($field) {
+                        return !empty($field->key_name) && is_string($field->key_name);
+                    })
+                    ->mapWithKeys(function($field) {
+                        $key = trim($field->key_name);
+                        return [$key => [
+                            'id' => $field->id,
+                            'value' => $field->value,
+                            'type' => $field->type,
+                            'order' => $field->order
+                        ]];
+                    }),
+                'created_at' => $topic->created_at->toISOString(),
+                'updated_at' => $topic->updated_at->toISOString()
+            ];
+        });
+
+        return $fullData;
+    }
+
+    /**
+     * Retorna dados simplificados dos tópicos (apenas metadados)
+     */
+    private function getSimpleTopicsData($topics, $workspace = null)
+    {
+        if($workspace){
+            $simpleData['metadata'] = [
+                'workspace_id' => (int)$workspace->id,
+                'workspace_title' => $workspace->title,
+                'total_topics' => $topics->count(),
+                'view_type' => 'simple',
+                'generated_at' => now()->toISOString()
+            ];
+        }
+
+        $simpleData['topics'] = $topics->map(function($topic) {
+            return [
+                'id' => $topic->id,
+                'title' => $topic->title,
+                'order' => $topic->order,
+                'fields_count' => $topic->fields->count(),
+                'fields' => $topic->fields
+                ->filter(function($field) {
+                    return !empty($field->key_name) && is_string($field->key_name);
+                })
+                ->mapWithKeys(function($field) {
+                    $key = trim($field->key_name);
+                    return [$key => [
+                        'id' => $field->id,
+                        'value' => $field->value,
+                        'type' => $field->type,
+                        'order' => $field->order
+                    ]];
+                }),
+            ];
+        });
+
+        return $simpleData;
     }
 
     public function store(Request $request, $workspaceId)

@@ -19,40 +19,24 @@ class FieldApiController extends Controller
         try {
             $user = Auth::user();
 
-            $topic = Topic::with(['workspace', 'fields' => function($query) {
-                $query->orderBy('order');
-            }])
-            ->whereHas('workspace', function($query) use ($user) {
-                $query->where('user_id', $user->id);
-            })
-            ->findOrFail($topicId);
-
-            $response = response()->json([
-                'metadata' => [
-                    'topic_id' => (int)$topicId,
-                    'topic_title' => $topic->title,
-                    'workspace_id' => $topic->workspace_id,
-                    'total_fields' => $topic->fields->count(),
-                    'visible_fields' => $topic->fields->where('is_visible', true)->count(),
-                    'generated_at' => now()->toISOString()
-                ],
-                'fields' => $topic->fields
-                    ->filter(function($field) {
-                        return !empty($field->key_name) && is_string($field->key_name);
-                    })
-                    ->mapWithKeys(function($field) {
-                    $key = trim($field->key_name);
-                    return [$key => [
-                        'id' => $field->id,
-                        'value' => $field->value,
-                        'type' => $field->type,
-                        'order' => $field->order,
-                        'created_at' => $field->created_at->toISOString(),
-                        'updated_at' => $field->updated_at->toISOString()
-                    ]];
+            $topic = Topic::with(['fields' => function($query) {
+                $query->where('is_visible', true);
+                }])
+                ->whereHas('workspace', function($query) use ($user) {
+                    $query->where('user_id', $user->id);
                 })
-            ]);
+                ->findOrFail($topicId);
 
+            // Verificar se é uma visualização completa
+            $viewType = request()->get('view');
+
+            if ($viewType === 'full') {
+                $responseData = $this->getFullFieldsData($topic);
+            }else{
+                $responseData = $this->getSimpleFieldsData($topic);
+            }
+
+            $response = response()->json($responseData);
             $this->logApiRequest($user, $topic->workspace, $startTime, 200, 'SUCCESS');
             return $response;
 
@@ -106,6 +90,64 @@ class FieldApiController extends Controller
             $this->logApiRequest($user ?? null, null, $startTime, 500, 'INTERNAL_ERROR');
             return response()->json(['error' => 'Internal server error'], 500);
         }
+    }
+
+        /**
+     * Retorna dados completos dos campos com todos os metadados
+     */
+    private function getFullFieldsData($topic)
+    {
+        return [
+            'metadata' => [
+                'topic_id' => (int)$topic->id,
+                'topic_title' => $topic->title,
+                'workspace_id' => $topic->workspace_id,
+                'workspace_title' => $topic->workspace->title,
+                'total_fields' => $topic->fields->count(),
+                'view_type' => 'full',
+                'generated_at' => now()->toISOString()
+            ],
+            'fields' => $topic->fields
+                ->filter(function($field) {
+                    return !empty($field->key_name) && is_string($field->key_name);
+                })
+                ->map(function($field) {
+                    return [
+                        'id' => $field->id,
+                        'key_name' => $field->key_name,
+                        'value' => $field->value,
+                        'type' => $field->type,
+                        'order' => $field->order,
+                        'is_visible' => $field->is_visible,
+                        'created_at' => $field->created_at->toISOString(),
+                        'updated_at' => $field->updated_at->toISOString()
+                    ];
+                })
+        ];
+    }
+
+    /**
+     * Retorna dados simplificados dos campos (formato chave-valor)
+     */
+    private function getSimpleFieldsData($topic)
+    {
+        return [
+            'metadata' => [
+                'topic_id' => (int) $topic->id,
+                'topic_title' => $topic->title,
+                'workspace_id' => $topic->workspace_id,
+                'workspace_title' => $topic->workspace->title,
+                'total_fields' => $topic->fields->count()
+            ],
+            'fields' => $topic->fields
+                ->filter(function ($field) {
+                    return !empty($field->key_name) && is_string($field->key_name);
+                })
+                ->mapWithKeys(function ($field) {
+                    $key = trim($field->key_name);
+                    return [$key => $field->value];
+                }),
+        ];
     }
 
     public function store(Request $request, $topicId)
