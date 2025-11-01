@@ -1,9 +1,10 @@
 <?php
 
 return [
-    'paths' => [],
+    'paths' => ['api/*'],
     
     'allowed_methods' => ['*'],
+    
     'allowed_origins' => ['*'],
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],

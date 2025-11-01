@@ -10,50 +10,94 @@ use Illuminate\Support\Facades\Auth;
 
 class Cors
 {
-    public function handle(Request $request, Closure $next)
+        public function handle(Request $request, Closure $next)
     {
-        // Pega a origem da requisição
-        $origin = $request->headers->get('Origin');
+        // Ignora rotas que não são API (ok, mas 'api/*' no cors.php já cuida disso)
+        if (!str_starts_with($request->path(), 'api/')) {
+            return $next($request);
+        }
+
+        $origin = $request->headers->get('Origin') ?? $request->headers->get('Referer');
         
-        // Se não tem origin, usa * (para Postman, curl, etc)
+        // Se não tem origin, permite (requisições diretas, Postman, curl)
         if (!$origin) {
-            $origin = '*';
+            Log::debug('CORS: No origin header, allowing request');
+            return $next($request);
         }
 
-        // Para requisições OPTIONS (preflight), responde IMEDIATAMENTE
+        // Extrai host limpo do origin
+        $originHost = $this->getHostWithPort($origin);
+
         if ($request->isMethod('OPTIONS')) {
-            return response('', 200)
-                ->header('Access-Control-Allow-Origin', $origin)
-                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
-                ->header('Access-Control-Allow-Headers', 'Origin, Content-Type, Authorization, Accept, X-Requested-With, X-Workspace-Id, X-API-Key')
-                ->header('Access-Control-Allow-Credentials', 'true')
-                ->header('Access-Control-Max-Age', '86400');
+            if ($this->validatePreflight($request, $origin, $originHost)) {
+                return $next($request); 
+            }
+
+            return $this->blockOrigin($origin, 'Preflight validation failed.');
         }
 
-        // Para outras requisições, processa e adiciona headers na resposta
-        $response = $next($request);
+        // Busca workspace
+        $workspace = $this->getWorkspaceFromRequest($request);
 
-        // Adiciona headers CORS na resposta
-        $response->headers->set('Access-Control-Allow-Origin', $origin);
-        $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-        $response->headers->set('Access-Control-Allow-Headers', 'Origin, Content-Type, Authorization, Accept, X-Requested-With, X-Workspace-Id, X-API-Key');
-        $response->headers->set('Access-Control-Allow-Credentials', 'true');
+        // Se não encontrou workspace, bloqueia
+        if (!$workspace) {
+            Log::warning('CORS: Workspace não encontrado', [
+                'origin' => $origin,
+                'path' => $request->path()
+            ]);
+            return $this->blockOrigin($origin, 'Workspace not found');
+        }
 
-        return $response;
+        if (Auth::check() && Auth::id() === $workspace->user_id) {
+            Log::debug('CORS: Owner access, bypassing all restrictions');
+            return $next($request); // Deixa seguir, o pacote CORS padrão adiciona o header '*'
+        }
+
+        // Se API não está habilitada
+        if (!$workspace->api_enabled) {
+            Log::warning('CORS: API desabilitada');
+            return $this->blockOrigin($origin, 'API disabled for this workspace');
+        }
+
+        $httpsRequired = $workspace->api_https_required ?? true;
+        if ($httpsRequired && !str_starts_with($origin, 'https://')) {
+            Log::warning('CORS: HTTPS obrigatório mas origin é HTTP');
+            return $this->blockOrigin($origin, 'Only HTTPS requests are allowed');
+        }
+
+        // Se restrição de domínio está DESATIVADA, permite qualquer origem
+        if (!$workspace->api_domain_restriction) {
+            Log::debug('CORS: Restrição de domínio desativada, permitindo origin');
+            return $next($request); // Deixa seguir
+        }
+
+        // Busca domínios permitidos
+        $allowedDomains = $workspace->allowedDomains()
+            ->where('is_active', true)
+            ->get();
+
+        if ($allowedDomains->isEmpty()) {
+            Log::warning('CORS: Restrição ativa mas nenhum domínio configurado');
+            return $this->blockOrigin($origin, 'Domain restriction is enabled but no domains are configured');
+        }
+
+        // Valida se origem é permitida
+        if (!$this->isDomainAllowed($originHost, $allowedDomains)) {
+            Log::warning('CORS: Domínio não permitido');
+            return $this->blockOrigin($origin, 'Domain not allowed');
+        }
+
+        Log::info('CORS: Request permitida');
+        return $next($request);
     }
 
-    private function handlePreflight(Request $request, $origin, $originHost)
+     private function validatePreflight(Request $request, $origin, $originHost): bool
     {
         $workspace = $this->getWorkspaceFromRequest($request);
         
         if (!$workspace) {
             Log::warning('CORS Preflight: Workspace não encontrado');
             return response()->json(['error' => 'Workspace not found'], 404);
-        }
-
-        // Owner sempre passa
-        if (Auth::check() && Auth::id() === $workspace->user_id) {
-            return $this->buildPreflightResponse($origin);
         }
 
         // API desabilitada
@@ -67,12 +111,6 @@ class Cors
         if ($httpsRequired && !str_starts_with($origin, 'https://')) {
             Log::warning('CORS Preflight: HTTPS obrigatório', ['origin' => $origin]);
             return response()->json(['error' => 'Only HTTPS allowed'], 403);
-        }
-
-        // Se não tem restrição de domínio, permite
-        if (!$workspace->api_domain_restriction) {
-            Log::debug('CORS Preflight: Sem restrição, permitindo', ['origin' => $origin]);
-            return $this->buildPreflightResponse($origin);
         }
 
         // Valida domínios permitidos
@@ -90,18 +128,7 @@ class Cors
             return response()->json(['error' => 'Domain not allowed'], 403);
         }
 
-        return $this->buildPreflightResponse($origin);
-    }
-
-    private function buildPreflightResponse($origin)
-    {
-        return response()->noContent(200, [
-            'Access-Control-Allow-Origin' => $origin,
-            'Access-Control-Allow-Methods' => 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers' => 'Origin, Content-Type, Authorization, Accept, X-Requested-With, X-Workspace-Id, X-API-Key',
-            'Access-Control-Allow-Credentials' => 'true',
-            'Access-Control-Max-Age' => '86400',
-        ]);
+        return true;
     }
 
     private function getWorkspaceFromRequest(Request $request)
@@ -229,14 +256,5 @@ class Cors
             'Access-Control-Allow-Origin' => $origin,
             'Access-Control-Allow-Credentials' => 'true',
         ]);
-    }
-
-    private function setCorsHeaders($response, $origin)
-    {
-        return $response
-            ->header('Access-Control-Allow-Origin', $origin)
-            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
-            ->header('Access-Control-Allow-Headers', 'Origin, Content-Type, Authorization, Accept, X-Requested-With, X-Workspace-Id, X-API-Key')
-            ->header('Access-Control-Allow-Credentials', 'true');
     }
 }
