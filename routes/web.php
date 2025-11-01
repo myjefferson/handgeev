@@ -98,7 +98,6 @@ Route::middleware([
     'plan.limits', 
     'record.last.login',
     'check.user.suspended',
-    'cors.dynamic',
 ])->group(function(){
     Route::controller(WorkspaceController::class)->group(function(){
         Route::get('/workspaces', 'indexWorkspaces')->name('workspaces.show');
