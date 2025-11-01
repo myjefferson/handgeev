@@ -8,7 +8,7 @@ use App\Models\Workspace;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 
-class DynamicCors
+class Cors
 {
     public function handle(Request $request, Closure $next)
     {

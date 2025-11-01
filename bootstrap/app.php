@@ -43,7 +43,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'auth' => Authenticate::class,
             'role' => RoleMiddleware::class,
-            'cors.dynamic' => DynamicCors::class,
             'plan.rate_limit' => CheckPlanLimits::class,
             'api.auth_token' => AuthTokenApi::class,
             'languages' => LanguageMiddleware::class,
