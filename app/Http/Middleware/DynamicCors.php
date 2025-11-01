@@ -10,56 +10,25 @@ class DynamicCors
 {
     public function handle(Request $request, Closure $next)
     {
-        // Handle preflight requests
+        // Para requisições OPTIONS (preflight)
         if ($request->isMethod('OPTIONS')) {
-            return $this->handlePreflight($request);
+            return response()->noContent(200, [
+                'Access-Control-Allow-Origin' => '*',
+                'Access-Control-Allow-Methods' => 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers' => 'Origin, Content-Type, Authorization, Accept, X-Requested-With, X-Workspace-Id, X-API-Key, *',
+                'Access-Control-Allow-Credentials' => 'true',
+                'Access-Control-Max-Age' => '86400',
+            ]);
         }
 
-        $origin = $request->headers->get('Origin');
         $response = $next($request);
 
-        // Se não tem Origin, não é CORS
-        if (!$origin) {
-            return $response;
-        }
-
-        // 1º: Sempre permitir localhost para desenvolvimento
-        if ($this->isLocalhost($origin)) {
-            return $this->setCorsHeaders($response, $origin);
-        }
-
-        // 2º: SEMPRE permitir domínios do Handgeev (seu próprio sistema)
-        if ($this->isHandgeevDomain($origin)) {
-            return $this->setCorsHeaders($response, $origin);
-        }
-
-        // 3º: Buscar workspace da requisição
-        $workspace = $this->getWorkspaceFromRequest($request);
-        
-        if (!$workspace) {
-            // Se não encontrou workspace, BLOQUEIA por segurança
-            return $this->blockOrigin($origin, 'Workspace not found');
-        }
-
-        // Verifica se a API está habilitada para este workspace
-        if (!$workspace->api_enabled) {
-            return response()->json([
-                'error' => 'API disabled for this workspace'
-            ], 403);
-        }
-
-        // 4º: SE restrição de domínio está ATIVA, verificar domínios permitidos
-        if ($workspace->api_domain_restriction) {
-            if ($this->isOriginAllowed($origin, $workspace)) {
-                return $this->setCorsHeaders($response, $origin);
-            }
-            
-            // Domínio não permitido
-            return $this->blockOrigin($origin, 'Your domain is not in the allowed list for this workspace API.');
-        }
-
-        // 5º: SE restrição de domínio está DESABILITADA, permite QUALQUER origem
-        return $this->setCorsHeaders($response, $origin);
+        // Para todas as outras requisições
+        return $response
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Origin, Content-Type, Authorization, Accept, X-Requested-With, X-Workspace-Id, X-API-Key, *')
+            ->header('Access-Control-Allow-Credentials', 'true');
     }
 
     private function handlePreflight(Request $request)
