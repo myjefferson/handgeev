@@ -203,7 +203,7 @@ class Workspace extends Model
     /**
      * Verifica se o domínio corresponde ao padrão permitido
      */
-    private function matchesDomain($requestDomain, $allowedDomain)
+    private function matchesDomain($requestDomain, $allowedDomain): bool
     {
         $requestDomain = strtolower(trim($requestDomain));
         $allowedDomain = strtolower(trim($allowedDomain));
@@ -213,10 +213,18 @@ class Workspace extends Model
             return true;
         }
 
-        // Se o domínio permitido tem wildcard
-        if (strpos($allowedDomain, '*') === 0) {
-            $pattern = '/^' . str_replace('\*', '.*', preg_quote($allowedDomain, '/')) . '$/';
-            return preg_match($pattern, $requestDomain) === 1;
+        // Se o domínio permitido tem wildcard no início (ex: *.exemplo.com)
+        if (str_starts_with($allowedDomain, '*.')) {
+            $pattern = str_replace('*.', '', $allowedDomain);
+            // Verifica se o domínio da requisição termina com o padrão
+            if (str_ends_with($requestDomain, $pattern)) {
+                return true;
+            }
+        }
+
+        // Verifica subdomínios (ex: api.exemplo.com para exemplo.com)
+        if (str_contains($requestDomain, '.') && str_ends_with($requestDomain, '.' . $allowedDomain)) {
+            return true;
         }
 
         return false;

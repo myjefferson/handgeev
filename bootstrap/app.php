@@ -10,6 +10,7 @@ use App\Http\Middleware\CheckApiEnabled;
 use App\Http\Middleware\LanguageMiddleware;
 use App\Http\Middleware\RecordLastLogin;
 use App\Http\Middleware\CheckSuspendedUser;
+use App\Http\Middleware\DynamicCors;
 
 use App\Http\Middleware\CheckDeactivatedAccount;
 
@@ -45,6 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'auth' => Authenticate::class,
             'role' => RoleMiddleware::class,
+            'cors.dynamic' => DynamicCors::class,
             'plan.rate_limit' => CheckPlanLimits::class,
             'api.auth_token' => AuthTokenApi::class,
             'languages' => LanguageMiddleware::class,

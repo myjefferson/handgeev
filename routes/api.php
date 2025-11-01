@@ -22,10 +22,11 @@ Route::get('/health', function () {
 })->name('api.health');
 
 Route::middleware([
+    'cors.dynamic',
     'api.auth_token', 
     'plan.rate_limit',
     'check.api.enabled', 
-    'check.api.domain'
+    'check.api.domain',
 ])->group(function () {
     
     // Workspace endpoints - CRUD completo do workspace
