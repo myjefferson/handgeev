@@ -23,76 +23,65 @@ class DynamicCors
             return $response;
         }
 
-        // Sempre permitir localhost para desenvolvimento
+        // 1º: Sempre permitir localhost para desenvolvimento
         if ($this->isLocalhost($origin)) {
             return $this->setCorsHeaders($response, $origin);
         }
 
-        // SEMPRE permitir domínios do Handgeev
+        // 2º: SEMPRE permitir domínios do Handgeev (seu próprio sistema)
         if ($this->isHandgeevDomain($origin)) {
             return $this->setCorsHeaders($response, $origin);
         }
 
-        // Buscar workspace da requisição
+        // 3º: PARA API COM BEARER TOKEN: permitir qualquer origem
+        // A autenticação será feita depois pelo middleware 'api.auth_token'
+        if ($this->isApiRequest($request)) {
+            return $this->setCorsHeaders($response, $origin);
+        }
+
+        // 4º: Para outras rotas não-API, aplica a lógica de domínios personalizados
         $workspace = $this->getWorkspaceFromRequest($request);
         
         if (!$workspace) {
-            // Se não encontrou workspace, aplica política global
             return $this->blockOrigin($origin);
         }
 
-        // Verifica se a API está habilitada para este workspace
         if (!$workspace->api_enabled) {
             return response()->json([
                 'error' => 'API disabled for this workspace'
             ], 403);
         }
 
-        // Se restrição de domínio está ativa, verificar domínios permitidos
         if ($workspace->api_domain_restriction) {
             if ($this->isOriginAllowed($origin, $workspace)) {
                 return $this->setCorsHeaders($response, $origin);
             }
             
-            // Domínio não permitido
-            return response()->json([
-                'error' => 'Origin not allowed for this workspace',
-                'message' => 'Your domain is not in the allowed list for this workspace API. Please contact the workspace administrator to add your domain.'
-            ], 403)->withHeaders([
-                'Access-Control-Allow-Origin' => $origin, // Importante para o frontend ler o erro
-            ]);
+            return $this->blockOrigin($origin, 'Your domain is not in the allowed list for this workspace API.');
         }
 
-        // Se restrição não está ativa, permite qualquer origem
         return $this->setCorsHeaders($response, $origin);
     }
 
-    private function handlePreflight(Request $request)
+    private function isApiRequest($request): bool
     {
-        $origin = $request->headers->get('Origin');
-        
-        if (!$origin) {
-            return response()->noContent();
-        }
+        // Verifica se é uma rota da API que requer autenticação Bearer
+        $apiPaths = [
+            'api/workspaces/',
+            'api/topics/',
+            'api/fields/',
+            'api/auth/login/token',
+        ];
 
-        // Para preflight, verificamos se a origem seria permitida
-        $workspace = $this->getWorkspaceFromRequest($request);
-        
-        if ($workspace && $workspace->api_enabled && $workspace->api_domain_restriction) {
-            if (!$this->isOriginAllowed($origin, $workspace)) {
-                return response()->noContent(403);
+        $path = $request->path();
+
+        foreach ($apiPaths as $apiPath) {
+            if (str_starts_with($path, $apiPath)) {
+                return true;
             }
         }
 
-        $headers = [
-            'Access-Control-Allow-Origin' => $origin,
-            'Access-Control-Allow-Methods' => 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers' => 'Origin, Content-Type, Authorization, Accept, X-Requested-With, X-Workspace-Id, X-API-Key',
-            'Access-Control-Allow-Credentials' => 'true',
-            'Access-Control-Max-Age' => '86400',
-        ];
-
-        return response()->noContent(200, $headers);
+        return false;
     }
 
     private function isHandgeevDomain($origin): bool
@@ -101,18 +90,22 @@ class DynamicCors
             'https://handgeev.com',
             'https://www.handgeev.com', 
             'https://app.handgeev.com',
-            'https://*.handgeev.com'
+            'https://api.handgeev.com',
+            'http://handgeev.com',
+            'http://www.handgeev.com',
         ];
 
+        $originHost = parse_url($origin, PHP_URL_HOST);
+        
         foreach ($handgeevDomains as $domain) {
-            if (str_starts_with($domain, '*')) {
-                $pattern = str_replace('*.', '', $domain);
-                if (str_contains($origin, $pattern)) {
-                    return true;
-                }
-            } elseif ($origin === $domain) {
+            $domainHost = parse_url($domain, PHP_URL_HOST);
+            if ($originHost === $domainHost) {
                 return true;
             }
+        }
+
+        if (str_ends_with($originHost, '.handgeev.com')) {
+            return true;
         }
 
         return false;
@@ -132,19 +125,46 @@ class DynamicCors
         return in_array($origin, $devOrigins);
     }
 
-    private function blockOrigin($origin, $message = 'Origin not allowed')
+    private function handlePreflight(Request $request)
     {
-        return response()->json([
-            'error' => 'Origin not allowed',
-            'message' => $message
-        ], 403)->withHeaders([
-            'Access-Control-Allow-Origin' => $origin, // Para o frontend ler o erro
+        $origin = $request->headers->get('Origin');
+        
+        if (!$origin) {
+            return response()->noContent();
+        }
+
+        // Para preflight da API, sempre permitir (a autenticação vem depois)
+        if ($this->isApiRequest($request)) {
+            $headers = [
+                'Access-Control-Allow-Origin' => $origin,
+                'Access-Control-Allow-Methods' => 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers' => 'Origin, Content-Type, Authorization, Accept, X-Requested-With, X-Workspace-Id, X-API-Key',
+                'Access-Control-Allow-Credentials' => 'true',
+                'Access-Control-Max-Age' => '86400',
+            ];
+
+            return response()->noContent(200, $headers);
+        }
+
+        // Para preflight não-API, aplica verificação normal
+        $workspace = $this->getWorkspaceFromRequest($request);
+        
+        if ($workspace && $workspace->api_enabled && $workspace->api_domain_restriction) {
+            if (!$this->isOriginAllowed($origin, $workspace)) {
+                return response()->noContent(403);
+            }
+        }
+
+        return response()->noContent(200, [
+            'Access-Control-Allow-Origin' => $origin,
+            'Access-Control-Allow-Methods' => 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers' => 'Origin, Content-Type, Authorization, Accept, X-Requested-With, X-Workspace-Id, X-API-Key',
+            'Access-Control-Allow-Credentials' => 'true',
         ]);
     }
 
     private function getWorkspaceFromRequest(Request $request)
     {
-        // Tenta obter workspace de várias formas possíveis
         $workspaceId = $request->route('workspace') ?? 
                       $request->route('workspaceId') ?? 
                       $request->input('workspace_id') ??
@@ -156,7 +176,6 @@ class DynamicCors
             }])->find($workspaceId);
         }
 
-        // Tenta pegar pela chave da API
         $apiKey = $request->header('X-API-Key') ?? $request->input('api_key');
         if ($apiKey) {
             return Workspace::where('workspace_key_api', $apiKey)
@@ -166,11 +185,6 @@ class DynamicCors
                 ->first();
         }
 
-        // Tenta pelo token JWT (se estiver usando)
-        if ($request->bearerToken()) {
-            // Aqui você pode adicionar lógica para extrair workspace do JWT se necessário
-        }
-
         return null;
     }
 
@@ -178,6 +192,16 @@ class DynamicCors
     {
         $originHost = parse_url($origin, PHP_URL_HOST);
         return $workspace->isDomainAllowed($originHost);
+    }
+
+    private function blockOrigin($origin, $message = 'Origin not allowed')
+    {
+        return response()->json([
+            'error' => 'Origin not allowed',
+            'message' => $message
+        ], 403)->withHeaders([
+            'Access-Control-Allow-Origin' => $origin,
+        ]);
     }
 
     private function setCorsHeaders($response, $origin)
