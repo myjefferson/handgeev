@@ -1,13 +1,3 @@
 [deploy]
 buildCommand = "composer install --no-dev --optimize-autoloader --no-interaction && php artisan optimize:clear && php artisan optimize"
-startCommand = "php artisan serve --host=0.0.0.0 --port=$PORT"
-
-[[services]]
-name = "web"
-type = "web"
-startCommand = "php artisan serve --host=0.0.0.0 --port=$PORT"
-
-[[services]]
-name = "worker"
-type = "worker"
-startCommand = "php artisan queue:work --sleep=3 --tries=3 --timeout=90"
+startCommand = "supervisord -c supervisord.conf"
