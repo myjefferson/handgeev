@@ -360,36 +360,40 @@
         </main>
 
         <!-- Share Modal -->
-        <div id="share-modal" tabindex="-1" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full">
-            <div class="relative w-full max-w-md max-h-full">
-                <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
-                    <div class="flex items-center justify-between p-4 border-b rounded-t dark:border-gray-600">
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">
-                            Compartilhar Workspace
-                        </h3>
-                        <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="share-modal">
-                            <i class="fas fa-times"></i>
+        
+    </div>
+@endsection
+
+@push('modals')
+    <div id="share-modal" tabindex="-1" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full">
+        <div class="relative w-full max-w-md max-h-full">
+            <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+                <div class="flex items-center justify-between p-4 border-b rounded-t dark:border-gray-600">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                        Compartilhar Workspace
+                    </h3>
+                    <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="share-modal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-6">
+                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                        Link de compartilhamento
+                    </label>
+                    <div class="flex">
+                        <input type="text" 
+                            value="{{ url()->current() }}" 
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-l-lg block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            readonly>
+                        <button onclick="copyShareLink()" class="text-white bg-teal-600 hover:bg-teal-700 focus:ring-4 focus:ring-teal-300 font-medium rounded-r-lg text-sm px-4 text-center inline-flex items-center dark:bg-teal-500 dark:hover:bg-teal-600 dark:focus:ring-teal-800 transition-colors">
+                            <i class="fas fa-copy"></i>
                         </button>
-                    </div>
-                    <div class="p-6">
-                        <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                            Link de compartilhamento
-                        </label>
-                        <div class="flex">
-                            <input type="text" 
-                                value="{{ url()->current() }}" 
-                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-l-lg block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                                readonly>
-                            <button onclick="copyShareLink()" class="text-white bg-teal-600 hover:bg-teal-700 focus:ring-4 focus:ring-teal-300 font-medium rounded-r-lg text-sm px-4 text-center inline-flex items-center dark:bg-teal-500 dark:hover:bg-teal-600 dark:focus:ring-teal-800 transition-colors">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-@endsection
+@endpush
 
 @push('style')
     <style>
@@ -431,9 +435,7 @@
 @endpush
 
 @push('scripts_end')
-    <script type="module">
-        import '/js/modules/alert.js'
-        
+    <script>
         // Tab Management
         document.addEventListener('DOMContentLoaded', function() {
             // Main Tabs

@@ -404,7 +404,7 @@
 
 @push('scripts_end')
     <script type="module">
-        import '/js/modules/alert.js'
+        
         // Inicializar tabs do Flowbite com a primeira aba ativa
         document.addEventListener('DOMContentLoaded', function() {
             // Ativar a primeira aba por padrão

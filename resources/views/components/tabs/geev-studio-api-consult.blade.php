@@ -258,10 +258,12 @@
     </div>
 </div>
 
+@push('modals')
+    
+@endpush
+
 @push('scripts_end')    
     <script type="module">
-        import '/js/modules/alert.js'
-
         document.addEventListener('DOMContentLoaded', function() {
             // API Consult functionality
             initializeApiConsult();

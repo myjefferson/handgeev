@@ -1,6 +1,3 @@
-import { AlertManager } from '../alert.js';
-const alertManager = new AlertManager();
-
 // CSRF
 const csrfToken = $('meta[name="csrf-token"]').attr('content');
 

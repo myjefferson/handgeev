@@ -18,8 +18,8 @@
             <div>
                 <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Link de Compartilhamento</label>
                 <div class="flex">
-                    <input type="text" id="share-link" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-l-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" value="{{ route('workspace.shared-geev-studio.show', ['global_key_api' => auth()->user()->global_key_api, 'workspace_key_api' => $workspace?->workspace_key_api]) }}" readonly>
-                    <button id="copy-link" data-tooltip-target="tooltip-copy-link" class="flex-shrink-0 inline-flex items-center py-2.5 px-4 text-sm font-medium text-white bg-blue-700 rounded-r-lg border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                    <input type="text" id="share-link" class="copy-input bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-l-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" value="{{ route('workspace.shared-geev-studio.show', ['global_key_api' => auth()->user()->global_key_api, 'workspace_key_api' => $workspace?->workspace_key_api]) }}" readonly>
+                    <button data-tooltip-target="tooltip-copy-link" class="copy-button flex-shrink-0 inline-flex items-center py-2.5 px-4 text-sm font-medium text-white bg-blue-700 rounded-r-lg border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
                         <i class="fas fa-copy mr-1"></i>
                         <span class="hidden md:inline">Copiar</span>
                     </button>

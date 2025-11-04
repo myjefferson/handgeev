@@ -92,7 +92,7 @@
     // Gerar estrutura de endpoints atualizada
     function generateEndpoints() {
         const baseWorkspacePath = `/api/workspaces/{{ $workspace->id }}`;
-        const baseUrl = '{{ url("/api") }}';
+        const baseUrl = '{{ url('') }}';
         
         return {
             workspace: [
@@ -260,7 +260,7 @@
                 },
                 {
                     method: 'GET',
-                    path: `/topics/{topicId}`,
+                    path: `/api/topics/{topicId}`,
                     full_url: `${baseUrl}/topics/{topicId}`,
                     description: 'Obter detalhes de um tópico específico com todos os campos',
                     parameters: [
@@ -287,7 +287,7 @@
                 },
                 {
                     method: 'PUT',
-                    path: `/topics/{topicId}`,
+                    path: `/api/topics/{topicId}`,
                     full_url: `${baseUrl}/topics/{topicId}`,
                     description: 'Atualizar tópico',
                     parameters: [
@@ -302,7 +302,7 @@
                 },
                 {
                     method: 'DELETE',
-                    path: `/topics/{topicId}`,
+                    path: `/api/topics/{topicId}`,
                     full_url: `${baseUrl}/topics/{topicId}`,
                     description: 'Excluir tópico',
                     parameters: [
@@ -313,7 +313,7 @@
             fields: [
                 {
                     method: 'GET',
-                    path: `/topics/{topicId}/fields`,
+                    path: `/api/topics/{topicId}/fields`,
                     full_url: `${baseUrl}/topics/{topicId}/fields`,
                     description: 'Listar todos os campos de um tópico',
                     parameters: [
@@ -352,7 +352,7 @@
                 },
                 {
                     method: 'POST',
-                    path: `/topics/{topicId}/fields`,
+                    path: `/api/topics/{topicId}/fields`,
                     full_url: `${baseUrl}/topics/{topicId}/fields`,
                     description: 'Criar novo campo em um tópico',
                     parameters: [
@@ -373,7 +373,7 @@
                 },
                 {
                     method: 'GET',
-                    path: `/fields/{fieldId}`,
+                    path: `/api/fields/{fieldId}`,
                     full_url: `${baseUrl}/fields/{fieldId}`,
                     description: 'Obter detalhes de um campo específico',
                     parameters: [
@@ -395,7 +395,7 @@
                 },
                 {
                     method: 'PUT',
-                    path: `/fields/{fieldId}`,
+                    path: `/api/fields/{fieldId}`,
                     full_url: `${baseUrl}/fields/{fieldId}`,
                     description: 'Atualizar campo',
                     parameters: [
@@ -416,7 +416,7 @@
                 },
                 {
                     method: 'PATCH',
-                    path: `/fields/{fieldId}/visibility`,
+                    path: `/api/fields/{fieldId}/visibility`,
                     full_url: `${baseUrl}/fields/{fieldId}/visibility`,
                     description: 'Atualizar apenas a visibilidade do campo',
                     parameters: [
@@ -429,7 +429,7 @@
                 },
                 {
                     method: 'DELETE',
-                    path: `/fields/{fieldId}`,
+                    path: `/api/fields/{fieldId}`,
                     full_url: `${baseUrl}/fields/{fieldId}`,
                     description: 'Excluir campo',
                     parameters: [

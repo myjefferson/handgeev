@@ -104,7 +104,8 @@
                                     </svg>
                                 </button>
                             @endif
-                            <button onclick="copyToClipboard('{{ $workspace->workspace_hash_api }}')" class="p-2 {{ $workspace->api_jwt_required ? 'text-amber-400 hover:text-amber-300' : 'text-cyan-400 hover:text-cyan-300' }}" title="{{ $workspace->api_jwt_required ? 'Copiar Workspace Hash' : 'Copiar Workspace Key' }}">
+                            <input type="hidden" value="{{ $workspace->workspace_key_api }}" class="copy-input">
+                            <button class="copy-button p-2 {{ $workspace->api_jwt_required ? 'text-amber-400 hover:text-amber-300' : 'text-cyan-400 hover:text-cyan-300' }}" title="{{ $workspace->api_jwt_required ? 'Copiar Workspace Hash' : 'Copiar Workspace Key' }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                                 </svg>
@@ -299,27 +300,11 @@ function initializeTabs() {
 async function copyToClipboard(text) {
     try {
         await navigator.clipboard.writeText(text);
-        showNotification('Copiado para a área de transferência!', 'success');
+        alertManager.show('Copiado para a área de transferência!', 'success');
     } catch (err) {
         console.error('Erro ao copiar:', err);
-        showNotification('Erro ao copiar texto', 'error');
+        alertManager.show('Erro ao copiar texto', 'error');
     }
-}
-
-// Notificações
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 transform transition-transform duration-300 ${
-        type === 'success' ? 'bg-green-500 text-white' : 
-        type === 'error' ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'
-    }`;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.transform = 'translateX(100%)';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
 }
 
 // Modal System
@@ -522,16 +507,16 @@ async function exportDocumentation(format) {
         }
 
         downloadFile(content, filename, mimeType);
-        showNotification('Documentação exportada com sucesso!', 'success');
+        alertManager.show('Documentação exportada com sucesso!', 'success');
     } catch (error) {
         console.error('Erro ao exportar documentação:', error);
-        showNotification('Erro ao exportar documentação', 'error');
+        alertManager.show('Erro ao exportar documentação', 'error');
     }
 }
 
 function exportOpenAPI() {
     if (!['pro', 'premium', 'admin'].includes(USER_PLAN.toLowerCase())) {
-        showNotification('Exportação OpenAPI disponível apenas para planos Pro e Premium', 'error');
+        alertManager.show('Exportação OpenAPI disponível apenas para planos Pro e Premium', 'error');
         return;
     }
     exportDocumentation('json');
@@ -612,13 +597,13 @@ async function generateApiKey() {
         const data = await response.json();
         
         if (data.success) {
-            showNotification('Workspace Key gerada com sucesso!', 'success');
+            alertManager.show('Workspace Key gerada com sucesso!', 'success');
             setTimeout(() => location.reload(), 1000);
         } else {
-            showNotification('Erro ao gerar Workspace Key', 'error');
+            alertManager.show('Erro ao gerar Workspace Key', 'error');
         }
     } catch (error) {
-        showNotification('Erro de conexão', 'error');
+        alertManager.show('Erro de conexão', 'error');
     }
 }
 

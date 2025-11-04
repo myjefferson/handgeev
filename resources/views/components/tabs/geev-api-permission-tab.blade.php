@@ -48,8 +48,6 @@
 </div>
 
 <script type="module">
-    import '/js/modules/alert.js'
-
     document.addEventListener('DOMContentLoaded', function() {
         loadPermissions();
     });

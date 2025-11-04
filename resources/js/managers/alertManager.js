@@ -100,6 +100,3 @@ export class AlertManager {
         this.show(message, 'info');
     }
 }
-
-// Instância global
-window.alertManager = new AlertManager();

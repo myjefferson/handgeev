@@ -27,7 +27,7 @@
                 {{-- <a href="#" class="social-icon text-slate-400 text-lg hover:text-primary-500 transition-colors" title="{{ __('footer.social.twitter') }}">
                     <i class="fab fa-twitter"></i>
                 </a> --}}
-                <a href="https://www.instagram.com/hand.geev/" class="social-icon text-slate-400 text-lg hover:text-primary-500 transition-colors" title="{{ __('footer.social.instagram') }}">
+                <a href="https://www.instagram.com/handgeev/" class="social-icon text-slate-400 text-lg hover:text-primary-500 transition-colors" title="{{ __('footer.social.instagram') }}">
                     <i class="fab fa-instagram"></i>
                 </a>
                 <a href="https://www.linkedin.com/company/handgeev" class="social-icon text-slate-400 text-lg hover:text-primary-500 transition-colors" title="{{ __('footer.social.linkedin') }}">

@@ -367,7 +367,6 @@
 @endpush
 
 <script type="module">
-import '/js/modules/alert.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // Cache blade-inserted values once

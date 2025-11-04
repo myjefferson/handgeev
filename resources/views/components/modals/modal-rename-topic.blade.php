@@ -61,10 +61,6 @@
 </div>
 
 @push('scripts_end')
-    <script type="module">
-        import { AlertManager } from '/js/modules/alert.js';
-        const alertManager = new AlertManager();
-    </script>
     <script>
         // Inicializar dropdowns e modais quando o documento estiver pronto
         document.addEventListener('DOMContentLoaded', function() {
