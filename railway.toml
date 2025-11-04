@@ -1,7 +1,3 @@
 [deploy]
-buildCommand = """
-apt-get update && apt-get install -y supervisor
-composer install --no-dev --optimize-autoloader --no-interaction
-php artisan optimize:clear && php artisan optimize
-"""
-startCommand = "supervisord -c supervisord.conf"
+buildCommand = "composer install --no-dev --optimize-autoloader --no-interaction && php artisan optimize:clear && php artisan optimize"
+startCommand = "./start.sh"
