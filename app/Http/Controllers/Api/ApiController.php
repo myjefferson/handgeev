@@ -261,7 +261,7 @@ class ApiController extends Controller
         }
     }
 
-    // Rota para a API REST compartilhada
+    // Rota para a Geev API compartilhada
     public function sharedApi($global_key_api, $workspace_key_api)
     {
         $startTime = microtime(true);

@@ -45,14 +45,14 @@
                 
                 <!-- Filtros Rápidos -->
                 <div class="flex items-center gap-3">
-                    <div class="flex bg-slate-800 rounded-lg p-1">
-                        <button type="button" class="filter-btn px-3 py-1 text-sm rounded-md bg-teal-600 text-white" data-filter="all">
+                    <div class="flex bg-slate-800 rounded-full p-1">
+                        <button type="button" class="filter-btn px-3 py-1 text-sm rounded-full bg-teal-600 text-white" data-filter="all">
                             Todas
                         </button>
-                        <button type="button" class="filter-btn px-3 py-1 text-sm rounded-md text-slate-400 hover:text-white" data-filter="active">
+                        <button type="button" class="filter-btn px-3 py-1 text-sm rounded-full text-slate-400 hover:text-white" data-filter="active">
                             Ativas
                         </button>
-                        <button type="button" class="filter-btn px-3 py-1 text-sm rounded-md text-slate-400 hover:text-white" data-filter="inactive">
+                        <button type="button" class="filter-btn px-3 py-1 text-sm rounded-full text-slate-400 hover:text-white" data-filter="inactive">
                             Inativas
                         </button>
                     </div>
@@ -170,7 +170,7 @@
                                             <span class="text-sm">Tipo</span>
                                         </div>
                                         <span class="text-white font-semibold text-sm">
-                                            {{ $workspace->type_view_workspace_id == 1 ? 'Interface API' : 'REST API' }}
+                                            {{ $workspace->type_view_workspace_id == 1 ? 'Geev Studio' : 'Geev API' }}
                                         </span>
                                     </div>
                                 </div>
@@ -180,12 +180,12 @@
                                     <!-- Botão Gerenciar -->
                                     <a href="{{ 
                                             $workspace->type_view_workspace_id == 1 
-                                            ? route('workspace.shared-interface-api.show', ['global_key_api' => auth()->user()->global_key_api, 'workspace_key_api' => $workspace->workspace_key_api]) 
+                                            ? route('workspace.shared-geev-studio.show', ['global_key_api' => auth()->user()->global_key_api, 'workspace_key_api' => $workspace->workspace_key_api]) 
                                             : route('workspace.api-rest.show', ['global_key_api' => auth()->user()->global_key_api, 'workspace_key_api' => $workspace->workspace_key_api])
                                         }}" 
                                         class="text-slate-300 hover:text-white text-sm flex items-center bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors">
                                         <i class="fas fa-cog mr-2"></i>
-                                        Gerenciar {{ $workspace->type_view_workspace_id == 1 ? 'Interface API' : 'REST API' }}
+                                        Gerenciar {{ $workspace->type_view_workspace_id == 1 ? 'Geev Studio' : 'Geev API' }}
                                     </a>
                                     
                                     <!-- Botão Ativar/Inativar -->

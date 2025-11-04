@@ -22,7 +22,7 @@ class TypeViewsWorkspacesSeeder extends Seeder
             ],
             [
                 'id' => 2,
-                'description' => 'API REST JSON',
+                'description' => 'Geev API JSON',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

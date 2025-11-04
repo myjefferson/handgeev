@@ -386,19 +386,19 @@
             <p class="description">Gerencie o acesso ao workspace <span class="workspace-name">Minha API de Produtos</span></p>
             
             <div class="tab-navigation">
-                <button class="tab-button active" data-tab="interface">Interface API</button>
-                <button class="tab-button" data-tab="rest">REST API</button>
+                <button class="tab-button active" data-tab="interface">Geev Studio</button>
+                <button class="tab-button" data-tab="rest">Geev API</button>
                 <button class="tab-button" data-tab="security">Segurança</button>
                 <button class="tab-button" data-tab="history">Histórico</button>
             </div>
         </header>
         
         <div class="tab-content">
-            <!-- Interface API Tab -->
+            <!-- Geev Studio Tab -->
             <div class="tab-pane active" id="interface">
                 <div class="security-card">
                     <h3 class="card-title"><i class="fas fa-eye"></i> Link de Visualização</h3>
-                    <p>Compartilhe este link para permitir que outras pessoas visualizem este workspace na Interface API.</p>
+                    <p>Compartilhe este link para permitir que outras pessoas visualizem este workspace na Geev Studio.</p>
                     
                     <div class="form-group">
                         <label>Link de Compartilhamento</label>
@@ -462,11 +462,11 @@
                 </div>
             </div>
             
-            <!-- REST API Tab -->
+            <!-- Geev API Tab -->
             <div class="tab-pane" id="rest">
                 <div class="security-card">
                     <h3 class="card-title"><i class="fas fa-code"></i> Endpoint da API</h3>
-                    <p>Use este endpoint para acessar os dados deste workspace via REST API.</p>
+                    <p>Use este endpoint para acessar os dados deste workspace via Geev API.</p>
                     
                     <div class="form-group">
                         <label>URL da API</label>

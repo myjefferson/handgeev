@@ -20,7 +20,7 @@ class ApiManagementController extends Controller
         ->where('api_enabled', true)
         ->get()
         ->map(function($workspace) {
-            $workspace->api_type = $workspace->type_view_workspace_id == 1 ? 'Interface API' : 'REST API';
+            $workspace->api_type = $workspace->type_view_workspace_id == 1 ? 'Geev Studio' : 'Geev API';
             $workspace->api_status = $workspace->is_published ? 'Ativa' : 'Inativa';
             
             $workspace->api_requests_count = ApiRequestLog::where('workspace_id', $workspace->id)->count();

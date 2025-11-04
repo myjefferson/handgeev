@@ -83,7 +83,7 @@ Route::middleware(['languages'])->group(function(){
         Route::get('/shared/workspace/{global_key_api}/{workspace_key_api}/endpoint-statistics', 'getEndpointStatistics')->name('api.get.endpoint-statistics');
         // Rotas para visualização compartilhada
         Route::middleware(['workspace.api.password', 'check.api.access'])->group(function(){
-            Route::get('/api/interface/workspace/{global_key_api}/{workspace_key_api}', 'showInterfaceApi')->name('workspace.shared-interface-api.show');
+            Route::get('/api/studio/workspace/{global_key_api}/{workspace_key_api}', 'showInterfaceApi')->name('workspace.shared-geev-studio.show');
             Route::get('/api/rest/workspace/{global_key_api}/{workspace_key_api}', 'showApiRest')->name('workspace.api-rest.show');
         });
     }); 

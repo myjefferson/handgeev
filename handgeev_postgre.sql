@@ -431,7 +431,7 @@ SELECT setval('type_workspaces_id_seq', (SELECT MAX(id) FROM type_workspaces));
 -- Inserir data into type_views_workspaces
 INSERT INTO type_views_workspaces (id, description) VALUES 
 (1, 'Interface da API'),
-(2, 'API REST JSON')
+(2, 'Geev API JSON')
 ON CONFLICT (id) DO UPDATE SET description = EXCLUDED.description;
 
 SELECT setval('type_views_workspaces_id_seq', (SELECT MAX(id) FROM type_views_workspaces));

@@ -61,7 +61,7 @@
                 <li>Criação e gerenciamento de workspaces</li>
                 <li>Organização de dados em tópicos e campos</li>
                 <li>Exportação e importação de dados em formato JSON</li>
-                <li>Geração de endpoints API RESTful</li>
+                <li>Geração de endpoints Geev APIful</li>
                 <li>Colaboração em workspaces com outros usuários</li>
                 <li>Controle de visibilidade de campos</li>
             </ul>

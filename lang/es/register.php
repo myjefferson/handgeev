@@ -17,7 +17,7 @@ return [
     
     'features' => [
         'instant_setup' => 'Configuración Instantánea',
-        'instant_setup_desc' => 'API REST automática en segundos',
+        'instant_setup_desc' => 'Geev API automática en segundos',
         'total_flexibility' => 'Flexibilidad Total',
         'total_flexibility_desc' => 'Campos dinámicos y temas jerárquicos',
         'robust_security' => 'Seguridad Robusta',

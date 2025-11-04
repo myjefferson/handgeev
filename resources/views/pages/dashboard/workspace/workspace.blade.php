@@ -206,15 +206,7 @@
 
                         <!-- Tabela de fields do tópico -->
                         <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
-                            <!-- Desktop Table -->
                             @include('components.tables.workspace-fields-table', [
-                                $topic,
-                                $topicLimits,
-                                $canAddMore
-                            ])
-
-                            <!-- Mobile Cards -->
-                            @include('components.cards.workspace-fields-card', [
                                 $topic,
                                 $topicLimits,
                                 $canAddMore
@@ -233,7 +225,7 @@
 @endsection
 
 @push('modals')
-    @include('components.modals.modal-share-api-interface', ['workspace' => $workspace])
+    @include('components.modals.modal-share-geev-studio', ['workspace' => $workspace])
     @include('components.modals.modal-import-topic')
     @include('components.modals.modal-export-topic')
     @include('components.modals.modal-rename-topic')

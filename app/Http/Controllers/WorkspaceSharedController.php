@@ -21,13 +21,13 @@ class WorkspaceSharedController extends Controller
         
         // Buscar workspace
         $workspace = Workspace::with(['topics.fields' => function($query) {
-                $query->orderBy('order', 'asc')->where('is_visible', true);
-            }])
-            ->where('user_id', $user->id)
-            ->where('workspace_key_api', $workspace_key_api)
-            ->firstOrFail();
-
-        if (!$workspace->is_published) {
+            $query->orderBy('order', 'asc')->where('is_visible', true);
+        }])
+        ->where('user_id', $user->id)
+        ->where('workspace_key_api', $workspace_key_api)
+        ->firstOrFail();
+        
+        if (!$workspace->is_published && $workspace->user_id != Auth::user()->id) {
             abort(403);
         }
         
@@ -37,7 +37,7 @@ class WorkspaceSharedController extends Controller
 
         $rateLimitInfo = RateLimitService::getRateLimitStatus($user);
 
-        return view('pages.dashboard.api-management.interface-api', compact(
+        return view('pages.dashboard.api-management.geev-studio', compact(
             'user', 
             'workspace', 
             'rateLimitInfo',
@@ -64,7 +64,7 @@ class WorkspaceSharedController extends Controller
 
             $apiKey = $workspace->workspace_key_api;
 
-            return view('pages.dashboard.api-management.rest-api', compact(
+            return view('pages.dashboard.api-management.geev-api', compact(
                 'workspace',
                 'apiKey',
             ));
@@ -89,7 +89,7 @@ class WorkspaceSharedController extends Controller
         ];
 
         if (!$workspace->password && $workspace->type_view_workspace_id === 1) {
-            return redirect()->route('workspace.shared-interface-api.show', $dataKey);
+            return redirect()->route('workspace.shared-geev-studio.show', $dataKey);
         }
         
         if (!$workspace->password && $workspace->type_view_workspace_id === 2) {
@@ -123,7 +123,7 @@ class WorkspaceSharedController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Acesso permitido!',
-                    'redirect' => route('workspace.shared-interface-api.show', [
+                    'redirect' => route('workspace.shared-geev-studio.show', [
                         'global_key_api' => $globalHash,
                         'workspace_key_api' => $workspaceHash
                     ])

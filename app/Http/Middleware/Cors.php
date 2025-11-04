@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 
 class Cors
 {
-        public function handle(Request $request, Closure $next)
+    public function handle(Request $request, Closure $next)
     {
         // Ignora rotas que não são API (ok, mas 'api/*' no cors.php já cuida disso)
         if (!str_starts_with($request->path(), 'api/')) {
@@ -82,7 +82,7 @@ class Cors
         }
 
         // Valida se origem é permitida
-        if (!$this->isDomainAllowed($originHost, $allowedDomains)) {
+        if (!$this->isDomainAllowed($originHost, $allowedDomains) && !Auth::id() === $workspace->user_id) {
             Log::warning('CORS: Domínio não permitido');
             return $this->blockOrigin($origin, 'Domain not allowed');
         }

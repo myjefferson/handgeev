@@ -1,6 +1,0 @@
-command = "php artisan queue:work --tries=3 --timeout=90 --sleep=3 --max-time=3600"
-
-[healthcheck]
-path = "/api/health"
-port = 443
-timeout = 10

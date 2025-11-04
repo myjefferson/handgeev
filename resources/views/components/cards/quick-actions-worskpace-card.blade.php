@@ -9,7 +9,7 @@
         </a>
         <a href="
             {{ $workspace->type_view_workspace_id === 1 ? 
-            route('workspace.shared-interface-api.show', ['global_key_api' => auth()->user()->global_key_api, 'workspace_key_api' => $workspace->workspace_key_api]) : 
+            route('workspace.shared-geev-studio.show', ['global_key_api' => auth()->user()->global_key_api, 'workspace_key_api' => $workspace->workspace_key_api]) : 
             route('workspace.api-rest.show', ['global_key_api' => auth()->user()->global_key_api, 'workspace_key_api' => $workspace->workspace_key_api]) }}" 
             class="w-full flex items-center justify-between p-3 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
             <span>Gerenciar API</span>

@@ -208,7 +208,7 @@
                                 <div class="text-sm font-mono text-slate-300">
                                     <div class="text-teal-400">{{ __('site.code_example.api_endpoint') }}</div>
                                     <div class="text-purple-400">GET</div> 
-                                    <span class="text-green-400">https://www.handgeev.com/workspace/</span>
+                                    <span class="text-green-400">https://www.handgeev.com/api/workspace/</span>
                                     <span class="text-yellow-400">:id</span>
                                     <span class="text-blue-400">/data</span>
                                     
@@ -405,7 +405,7 @@
                             </div>
                             <div class="p-4">
                                 <div class="text-sm font-mono text-slate-300">
-                                    <div class="text-purple-400">fetch</div>(<span class="text-green-400">'https://wwww.handgeev.com/workspace/123/data'</span>)
+                                    <div class="text-purple-400">fetch</div>(<span class="text-green-400">'https://wwww.handgeev.com/api/workspace/123/data'</span>)
                                     <div>  .then(<span class="text-blue-400">response</span> => response.<span class="text-purple-400">json</span>())</div>
                                     <div>  .then(<span class="text-blue-400">data</span> => {</div>
                                     <div>    <span class="text-gray-500">// {{ __('site.how_it_works.endpoint_ready.json_responses') }}</span></div>
@@ -552,7 +552,7 @@
                         </li>
                         <li class="flex items-center text-gray-500">
                             <i class="fas fa-times mr-2"></i>
-                            <span class="text-sm">Acesso à Interface API REST</span>
+                            <span class="text-sm">Acesso à Geev Studio REST</span>
                         </li>
                     </ul>
                     <a href="{{ route('register.show') }}" 
@@ -753,7 +753,7 @@
                                 <td class="py-4 text-center"><i class="fas fa-check text-teal-400"></i></td>
                             </tr>
                             <tr class="border-b border-slate-700">
-                                <td class="py-4">Acesso à Interface API REST</td>
+                                <td class="py-4">Acesso à Geev Studio REST</td>
                                 <td class="py-4 text-center"><i class="fas fa-times text-red-400"></i></td>
                                 <td class="py-4 text-center"><i class="fas fa-check text-teal-400"></i></td>
                                 <td class="py-4 text-center"><i class="fas fa-check text-teal-400"></i></td>

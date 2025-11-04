@@ -83,7 +83,7 @@ CREATE TABLE type_views_workspaces (
 );
 
 INSERT INTO type_views_workspaces (id, description) VALUES (1, 'Interface da API');
-INSERT INTO type_views_workspaces (id, description) VALUES (2, 'API REST JSON');
+INSERT INTO type_views_workspaces (id, description) VALUES (2, 'Geev API JSON');
 
 
 

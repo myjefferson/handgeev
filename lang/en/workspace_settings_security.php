@@ -14,10 +14,11 @@ return [
     'api_key_description' => 'Use this key to access this workspace\'s API.',
 
     // API view options
-    'api_interface' => 'API Interface',
-    'api_interface_description' => 'Friendly interface with JSON view option',
-    'json_rest_api' => 'JSON REST API',
-    'json_rest_api_description' => 'Raw JSON only for developers',
+    'geev_studio' => 'Geev Studio',
+    'geev_studio_description' => 'Interactive visual environment to explore the workspace structure, test GET endpoints, and view code examples.',
+    'geev_api' => 'Geev API',
+    'geev_api_description' => 'Technical panel providing API statistics, documentation, routes, permissions, and configuration management.',
+
 
     // States and feedback
     'generating' => 'Generating...',

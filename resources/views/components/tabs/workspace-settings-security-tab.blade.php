@@ -13,26 +13,26 @@
                 <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">{{ __('workspace_settings_security.api_preview_description') }}</p>
                 
                 <div class="grid gap-4 md:grid-cols-2">
-                    <!-- Opção: Visualização GUI -->
+                    <!-- Option: Geev Studio -->
                     <div>
-                        <input type="radio" id="interface-api" name="type_view_workspace" value="1" class="hidden peer" @if($workspace->type_view_workspace_id == 1) checked @endif/>
-                        <label for="interface-api" class="inline-flex items-center justify-between w-full p-4 text-gray-500 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-teal-500 peer-checked:border-teal-600 peer-checked:text-teal-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                        <input type="radio" id="geev-studio" name="type_view_workspace" value="1" class="hidden peer" @if($workspace->type_view_workspace_id == 1) checked @endif/>
+                        <label for="geev-studio" class="inline-flex items-center justify-between w-full p-4 text-gray-500 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-teal-500 peer-checked:border-teal-600 peer-checked:text-teal-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
                             <div class="block">
-                                <div class="w-full text-lg font-semibold">{{ __('workspace_settings_security.api_interface') }}</div>
-                                <div class="w-full text-sm">{{ __('workspace_settings_security.api_interface_description') }}</div>
+                                <div class="w-full text-lg font-semibold">{{ __('workspace_settings_security.geev_studio') }}</div>
+                                <div class="w-full text-sm">{{ __('workspace_settings_security.geev_studio_description') }}</div>
                             </div>
                             <i class="fas fa-desktop text-xl" title="{{ __('workspace_settings_security.interface_icon') }}"></i>
                         </label>
                     </div>
                     
-                    <!-- Opção: Visualização JSON Puro -->
+                    <!-- Option: Geev API -->
                     @if(auth()->user()->isStart() || auth()->user()->isPro() || auth()->user()->isPremium() || auth()->user()->isAdmin())
                         <div>
-                            <input type="radio" id="json-rest-api" name="type_view_workspace" value="2" class="hidden peer" @if($workspace->type_view_workspace_id == 2) checked @endif/>
-                            <label for="json-rest-api" class="inline-flex items-center justify-between w-full p-4 text-gray-500 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-teal-500 peer-checked:border-teal-600 peer-checked:text-teal-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                            <input type="radio" id="json-geev-api" name="type_view_workspace" value="2" class="hidden peer" @if($workspace->type_view_workspace_id == 2) checked @endif/>
+                            <label for="json-geev-api" class="inline-flex items-center justify-between w-full p-4 text-gray-500 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-teal-500 peer-checked:border-teal-600 peer-checked:text-teal-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
                                 <div class="block">
-                                    <div class="w-full text-lg font-semibold">{{ __('workspace_settings_security.json_rest_api') }}</div>
-                                    <div class="w-full text-sm">{{ __('workspace_settings_security.json_rest_api_description') }}</div>
+                                    <div class="w-full text-lg font-semibold">{{ __('workspace_settings_security.geev_api') }}</div>
+                                    <div class="w-full text-sm">{{ __('workspace_settings_security.geev_api_description') }}</div>
                                 </div>
                                 <i class="fas fa-code text-xl" title="{{ __('workspace_settings_security.code_icon') }}"></i>
                             </label>
@@ -42,10 +42,10 @@
                             <label class="inline-flex items-center justify-between w-full p-4 text-gray-500 border border-gray-200 rounded-lg cursor-pointer dark:border-gray-700">
                                 <div class="block rounded-full items-center justify-center mr-3 bg-gradient-to-r">
                                     <div class="flex items-center">
-                                        <span class="text-lg font-semibold text-white">{{ __('workspace_settings_security.json_rest_api') }}</span>
+                                        <span class="text-lg font-semibold text-white">{{ __('workspace_settings_security.geev_api') }}</span>
                                         @include("components.badges.upgrade-badge")
                                     </div>
-                                    <div class="w-full text-sm text-purple-300 mt-1">{{ __('workspace_settings_security.json_rest_api_description') }}</div>
+                                    <div class="w-full text-sm text-purple-300 mt-1">{{ __('workspace_settings_security.geev_api_description') }}</div>
                                 </div>
                                 <i class="fas fa-code text-xl"></i>
                             </label>

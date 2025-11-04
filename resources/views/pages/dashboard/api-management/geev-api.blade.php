@@ -1,7 +1,7 @@
 @extends('template.template-dashboard')
 
 @section('title', 'API '.$workspace->title)
-@section('description', 'API REST do HandGeev - '.$workspace->title)
+@section('description', 'Geev API do HandGeev - '.$workspace->title)
 
 @section('content_dashboard')
 <div class="min-h-screen">
@@ -10,7 +10,7 @@
         <!-- Header -->
         <div class="flex justify-between items-center mb-8">
             <div>
-                <h1 class="text-3xl font-bold text-white">API REST - {{ $workspace->title }}</h1>
+                <h1 class="text-3xl font-bold text-white">Geev API - {{ $workspace->title }}</h1>
                 <p class="text-slate-400 mt-2">Gerencie e integre seus dados através de API</p>
             </div>
             <a href="{{ url()->previous() }}" 
@@ -202,19 +202,19 @@
         <!-- Tab Content -->
         <div>
             <!-- Statistics Tab -->
-            @include('components.tabs.restapi-statistics-tab', $workspace)
+            @include('components.tabs.geev-api-statistics-tab', $workspace)
 
             <!-- Endpoints Tab -->
-            @include('components.tabs.restapi-endpoint-tab', $workspace)
+            @include('components.tabs.geev-api-endpoint-tab', $workspace)
 
             <!-- Documentation Tab -->
-            @include('components.tabs.restapi-documentation-tab', $workspace)
+            @include('components.tabs.geev-api-documentation-tab', $workspace)
 
             <!-- Permissions Tab -->
-            @include('components.tabs.restapi-permission-tab', $workspace)
+            @include('components.tabs.geev-api-permission-tab', $workspace)
 
             <!-- Settings Tab -->
-            @include('components.tabs.restapi-setting-tab', $workspace)
+            @include('components.tabs.geev-api-setting-tab', $workspace)
         </div>
     </div>
 </div>
