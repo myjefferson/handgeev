@@ -37,23 +37,12 @@
                 <i class="fas fa-cog"></i>
             </a>
         </div>
-
-        @include('components.modals.modal-json-preview')
-
-        <!-- Toast Notification -->
-        <div id="export-toast" class="fixed top-4 right-4 z-50 hidden">
-            <div class="flex items-center w-full max-w-xs p-4 mb-4 text-gray-500 bg-white rounded-lg shadow dark:text-gray-400 dark:bg-gray-800" role="alert">
-                <div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-lg">
-                    <i id="toast-icon" class="fas fa-check text-green-500"></i>
-                </div>
-                <div class="ms-3 text-sm font-normal" id="toast-message">Operação realizada com sucesso!</div>
-                <button type="button" class="ms-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700" onclick="hideToast()">
-                    <i class="fas fa-times text-sm"></i>
-                </button>
-            </div>
-        </div>
     </div>
 </div>
+
+@push('modals')
+    @include('components.modals.modal-json-preview')
+@endpush
 
 @push('scripts_end')
     <script>
@@ -159,11 +148,11 @@
 
             const data = await response.json();
             await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-            showToast('JSON copiado para a área de transferência!', 'success');
+            alertManager.show('JSON copiado para a área de transferência!', 'success');
 
         } catch (error) {
             console.error('Erro ao copiar JSON:', error);
-            showToast('Erro ao copiar JSON. Tente novamente.', 'error');
+            alertManager.show('Erro ao copiar JSON. Tente novamente.', 'error');
         } finally {
             button.innerHTML = originalContent;
             button.disabled = false;
@@ -190,7 +179,7 @@
 
         } catch (error) {
             console.error('Erro ao carregar JSON:', error);
-            showToast('Erro ao carregar JSON para visualização', 'error');
+            alertManager.show('Erro ao carregar JSON para visualização', 'error');
         } finally {
             button.innerHTML = originalContent;
             button.disabled = false;
@@ -206,32 +195,13 @@
     // Copiar JSON do modal
     function copyJsonToClipboard() {
         const jsonContent = document.getElementById('json-preview-content')?.textContent;
-        if (!jsonContent) { showToast('Nada para copiar', 'error'); return; }
+        if (!jsonContent) { alertManager.show('Nada para copiar', 'error'); return; }
         navigator.clipboard.writeText(jsonContent).then(() => {
-            showToast('JSON copiado para a área de transferência!', 'success');
+            alertManager.show('JSON copiado para a área de transferência!', 'success');
             closeJsonPreview();
         }).catch(() => {
-            showToast('Erro ao copiar JSON', 'error');
+            alertManager.show('Erro ao copiar JSON', 'error');
         });
-    }
-
-    // Sistema de Toast Notification
-    function showToast(message, type = 'success') {
-        const toast = document.getElementById('export-toast');
-        const toastIcon = document.getElementById('toast-icon');
-        const toastMessage = document.getElementById('toast-message');
-        if (!toast || !toastIcon || !toastMessage) return;
-
-        toastIcon.className = (type === 'success') ? 'fas fa-check text-green-500' : 'fas fa-exclamation-triangle text-red-500';
-        toastMessage.textContent = message;
-        toast.classList.remove('hidden');
-
-        setTimeout(hideToast, 4000);
-    }
-
-    function hideToast() {
-        const toast = document.getElementById('export-toast');
-        if (toast) toast.classList.add('hidden');
     }
 
     // Fechar modal com ESC

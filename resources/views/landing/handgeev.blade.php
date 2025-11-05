@@ -405,7 +405,7 @@
                             </div>
                             <div class="p-4">
                                 <div class="text-sm font-mono text-slate-300">
-                                    <div class="text-purple-400">fetch</div>(<span class="text-green-400">'https://wwww.handgeev.com/api/workspace/123/data'</span>)
+                                    <div class="text-purple-400">fetch</div>(<span class="text-green-400">'https://www.handgeev.com/api/workspace/123/data'</span>)
                                     <div>  .then(<span class="text-blue-400">response</span> => response.<span class="text-purple-400">json</span>())</div>
                                     <div>  .then(<span class="text-blue-400">data</span> => {</div>
                                     <div>    <span class="text-gray-500">// {{ __('site.how_it_works.endpoint_ready.json_responses') }}</span></div>
