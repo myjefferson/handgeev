@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use Inertia\Inertia;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
 use App\Jobs\PermanentAccountDeletion;
@@ -23,7 +24,8 @@ class AccountController extends Controller
         if(Auth::check()){
             return redirect()->route('dashboard.home');
         }
-        return view('pages.auth.login');
+
+        return Inertia::render('Auth/Login', ['lang' =>  __('login.login')]);
     }
 
     /**
@@ -131,7 +133,7 @@ class AccountController extends Controller
             }
         }
         
-        return view('pages.auth.register');
+        return Inertia::render('Auth/Register', ['lang' => __('register')]);
     }
 
     private function getPriceIdByPlan($planName)

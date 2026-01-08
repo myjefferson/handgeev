@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\Workspace;
 use App\Models\Topic;
-use App\Models\Field;
+use App\Models\RecordFieldValue;
 use App\Models\Collaborator;
-use DB;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
@@ -17,91 +19,192 @@ class DashboardController extends Controller
     public function index()
     {
         $user = Auth::user();
-        
-        // Workspaces do usuário com contagens
-        $workspaces = $user->workspaces()->withCount(['topics', 'topics as fields_count' => function($query) {
-            $query->select(DB::raw('SUM(
-                (SELECT COUNT(*) FROM fields WHERE fields.topic_id = topics.id)
-            )'));
-        }])->get();
-        
-        // Estatísticas principais
+
+        /**
+         * ----------------------------------------------
+         *  WORKSPACES + CONTAGEM
+         * ----------------------------------------------
+         */
+        $workspaces = $user->workspaces()
+            ->withCount([
+                'topics',
+                'topics as fields_count' => function ($query) {
+                    $query->leftJoin('topic_records', 'topic_records.topic_id', '=', 'topics.id')
+                        ->leftJoin('record_field_values', 'record_field_values.record_id', '=', 'topic_records.id');
+                }
+            ])
+            ->groupBy('workspaces.id')
+            ->get();
+
+
+        /**
+         * ----------------------------------------------
+         *  ESTATÍSTICAS GERAIS
+         * ----------------------------------------------
+         */
         $workspacesCount = $workspaces->count();
         $topicsCount = $user->topics()->count();
-        
-        // Contar campos de forma eficiente
-        $fieldsCount = Field::whereHas('topic.workspace', function($query) use ($user) {
+
+        // conta todos os values existentes
+        $fieldsCount = RecordFieldValue::whereHas('record.topic.workspace', function($query) use ($user) {
             $query->where('user_id', $user->id);
         })->count();
-        
-        // Workspaces recentes (últimos 5)
+
+
+        /**
+         * ----------------------------------------------
+         *  WORKSPACES RECENTES
+         * ----------------------------------------------
+        */
         $recentWorkspaces = $user->workspaces()
-            ->withCount(['topics', 'topics as fields_count' => function($query) {
-                $query->select(DB::raw('SUM(
-                    (SELECT COUNT(*) FROM fields WHERE fields.topic_id = topics.id)
-                )'));
-            }])
+        ->withCount([
+            'topics',
+                'topics as fields_count' => function ($query) {
+                    $query->leftJoin('topic_records', 'topic_records.topic_id', '=', 'topics.id')
+                        ->leftJoin('record_field_values', 'record_field_values.record_id', '=', 'topic_records.id');
+                }
+            ])
+            ->groupBy('workspaces.id')
             ->orderBy('updated_at', 'desc')
             ->take(5)
-            ->get();
+            ->get()
+            ->map(function ($workspace) {
+                return [
+                    'id' => $workspace->id,
+                    'title' => $workspace->title,
+                    'is_published' => $workspace->is_published,
+                    'topics_count' => $workspace->topics_count,
+                    'fields_count' => $workspace->fields_count ?? 0,
+                    'updated_at' => $workspace->updated_at->toISOString(),
+                    'created_at' => $workspace->created_at->toISOString(),
+                ];
+            });
             
-        // Workspaces mais ativos (por número de campos)
+            /**
+         * ----------------------------------------------
+         *  WORKSPACES MAIS ATIVOS
+         * ----------------------------------------------
+         */
         $mostActiveWorkspaces = $user->workspaces()
-            ->withCount(['topics', 'topics as fields_count' => function($query) {
-                $query->select(DB::raw('SUM(
-                    (SELECT COUNT(*) FROM fields WHERE fields.topic_id = topics.id)
-                )'));
-            }])
+            ->withCount([
+                'topics',
+                'topics as fields_count' => function ($query) {
+                    $query->leftJoin('topic_records', 'topic_records.topic_id', '=', 'topics.id')
+                        ->leftJoin('record_field_values', 'record_field_values.record_id', '=', 'topic_records.id');
+                }
+            ])
+            ->groupBy('workspaces.id')
             ->orderBy('fields_count', 'desc')
             ->take(5)
-            ->get();
-            
-        // Estatísticas detalhadas
+            ->get()
+            ->map(function ($workspace) {
+                return [
+                    'id' => $workspace->id,
+                    'title' => $workspace->title,
+                    'fields_count' => $workspace->fields_count ?? 0,
+                    'topics_count' => $workspace->topics_count,
+                ];
+            });
+
+
+        /**
+         * ----------------------------------------------
+         *  ESTATÍSTICAS DETALHADAS
+         * ----------------------------------------------
+        */
         $publishedWorkspaces = $workspaces->where('is_published', true)->count();
         $privateWorkspaces = $workspaces->where('is_published', false)->count();
-        
-        $topicsWithFields = Topic::whereHas('workspace', function($query) use ($user) {
+
+        // tópicos que possuem registros
+        $topicsWithFields = Topic::whereHas('workspace', function ($query) use ($user) {
             $query->where('user_id', $user->id);
-        })->has('fields')->count();
-        
-        $visibleFields = Field::whereHas('topic.workspace', function($query) use ($user) {
-            $query->where('user_id', $user->id);
-        })->where('is_visible', true)->count();
-        
-        $hiddenFields = Field::whereHas('topic.workspace', function($query) use ($user) {
-            $query->where('user_id', $user->id);
-        })->where('is_visible', false)->count();
-        
-        // Colaborações
+        })
+        ->has('records')
+        ->count();
+
+        // como a tabela fields não existe mais
+        $visibleFields = 0;
+        $hiddenFields = 0;
+
+
+        /**
+         * ----------------------------------------------
+         *  COLABORAÇÕES
+         * ----------------------------------------------
+         */
         $collaborationsCount = $user->collaborations()->count();
         $activeCollaborations = $user->collaborations()->where('status', 'accepted')->count();
-        
-        // Limites do plano
+
+
+        /**
+         * ----------------------------------------------
+         *  LIMITES DO PLANO
+         * ----------------------------------------------
+         */
         $plan = $user->getPlan();
-        $workspaceLimit = $plan->max_workspaces === 0 ? 999 : $plan->max_workspaces;
-        $fieldsLimit = $plan->max_fields === 0 ? 999 : $plan->max_fields;
-        
-        // Mensagem de saudação personalizada
+        $workspaceLimit = $plan->workspaces === 0 ? 999 : $plan->workspaces;
+        $fieldsLimit = $plan->fields === 0 ? 999 : $plan->fields;
+
         $greetingMessage = $this->getGreetingMessage($user);
 
-        // Consulta direta nas tabelas do permission
-        return view('pages.dashboard.home.index', compact(
-            'workspacesCount',
-            'topicsCount',
-            'fieldsCount',
-            'recentWorkspaces',
-            'mostActiveWorkspaces',
-            'publishedWorkspaces',
-            'privateWorkspaces',
-            'topicsWithFields',
-            'visibleFields',
-            'hiddenFields',
-            'collaborationsCount',
-            'activeCollaborations',
-            'workspaceLimit',
-            'fieldsLimit',
-            'greetingMessage'
-        ));
+        return Inertia::render('Dashboard/Home/Home', [
+            'lang' => __('about'),
+            'workspacesCount' => $workspacesCount,
+            'topicsCount' => $topicsCount,
+            'fieldsCount' => $fieldsCount,
+            'recentWorkspaces' => $recentWorkspaces,
+            'mostActiveWorkspaces' => $mostActiveWorkspaces,
+            'publishedWorkspaces' => $publishedWorkspaces,
+            'privateWorkspaces' => $privateWorkspaces,
+            'topicsWithFields' => $topicsWithFields,
+            'visibleFields' => $visibleFields,
+            'hiddenFields' => $hiddenFields,
+            'collaborationsCount' => $collaborationsCount,
+            'activeCollaborations' => $activeCollaborations,
+            'workspaceLimit' => $workspaceLimit,
+            'fieldsLimit' => $fieldsLimit,
+            'greetingMessage' => $greetingMessage,
+            'planLimits' => [
+                'workspaces' => [
+                    'current' => $workspacesCount,
+                    'limit' => $workspaceLimit,
+                    'percentage' => ($workspaceLimit > 0 && $workspaceLimit !== 999) ? ($workspacesCount / $workspaceLimit) * 100 : 0
+                ],
+                'fields' => [
+                    'current' => $fieldsCount,
+                    'limit' => $fieldsLimit,
+                    'percentage' => ($fieldsLimit > 0 && $fieldsLimit !== 999) ? ($fieldsCount / $fieldsLimit) * 100 : 0,
+                ]
+            ]
+        ]);
+    }
+
+
+
+    /**
+     * Get personalized greeting message based on time of day
+     */
+    private function getGreetingMessage($user)
+    {
+        $hour = Carbon::now()->hour;
+
+        if ($hour < 12) {
+            $greeting = 'Bom dia';
+        } elseif ($hour < 18) {
+            $greeting = 'Boa tarde';
+        } else {
+            $greeting = 'Boa noite';
+        }
+        
+        $messages = [
+            "{$greeting}! Pronto para organizar seus dados? 📊",
+            "{$greeting}! Seus workspaces estão te esperando 🚀",
+            "{$greeting}! Hora de criar algo incrível 💫",
+            "{$greeting}! Vamos simplificar seus dados hoje? 🔧",
+            // "{$greeting}! Seu hub de dados está atualizado 📈"
+        ];
+        
+        return $messages[array_rand($messages)];
     }
 
     /**
@@ -144,31 +247,11 @@ class DashboardController extends Controller
         //
     }
 
-    public function about(){
-        $api_count = auth()->user()->workspaces()->withCount('topics')->get()->sum('topics_count');
-        return view("pages.dashboard.about.index", ['api_count' => $api_count]);
-    }
-
-    private function getGreetingMessage($user)
+public function about()
     {
-        $hour = now()->hour;
-        
-        if ($hour < 12) {
-            $greeting = 'Bom dia';
-        } elseif ($hour < 18) {
-            $greeting = 'Boa tarde';
-        } else {
-            $greeting = 'Boa noite';
-        }
-        
-        $messages = [
-            "{$greeting}! Pronto para organizar seus dados? 📊",
-            "{$greeting}! Seus workspaces estão te esperando 🚀",
-            "{$greeting}! Hora de criar algo incrível 💫",
-            "{$greeting}! Vamos simplificar seus dados hoje? 🔧",
-            // "{$greeting}! Seu hub de dados está atualizado 📈"
-        ];
-        
-        return $messages[array_rand($messages)];
+        $user = Auth::user();
+        $api_count = $user->workspaces()->withCount('topics')->get()->sum('topics_count');
+
+        return Inertia::render('Dashboard/About/About', ['lang' => __('about')]);
     }
 }

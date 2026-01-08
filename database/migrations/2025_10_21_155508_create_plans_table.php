@@ -12,9 +12,10 @@ return new class extends Migration
             $table->id();
             $table->string('name', 50)->unique();
             $table->decimal('price', 10, 2)->default(0.00);
-            $table->unsignedInteger('max_workspaces')->nullable()->default(1);
-            $table->unsignedInteger('max_topics')->nullable()->default(3);
-            $table->unsignedInteger('max_fields')->nullable()->default(10);
+            $table->unsignedInteger('structures')->nullable()->default(3);
+            $table->unsignedInteger('workspaces')->nullable()->default(1);
+            $table->unsignedInteger('topics')->nullable()->default(3);
+            $table->unsignedInteger('fields')->nullable()->default(10);
             $table->boolean('can_export')->default(false);
             $table->boolean('can_use_api')->default(false);
             $table->boolean('is_active')->default(true);

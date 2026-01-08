@@ -221,7 +221,6 @@
                     }
 
                     if (data.success) {
-                        console.log(data)
                         $('div[data-topic-id="' + topicId + '"]').find('.topic-title').html(data.topic.title);
                         $('div[data-topic-id="' + topicId + '"]').find('h3').html(data.topic.title);
                         // Atualizar o título na interface

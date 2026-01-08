@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Inertia\Inertia;
 use App\Models\User;
 use App\Services\HashService;
 use Illuminate\Http\Request;
@@ -18,9 +19,12 @@ class SettingController extends Controller
     public function index()
     {
         $settings = User::select('global_key_api')->where(['id' => Auth::user()->id])->first();
-        return view('pages.dashboard.settings.index', compact('settings'));
+        
+        return Inertia::render('Dashboard/Settings/Settings', [
+            'lang' => __('settings'),
+            'settings' => $settings,
+        ]);
     }
-
     /**
      * Update user language preference
      */
@@ -48,7 +52,7 @@ class SettingController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => __('settings.language_updated'),
+                'message' => __('language_updated'),
                 'data' => [
                     'language' => $request->language,
                     'language_name' => config("app.available_locales.{$request->language}")
@@ -58,7 +62,7 @@ class SettingController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => __('settings.language_update_error'),
+                'message' => __('language_update_error'),
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -87,14 +91,14 @@ class SettingController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => __('settings.timezone_updated'),
+                'message' => __('timezone_updated'),
                 'data' => ['timezone' => $request->timezone]
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => __('settings.timezone_update_error'),
+                'message' => __('timezone_update_error'),
                 'error' => $e->getMessage()
             ], 500);
         }

@@ -8,7 +8,6 @@ use App\Http\Controllers\EmailController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\WorkspaceController;
-use App\Http\Controllers\FieldController;
 use App\Http\Controllers\TopicController;
 use App\Http\Controllers\WorkspaceSettingController;
 use App\Http\Controllers\WorkspaceSharedController;
@@ -21,21 +20,25 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\ApiManagementController;
+use App\Http\Controllers\StructureController;
+use App\Http\Controllers\RecordController;
 
 use App\Http\Controllers\StripeWebhookController;
 
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
+use Inertia\Inertia; //new from structure
+
 Route::middleware(['languages'])->group(function(){
-    Route::get('/', function (){ return view('landing.handgeev'); } )->name('landing.handgeev');
+    Route::get('/', function (){ return Inertia::render('Landing/Site', ['lang' => __('site')]); })->name('landing.handgeev');
 
     //Help Center
     Route::get('/help', [HelpController::class, 'index'])->name('help.center');
     
     // Termos e Privacidade
-    Route::get('/terms', function () { return view('legal.terms'); })->name('legal.terms');
-    Route::get('/privacy', function () { return view('legal.privacy'); })->name('legal.privacy');
+    Route::get('/terms', function () { return Inertia::render('Legal/Terms', ['lang' => __('site')]); })->name('legal.terms');
+    Route::get('/privacy', function () { return Inertia::render('Legal/Privacy', ['lang' => __('site')]); })->name('legal.privacy');
     
     // Route::get('/teste', function (){ return view('pages.dashboard.teste'); })->name('teste.page');
     
@@ -83,7 +86,7 @@ Route::middleware(['languages'])->group(function(){
         Route::get('/shared/workspace/{global_key_api}/{workspace_key_api}/endpoint-statistics', 'getEndpointStatistics')->name('api.get.endpoint-statistics');
         // Rotas para visualização compartilhada
         Route::middleware(['workspace.api.password', 'check.api.access'])->group(function(){
-            Route::get('/api/studio/workspace/{global_key_api}/{workspace_key_api}', 'showInterfaceApi')->name('workspace.shared-geev-studio.show');
+            Route::get('/api/studio/workspace/{global_key_api}/{workspace_key_api}', 'geevStudio')->name('workspace.shared-geev-studio.show');
             Route::get('/api/rest/workspace/{global_key_api}/{workspace_key_api}', 'showApiRest')->name('workspace.api-rest.show');
         });
     }); 
@@ -102,7 +105,7 @@ Route::middleware([
     Route::controller(WorkspaceController::class)->group(function(){
         Route::get('/workspaces', 'indexWorkspaces')->name('workspaces.show');
         Route::get('/workspace/{id}', 'index')->name('workspace.show');
-        Route::post('/workspace/store', 'store')->name('workspace.store')->middleware('throttle:create-resources');
+        Route::post('/workspace/create', 'store')->name('workspace.create')->middleware('throttle:create-resources');
         Route::put('/workspace/{id}/update', 'update')->name('workspace.update');
         Route::delete('/workspace/{id}/delete', 'destroy')->name('workspace.delete');
         
@@ -145,25 +148,48 @@ Route::middleware([
         Route::post('/{id}/reject', 'rejectInviteById')->name('workspace.invite.reject.id');
     });
 
-    Route::controller(FieldController::class)->group(function(){
-        Route::post('/field/store', 'store')->name('field.store')->middleware('throttle:create-resources');
-        Route::put('/field/{id}/update', 'update')->name('field.update');
-        Route::delete('/field/{id}/destroy', 'destroy')->name('field.destroy');
-        Route::post('/field/check-limit', 'checkLimit')->name('fields.checkLimit');
-        Route::get('/fields/check-type', 'checkTypeAllowed')->name('fields.check-type');
-        Route::get('/fields/allowed-types', 'getAllowedTypes')->name('fields.allowed-types');
-    });
-
     Route::controller(TopicController::class)->group(function(){
         Route::post('/topic/store', 'store')->name('topic.store')->middleware('throttle:create-resources');
         Route::put('/topic/{id}', 'update')->name('topic.update');
         Route::delete('/topic/{id}/destroy', 'destroy')->name('topic.destroy');
         Route::post('/topic/{workspaceid}/merge-topics', 'mergeTopics')->name('workspace.merge-topics');
-    
+        
+        Route::put('/topics/{id}/structure', 'updateTopicStructure')->name('topic.structure.update');
         Route::get('/topics/{topic}/export', 'export')->name('topics.export');
         Route::get('/topics/{topic}/download', 'download')->name('topics.download');
         Route::post('/workspaces/{workspace}/import-topic', 'import')->name('topics.import');
         Route::get('/importable-topics', 'importableTopics')->name('topics.importable');
+        Route::post('/records', 'storeRecord')->name('records.store');
+        Route::post('/topics/{topic}/add-structure-fields', 'addStructureFields')->name('topic.add-structure-fields');
+    });
+
+    Route::controller(StructureController::class)->group(function(){
+        Route::get('/structures', 'index')->name('structures');
+        Route::get('/structures/create', 'create')->name('structures.create');
+        Route::get('/structures/available', 'getAvailableStructures')->name('structures.available');
+        Route::post('/structures', 'store')->name('structures.store');
+        
+        // Rotas dinâmicas SEMPRE por último
+        Route::get('/structures/{structure}', 'show')->name('structures.show');
+        Route::get('/structures/{structure}/edit', 'edit')->name('structures.edit');
+        Route::put('/structures/{structure}', 'update')->name('structures.update');
+        Route::delete('/structures/{structure}', 'destroy')->name('structures.destroy');
+
+        Route::get('/{structure}/export', 'export')->name('structures.export');
+        Route::post('/import', 'import')->name('structures.import');
+    });
+
+    // === ADICIONE ESTE NOVO GRUPO PARA OS CAMPOS DA ESTRUTURA ===
+    Route::controller(StructureFieldController::class)->group(function(){
+        Route::post('/structures/{structure}/fields', 'store')->name('structure.fields.store');
+        Route::put('/structures/{structure}/fields/{field}', 'update')->name('structure.fields.update');
+        Route::delete('/structures/{structure}/fields/{field}', 'destroy')->name('structure.fields.destroy');
+    });
+
+    Route::controller(RecordController::class)->group(function(){
+        Route::post('/records', 'store')->name('records.store');
+        Route::put('/records/{record}/field/{field}', 'updateField')->name('record.field.update');
+        Route::delete('/records/{record}', 'destroy')->name('records.destroy');
     });
 
     Route::controller(DashboardController::class)->group(function(){

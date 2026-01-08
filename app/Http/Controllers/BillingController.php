@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Inertia\Inertia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Services\SubscriptionService;
@@ -45,14 +46,16 @@ class BillingController extends Controller
 
         $subscriptionHistory = $this->subscriptionService->getSubscriptionHistory($user);
 
-        return view('pages.dashboard.billing.index', compact(
-            'user',
-            'planInfo', 
-            'paymentMethod',
-            'invoices', 
-            'upcomingInvoice',
-            'subscriptionHistory',
-        ));
+        return Inertia::render('Dashboard/Billing/Billing', [
+            'billing' => [
+                'has_default_payment_method' => $user->hasDefaultPaymentMethod(),
+            ],
+            'planInfo' => $planInfo,
+            'paymentMethod' => $paymentMethod,
+            'invoices' => $invoices,
+            'upcomingInvoice' => $upcomingInvoice,
+            'subscriptionHistory' => $subscriptionHistory,
+        ]);
     }
 
     private function ensureStripeCustomer($user)

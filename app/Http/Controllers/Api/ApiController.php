@@ -34,7 +34,7 @@ class ApiController extends Controller
             'email' => 'required|email',
             'password' => 'required|string'
         ]);
-
+        
         // Tentativa de autenticação
         if (!auth()->attempt($credentials)) {
             $this->logApiRequest(null, null, $startTime, 401, 'INVALID_CREDENTIALS');

@@ -2,11 +2,15 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Http\Request;
-use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Cache\RateLimiting\Limit;
+use Inertia\Inertia;
 use Laravel\Cashier\Cashier;
 use Stripe\Stripe;
 
@@ -28,6 +32,30 @@ class AppServiceProvider extends ServiceProvider
         
         // Configurar rate limiting personalizado
         $this->configureRateLimiting();
+
+        // Compartilhar traduções com Inertia (para todas as páginas)
+        Inertia::share([
+            'locale' => fn() => App::getLocale(),
+            'available_locales' => config('app.available_locales', [
+                'pt_BR' => 'Português',
+                'en' => 'English',
+                'es' => 'Español'
+            ]),
+            'translations' => function () {
+                $locale = App::getLocale();
+                $langPath = lang_path($locale);
+                $translations = [];
+
+                if (File::isDirectory($langPath)) {
+                    foreach (File::allFiles($langPath) as $file) {
+                        $key = pathinfo($file, PATHINFO_FILENAME);
+                        $translations[$key] = include $file->getPathname();
+                    }
+                }
+
+                return $translations;
+            },
+        ]);
     }
 
     protected function configureRateLimiting()

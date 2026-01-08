@@ -22,8 +22,8 @@ class CheckApiAccessMiddleware
         
         // Verificar se o plano permite acesso à API
         if (!$plan || !$plan->can_use_api) {
-            return response()->json([
-                'error' => 'API access denied',
+            return back()->with([
+                'type' => 'warning',
                 'message' => 'Your current plan does not include API access. Please upgrade your plan.'
             ], 403);
         }

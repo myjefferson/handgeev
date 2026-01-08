@@ -1,0 +1,123 @@
+/* resources/css/site.css */
+body {
+    font-family: 'Inter', sans-serif;
+    scroll-behavior: smooth;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #f1f5f9;
+}
+
+.gradient-bg {
+    background: linear-gradient(135deg, #00e6d8 0%, #00b3a8 100%);
+}
+
+.teal-glow {
+    box-shadow: 0 0 25px rgba(0, 230, 216, 0.3);
+}
+
+.teal-glow-hover:hover {
+    box-shadow: 0 0 35px rgba(0, 230, 216, 0.4);
+}
+
+.card-hover {
+    transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 230, 216, 0.15), 0 10px 10px -5px rgba(0, 230, 216, 0.1);
+}
+
+.pricing-card.popular {
+    position: relative;
+    overflow: hidden;
+}
+
+.popular-tag {
+    color: #0f172a;
+    padding: 5px 40px;
+}
+
+.recommended-tag{
+    padding: 5px 40px;
+}
+
+.recommended-tag, .popular-tag {
+    position: absolute;
+    top: 32px;
+    right: -40px;
+    font-size: 12px;
+    font-weight: 600;
+    transform: rotate(45deg);
+}
+
+.nav-link {
+    position: relative;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: -4px;
+    left: 0;
+    background-color: #00e6d8;
+    transition: width 0.3s ease;
+}
+
+.nav-link:hover::after {
+    width: 100%;
+}
+
+.code-block {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.feature-icon {
+    background: rgba(0, 230, 216, 0.1);
+    border: 1px solid rgba(0, 230, 216, 0.2);
+}
+
+.teal-badge {
+    background: rgba(8, 255, 240, 0.1);
+    color: #08fff0;
+}
+
+.purple-badge {
+    background: #a855f7;
+    color: white;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.blue-badge {
+    background: #2B68FF;
+    color: white;
+}
+
+.popular-tag {
+    position: absolute;
+    top: 20px;
+    right: -34px;
+    background: #8b5cf6;
+    color: white;
+    padding: 5px 40px;
+    font-size: 12px;
+    font-weight: 600;
+    transform: rotate(45deg);
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}

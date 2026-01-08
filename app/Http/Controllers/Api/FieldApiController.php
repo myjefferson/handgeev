@@ -18,33 +18,46 @@ class FieldApiController extends Controller
         
         try {
             $user = Auth::user();
-
-            $topic = Topic::with(['fields' => function($query) {
-                $query->where('is_visible', true);
-                }])
-                ->whereHas('workspace', function($query) use ($user) {
+            
+            $topic = Topic::with(['structure.fields', 'structure.workspace'])
+                ->whereHas('structure.workspace', function($query) use ($user) {
                     $query->where('user_id', $user->id);
                 })
                 ->findOrFail($topicId);
-
-            // Verificar se é uma visualização completa
-            $viewType = request()->get('view');
-
-            if ($viewType === 'full') {
-                $responseData = $this->getFullFieldsData($topic);
-            }else{
-                $responseData = $this->getSimpleFieldsData($topic);
-            }
-
-            $response = response()->json($responseData);
-            $this->logApiRequest($user, $topic->workspace, $startTime, 200, 'SUCCESS');
-            return $response;
-
+            
+            $responseData = [
+                'metadata' => [
+                    'topic_id' => $topic->id,
+                    'topic_title' => $topic->title,
+                    'structure_id' => $topic->structure_id,
+                    'total_fields' => $topic->structure->fields->count(),
+                    'generated_at' => now()->toISOString()
+                ],
+                'fields' => $topic->structure->fields->map(function($field) {
+                    return [
+                        'id' => $field->id,
+                        'name' => $field->name,
+                        'key' => $field->key_name,
+                        'type' => $field->type,
+                        'description' => $field->description,
+                        'is_required' => $field->is_required,
+                        'order' => $field->order,
+                        'default_value' => $field->default_value,
+                        'validation_rules' => $field->validation_rules,
+                        'created_at' => $field->created_at->toISOString(),
+                        'updated_at' => $field->updated_at->toISOString()
+                    ];
+                })
+            ];
+            
+            $this->logApiRequest($user, $topic->structure->workspace, $startTime, 200, 'SUCCESS');
+            return response()->json($responseData);
+            
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            $this->logApiRequest($user ?? null, null, $startTime, 404, 'TOPIC_NOT_FOUND');
+            $this->logApiRequest(Auth::user() ?? null, null, $startTime, 404, 'TOPIC_NOT_FOUND');
             return response()->json(['error' => 'Topic not found'], 404);
         } catch (\Exception $e) {
-            $this->logApiRequest($user ?? null, null, $startTime, 500, 'INTERNAL_ERROR');
+            $this->logApiRequest(Auth::user() ?? null, null, $startTime, 500, 'INTERNAL_ERROR');
             return response()->json(['error' => 'Internal server error'], 500);
         }
     }
@@ -168,13 +181,13 @@ class FieldApiController extends Controller
             $currentFields = $topic->fields()->count();
             $workspaceFields = $topic->workspace->getFieldsCountAttribute();
             
-            if ($plan->max_fields > 0 && $workspaceFields >= $plan->max_fields) {
+            if ($plan->fields > 0 && $workspaceFields >= $plan->fields) {
                 $this->logApiRequest($user, $topic->workspace, $startTime, 403, 'FIELD_LIMIT_EXCEEDED');
                 return response()->json([
                     'error' => 'Field limit exceeded',
-                    'message' => "Your plan allows maximum {$plan->max_fields} fields",
+                    'message' => "Your plan allows maximum {$plan->fields} fields",
                     'current_plan' => $plan->name,
-                    'max_fields' => $plan->max_fields,
+                    'fields' => $plan->fields,
                     'current_count' => $workspaceFields
                 ], 403);
             }

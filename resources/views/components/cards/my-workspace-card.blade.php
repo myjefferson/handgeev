@@ -9,20 +9,6 @@
             <p class="text-slate-400 text-sm mt-1 line-clamp-2">
                 {{ $workspace->description ?: 'Sem descrição' }}
             </p>
-            
-            {{-- @if($type === 'collaborator')
-                <div class="flex items-center mt-2 text-xs text-slate-500">
-                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                    </svg>
-                    Proprietário: {{ $workspace->user->name }}
-                    @if(isset($collaboration))
-                        <span class="ml-2 px-2 py-1 bg-slate-600 rounded text-slate-300">
-                            {{ ucfirst($collaboration->role) }}
-                        </span>
-                    @endif
-                </div>
-            @endif --}}
         </div>
         
         <div class="relative">
@@ -175,7 +161,7 @@
     function leaveWorkspace(workspaceId) {
         if (confirm('Tem certeza que deseja sair deste workspace?')) {
             // Implementar saída do workspace
-            console.log('Sair do workspace:', workspaceId);
+            // console.log('Sair do workspace:', workspaceId);
         }
     }
 </script>

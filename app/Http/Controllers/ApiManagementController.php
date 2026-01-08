@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Inertia\Inertia;
 use App\Models\Workspace;
 use App\Models\ApiRequestLog;
 use Illuminate\Http\Request;
@@ -10,25 +11,46 @@ use Illuminate\Support\Facades\Auth;
 
 class ApiManagementController extends Controller
 {
-    public function showMyApis()
-    {
-        $user = Auth::user();
-        
-        // Buscar workspaces com APIs ativas
-        $workspaces = Workspace::with(['typeWorkspace', 'topics.fields'])
-        ->where('user_id', $user->id)
-        ->where('api_enabled', true)
-        ->get()
-        ->map(function($workspace) {
-            $workspace->api_type = $workspace->type_view_workspace_id == 1 ? 'Geev Studio' : 'Geev API';
-            $workspace->api_status = $workspace->is_published ? 'Ativa' : 'Inativa';
-            
-            $workspace->api_requests_count = ApiRequestLog::where('workspace_id', $workspace->id)->count();
-            return $workspace;
-        });
+public function showMyApis()
+{
+    $user = Auth::user();
+    
+    // Buscar workspaces com APIs ativas
+    $workspaces = Workspace::with([
+        'typeWorkspace',
+        'topics.structureFields' // <<< corrigido
+    ])
+    ->where('user_id', $user->id)
+    ->get()
+    ->map(function($workspace) {
 
-        return view('pages.dashboard.api-management.my-apis', compact('workspaces'));
-    }
+        $workspace->api_type = $workspace->type_view_workspace_id == 1 
+            ? 'Geev Studio' 
+            : 'Geev API';
+
+        $workspace->api_status = $workspace->is_published ? 'Ativa' : 'Inativa';
+        
+        // Contagem de requests
+        $workspace->api_requests_count = ApiRequestLog::where('workspace_id', $workspace->id)->count();
+
+        // Corrigido: buscar fields visíveis
+        $workspace->visible_fields_count = $workspace->topics
+            ->flatMap
+            ->structureFields
+            ->where('is_visible', true)
+            ->count();
+
+        return $workspace;
+    });
+
+    return Inertia::render('Dashboard/ApiManagement/MyApis', [
+        'workspaces' => $workspaces
+    ]);
+}
+
+
+
+
     
     /**
      * Ativar/desativar API
@@ -82,8 +104,8 @@ class ApiManagementController extends Controller
 
             $status = $newStatus ? 'ativada' : 'desativada';
             
-            return response()->json([
-                'success' => true,
+            return back()->with([
+                'type'=> 'success',
                 'message' => "API {$status} com sucesso!",
                 'new_status' => $newStatus,
                 'workspace_id' => $workspace->id
@@ -95,8 +117,8 @@ class ApiManagementController extends Controller
                 'user_id' => $user->id ?? 'unknown'
             ]);
 
-            return response()->json([
-                'success' => false,
+            return back()->with([
+                'type'=> 'error',
                 'message' => 'Erro interno ao alterar status da API.'
             ], 500);
         }
@@ -108,7 +130,7 @@ class ApiManagementController extends Controller
 
         if (!$user) {
             return response()->json([
-                'success' => false,
+                'type'=> 'error',
                 'message' => 'Usuário não autenticado.'
             ], 401);
         }

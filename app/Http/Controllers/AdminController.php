@@ -7,9 +7,10 @@ use App\Models\User;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 use Carbon\Carbon;
-use Auth;
-use DB;
 
 class AdminController extends Controller
 {
@@ -75,23 +76,63 @@ class AdminController extends Controller
 
         $users = $query->paginate(10);
 
-        // Se for requisição AJAX, retornar JSON
-        if ($request->ajax()) {
-            return response()->json([
-                'html' => view('components.admin.users-table-rows', compact('users'))->render(),
-                'pagination' => $users->links()->toHtml(),
-                'stats' => [
-                    'total' => $users->total(),
-                    'active' => $users->where('status', 'active')->count(),
-                    'suspended' => $users->where('status', 'suspended')->count(),
-                    'pro' => $users->where('plan_name', 'pro')->count(),
-                    'premium' => $users->where('plan_name', 'premium')->count(),
-                ],
-                'resultsInfo' => "Mostrando {$users->firstItem()} - {$users->lastItem()} de {$users->total()} resultados"
-            ]);
-        }
+        // Preparar dados para Inertia
+        $usersData = $users->through(function ($user) {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'surname' => $user->surname,
+                'email' => $user->email,
+                'status' => $user->status,
+                'plan_name' => $user->plan_name,
+                'created_at' => $user->created_at,
+                'last_login_at' => $user->last_login_at,
+                'email_verified_at' => $user->email_verified_at,
+                'workspaces_count' => $user->workspaces_count,
+                'topics_count' => $user->topics_count,
+                'initials' => strtoupper(
+                    (substr($user->name, 0, 1) ?? '') . 
+                    (substr($user->surname, 0, 1) ?? '')
+                )
+            ];
+        });
 
-        return view('pages.dashboard.admin.users-admin', compact('users', 'plans', 'statuses'));
+        // // Se for requisição AJAX, retornar JSON (para compatibilidade)
+        // if ($request->ajax()) {
+        //     return response()->json([
+        //         'users' => $usersData,
+        //         'pagination' => [
+        //             'current_page' => $users->currentPage(),
+        //             'last_page' => $users->lastPage(),
+        //             'per_page' => $users->perPage(),
+        //             'total' => $users->total(),
+        //             'from' => $users->firstItem(),
+        //             'to' => $users->lastItem(),
+        //         ],
+        //         'filters' => $request->only(['search', 'plan', 'status']),
+        //         'stats' => [
+        //             'total' => $users->total(),
+        //             'active' => $users->where('status', 'active')->count(),
+        //             'suspended' => $users->where('status', 'suspended')->count(),
+        //             'pro' => $users->where('plan_name', 'pro')->count(),
+        //             'premium' => $users->where('plan_name', 'premium')->count(),
+        //         ]
+        //     ]);
+        // }
+
+        return Inertia::render('Dashboard/Admin/Users', [
+            'users' => $usersData,
+            'filters' => $request->only(['search', 'plan', 'status']),
+            'plans' => $plans,
+            'statuses' => $statuses,
+            'stats' => [
+                'total' => $users->total(),
+                'active' => $users->where('status', 'active')->count(),
+                'suspended' => $users->where('status', 'suspended')->count(),
+                'pro' => $users->where('plan_name', 'pro')->count(),
+                'premium' => $users->where('plan_name', 'premium')->count(),
+            ]
+        ]);
     }
 
     public function getUserStats($id)
@@ -177,11 +218,12 @@ class AdminController extends Controller
             // Informações do plano
             $plan = $user->getPlan();
             $planLimits = [
-                'max_workspaces' => $plan->max_workspaces,
-                'max_topics' => $plan->max_topics,
-                'max_fields' => $plan->max_fields,
-                'can_export' => $plan->can_export,
-                'can_use_api' => $plan->can_use_api,
+                'structures' => $plan->structures ?? 0,
+                'workspaces' => $plan->workspaces ?? 0,
+                'topics' => $plan->topics ?? 0,
+                'fields' => $plan->fields ?? 0,
+                'can_export' => $plan->can_export ?? false,
+                'can_use_api' => $plan->can_use_api ?? false,
             ];
 
             // Uso atual
@@ -191,12 +233,42 @@ class AdminController extends Controller
                 'fields' => $stats['fields_count'],
             ];
 
-            return view('pages.dashboard.admin.user-admin', compact(
-                'user', 'stats', 'recentWorkspaces', 'activities', 'planLimits', 'currentUsage'
-            ));
+            // Workspaces completos para a tab
+            $workspaces = $user->workspaces()
+                ->withCount('topics')
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->each(function($workspace) {
+                    $workspace->fields_count = $workspace->getFieldsCountAttribute();
+                });
+
+            return Inertia::render('Dashboard/Admin/UserProfile', [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'surname' => $user->surname,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'status' => $user->status,
+                    'plan_name' => $user->plan_name,
+                    'email_verified_at' => $user->email_verified_at,
+                    'created_at' => $user->created_at,
+                    'last_login_at' => $user->last_login_at,
+                    'initials' => strtoupper(
+                        (substr($user->name, 0, 1) ?? '') . 
+                        (substr($user->surname, 0, 1) ?? '')
+                    )
+                ],
+                'stats' => $stats,
+                'recentWorkspaces' => $recentWorkspaces,
+                'activities' => $activities,
+                'planLimits' => $planLimits,
+                'currentUsage' => $currentUsage,
+                'workspaces' => $workspaces
+            ]);
 
         } catch (\Exception $e) {
-            return redirect()->route('admin.users')
+            return redirect()->route('admin.users.index')
                 ->with('error', 'Usuário não encontrado: ' . $e->getMessage());
         }
     }

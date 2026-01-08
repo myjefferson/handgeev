@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use Inertia\Inertia;
 use App\Models\User;
 use App\Models\Plan;
+use App\Models\RecordFieldValue;
 use App\Services\HashService;
 use App\Services\SubscriptionService;
 use App\Mail\VerificationEmail;
@@ -12,7 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Mail;
-use Auth;
+use Illuminate\Support\Facades\Auth;
 use Validator;
 
 class UserController extends Controller
@@ -33,7 +35,19 @@ class UserController extends Controller
     {
         $id_user = Auth::user()->id;
         $user = User::where(['id' => $id_user])->first();
-        return view('pages.dashboard.profile.index', compact(['user']));
+        $fieldsCount = RecordFieldValue::whereHas('record.topic.workspace', function($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })->count();
+        $userStats = [
+            'workspaces' => $user->workspaces()->count(),
+            'topics' => $user->topics()->count(),
+            'fields' => $fieldsCount,
+        ];
+        return Inertia::render('Dashboard/Profile/Profile', [
+            'lang' => __('profile'),
+            'user' => $user,   
+            'userStats' => $userStats,
+        ]);
     }
 
     /**

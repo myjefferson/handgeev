@@ -4,51 +4,52 @@ namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\HttpKernel\Exception\HttpException;
+use Inertia\Inertia;
 
 class Handler extends ExceptionHandler
 {
-    /**
-     * The list of the inputs that are never flashed to the session on validation exceptions.
-     *
-     * @var array<int, string>
-     */
     protected $dontFlash = [
         'current_password',
         'password',
         'password_confirmation',
     ];
 
-    /**
-     * Register the exception handling callbacks for the application.
-     */
     public function register(): void
     {
         $this->reportable(function (Throwable $e) {
             //
         });
+    }
 
-        // Página 419 - Token CSRF Expirado
-        $this->renderable(function (TokenMismatchException $e, $request) {
-            return response()->view('errors.419', [], 419);
-        });
+    /**
+     * Render an exception into an HTTP response.
+     */
+    public function render($request, Throwable $e)
+    {
+        $response = parent::render($request, $e);
+        $status = method_exists($response, 'status') ? $response->status() : 500;
 
-
-        // Página 404 - Não Encontrado
-        $this->renderable(function (NotFoundHttpException $e, $request) {
-            return response()->view('errors.404', [], 404);
-        });
-
-        // Páginas para outros erros HTTP
-        $this->renderable(function (HttpException $e, $request) {
-            $status = $e->getStatusCode();
+        // Só processa se não for JSON e for um status que queremos customizar
+        if (!$request->expectsJson() && 
+            in_array($status, [403, 404, 419, 500, 503])) {
             
-            if (view()->exists("errors.{$status}")) {
-                return response()->view("errors.{$status}", [], $status);
-            }
-            
-            return null;
-        });
+            $messages = [
+                403 => 'Acesso negado.',
+                404 => 'Página não encontrada.',
+                419 => 'Sua sessão expirou. Por favor, atualize a página.',
+                500 => 'Erro interno do servidor.',
+                503 => 'Serviço temporariamente indisponível.',
+            ];
+
+            // Renderiza com Inertia
+            return Inertia::render("Errors/{$status}", [
+                'status' => $status,
+                'message' => $messages[$status] ?? 'Ocorreu um erro.',
+            ])
+            ->toResponse($request)
+            ->setStatusCode($status);
+        }
+
+        return $response;
     }
 }

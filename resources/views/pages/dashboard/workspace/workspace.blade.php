@@ -8,7 +8,7 @@
     $topicsLimit = $user->getTopicsLimit();
     $currentTopics = $user->getCurrentTopicsCount($workspace->id);
     $remainingTopics = $user->getRemainingTopicsCount($workspace->id);
-    $canAddMoreTopics = $user->canAddMoreTopics($workspace->id);
+    $canAddMoreTopics = $user->canCreateTopics($workspace->id);
 @endphp
 
 @section('content_dashboard')
@@ -622,7 +622,6 @@
                 .then(data => {
                     if (data.success) {
                         // Mostrar JSON em um modal ou console
-                        console.log('Dados exportados:', data.data);
                         showNotification('Tópico exportado! Verifique o console do navegador.', 'success');
                         closeExportModal();
                     } else {

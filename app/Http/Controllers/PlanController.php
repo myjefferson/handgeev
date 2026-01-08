@@ -30,7 +30,7 @@ class PlanController extends Controller
             'limits' => [
                 'workspaces' => [
                     'current' => $user->workspaces()->count(),
-                    'max' => $user->plan->max_workspaces,
+                    'max' => $user->plan->workspaces,
                     'unlimited' => $user->plan->hasUnlimitedWorkspaces()
                 ],
                 'can_export' => $user->canExportData(),

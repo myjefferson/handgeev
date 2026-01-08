@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Inertia\Inertia;
 use Illuminate\Http\Request;
 
 class HelpController extends Controller
@@ -74,6 +75,7 @@ class HelpController extends Controller
             'color' => 'green'
         ];
 
-        return view('support.help-center', compact('popularArticles', 'faqs', 'systemStatus'));
+        $lang = __('site');
+        return Inertia::render('Support/HelpCenter', compact('popularArticles', 'faqs', 'systemStatus', 'lang'));
     }
 }

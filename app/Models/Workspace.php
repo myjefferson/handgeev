@@ -8,14 +8,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Topic;
 use App\Models\User;
+use App\Models\Collaborator;
+use App\Models\WorkspaceApiPermission;
+use App\Models\WorkspaceAllowedDomain;
 
 class Workspace extends Model
 {
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'user_id',
         'type_workspace_id',
@@ -30,7 +28,6 @@ class Workspace extends Model
         'api_jwt_required',
         'api_https_required',
     ];
-
 
     public static $rules = [
         'title' => 'required|string|max:100',
@@ -48,7 +45,6 @@ class Workspace extends Model
         'api_https_required' => 'boolean'
     ];
 
-    // Valor padrão
     protected $attributes = [
         'api_enabled' => false,
         'api_domain_restriction' => false,
@@ -56,7 +52,6 @@ class Workspace extends Model
         'api_https_required' => true,
     ];
 
-    
     public function messages()
     {
         return [
@@ -65,13 +60,16 @@ class Workspace extends Model
             'type_workspace_id.exists' => 'O tipo de workspace selecionado é inválido',
         ];
     }
-    
+
+
     /**
-     * Boot method para criar permissões padrão
+     * Boot: cria automaticamente o colaborador 'owner'
+     * e permissões padrão da API
      */
     protected static function booted()
     {
         static::created(function ($workspace) {
+
             Collaborator::create([
                 'workspace_id' => $workspace->id,
                 'user_id' => $workspace->user_id,
@@ -82,66 +80,70 @@ class Workspace extends Model
                 'status' => 'accepted'
             ]);
 
-            // Criar permissões padrão baseadas no plano
             $userPlan = $workspace->user->getPlan()->name;
             $defaultMethods = WorkspaceApiPermission::getDefaultMethods($userPlan);
 
             foreach ($defaultMethods as $endpoint => $methods) {
                 WorkspaceApiPermission::create([
                     'workspace_id' => $workspace->id,
-                    'endpoint' => $endpoint,
+                    'endpoint'    => $endpoint,
                     'allowed_methods' => $methods
                 ]);
             }
         });
     }
 
-    /**
-     * Relacionamento: Um workspace pertence a um usuário
-     */
-    public function user(): BelongsTo{
-        return $this->belongsTo(User::class); //workspace pertence a um usuário
-    }
+
 
     /**
-     * Relacionamento: Um workspace tem muitos tópicos
+     * RELACIONAMENTOS
+     * -------------------------------------------------------
      */
-    public function topics(): HasMany{
-        return $this->hasMany(Topic::class)->orderBy('order', 'asc'); //workspace tem muitos tópicos
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
-    /**
-     * Relacionamento: Um workspace tem um tipo
-     */
     public function typeWorkspace(): BelongsTo
     {
         return $this->belongsTo(TypeWorkspace::class, 'type_workspace_id');
     }
 
-
-    public function collaborators()
+    public function collaborators(): HasMany
     {
         return $this->hasMany(Collaborator::class);
     }
 
-    public function totalFields()
+    public function topics(): HasMany
     {
-        return $this->topics->sum(function($topic) {
-            return $topic->fields->count();
-        });
+        return $this->hasMany(Topic::class)
+            ->orderBy('order', 'asc');
     }
 
+    public function allowedDomains(): HasMany
+    {
+        return $this->hasMany(WorkspaceAllowedDomain::class);
+    }
+
+    public function apiPermissions(): HasMany
+    {
+        return $this->hasMany(WorkspaceApiPermission::class);
+    }
+
+
+
     /**
-     * Verificar se usuário tem acesso
+     * MÉTODOS DE ACESSO / PERMISSÃO
+     * -------------------------------------------------------
      */
+
     public function userHasAccess(User $user, string $permission = null): bool
     {
-        // Dono tem acesso total
         if ($this->user_id === $user->id) {
             return true;
         }
 
-        // Verificar se é colaborador aceito
         $collaborator = $this->collaborators()
             ->where('user_id', $user->id)
             ->where('status', 'accepted')
@@ -151,7 +153,6 @@ class Workspace extends Model
             return false;
         }
 
-        // Verificar permissão específica
         if ($permission) {
             $permissions = [
                 'workspace.view' => true,
@@ -166,17 +167,12 @@ class Workspace extends Model
         return true;
     }
 
-    /**
-     * Relacionamento com domínios permitidos
-     */
-    public function allowedDomains(): HasMany
-    {
-        return $this->hasMany(WorkspaceAllowedDomain::class);
-    }
 
     /**
-     * Verificar se um domínio é permitido
+     * API - domínios permitidos
+     * -------------------------------------------------------
      */
+
     public function isDomainAllowed($domain): bool
     {
         if (!$this->api_enabled) {
@@ -200,39 +196,31 @@ class Workspace extends Model
         return false;
     }
 
-    /**
-     * Verifica se o domínio corresponde ao padrão permitido
-     */
     private function matchesDomain($requestDomain, $allowedDomain): bool
     {
         $requestDomain = strtolower(trim($requestDomain));
         $allowedDomain = strtolower(trim($allowedDomain));
 
-        // Se for exatamente igual
         if ($requestDomain === $allowedDomain) {
             return true;
         }
 
-        // Se o domínio permitido tem wildcard no início (ex: *.exemplo.com)
         if (str_starts_with($allowedDomain, '*.')) {
             $pattern = str_replace('*.', '', $allowedDomain);
-            // Verifica se o domínio da requisição termina com o padrão
             if (str_ends_with($requestDomain, $pattern)) {
                 return true;
             }
         }
 
-        // Verifica subdomínios (ex: api.exemplo.com para exemplo.com)
-        if (str_contains($requestDomain, '.') && str_ends_with($requestDomain, '.' . $allowedDomain)) {
+        if (str_contains($requestDomain, '.') &&
+            str_ends_with($requestDomain, '.' . $allowedDomain)) {
             return true;
         }
 
         return false;
     }
 
-    /**
-     * Obter lista de domínios ativos
-     */
+
     public function getActiveDomainsAttribute()
     {
         return $this->allowedDomains()
@@ -241,102 +229,12 @@ class Workspace extends Model
             ->toArray();
     }
 
-    /**
-     * Scope para workspaces com API habilitada
-     */
-    public function scopeWithApiEnabled($query)
-    {
-        return $query->where('api_enabled', true);
-    }
 
     /**
-     * Scope para workspaces com restrição de domínio ativa
+     * API - métodos permitidos
+     * -------------------------------------------------------
      */
-    public function scopeWithDomainRestriction($query)
-    {
-        return $query->where('api_domain_restriction', true);
-    }
 
-    /**
-     * Adicionar domínio
-     */
-    public function addAllowedDomain($domain): bool
-    {
-        return WorkspaceAllowedDomain::updateOrCreate(
-            [
-                'workspace_id' => $this->id,
-                'domain' => $domain
-            ],
-            ['is_active' => true]
-        ) !== null;
-    }
-
-    /**
-     * Remover/desativar domínio
-     */
-    public function removeAllowedDomain($domain): bool
-    {
-        return $this->allowedDomains()
-            ->where('domain', $domain)
-            ->update(['is_active' => false]);
-    }
-
-    /**
-     * Ativar domínio previamente removido
-     */
-    public function activateDomain($domain): bool
-    {
-        return $this->allowedDomains()
-            ->where('domain', $domain)
-            ->update(['is_active' => true]);
-    }
-
-    // No Workspace.php
-    public function fieldsCount()
-    {
-        return $this->hasManyThrough(
-            Field::class,
-            Topic::class,
-            'workspace_id', // Foreign key on topics table
-            'topic_id',      // Foreign key on fields table
-            'id',           // Local key on workspaces table
-            'id'            // Local key on topics table
-        )->count();
-    }
-
-    // Ou este método alternativo usando withCount:
-    public function loadFieldsCount()
-    {
-        return $this->loadCount(['topics' => function($query) {
-            $query->select(DB::raw('SUM(
-                (SELECT COUNT(*) FROM fields WHERE fields.topic_id = topics.id)
-            ) as fields_count'));
-        }]);
-    }
-
-    // Método mais simples usando withCount nos relacionamentos
-    public function getFieldsCountAttribute()
-    {
-        if (!$this->relationLoaded('topics.fields')) {
-            $this->load(['topics.fields']);
-        }
-        
-        return $this->topics->sum(function($topic) {
-            return $topic->fields->count();
-        });
-    }
-
-    /**
-     * Relacionamento com permissões da API
-     */
-    public function apiPermissions(): HasMany
-    {
-        return $this->hasMany(WorkspaceApiPermission::class);
-    }
-
-     /**
-     * Obter métodos permitidos para um endpoint
-     */
     public function getAllowedMethods($endpoint): array
     {
         $permission = $this->apiPermissions()
@@ -347,22 +245,17 @@ class Workspace extends Model
             return $permission->allowed_methods;
         }
 
-        // Retornar padrão baseado no plano
         $userPlan = $this->user->getPlan()->name;
         return WorkspaceApiPermission::getDefaultMethods($userPlan)[$endpoint] ?? ['GET'];
     }
 
-    /**
-     * Verificar se método é permitido para endpoint
-     */
+
     public function isMethodAllowed($endpoint, $method): bool
     {
         return in_array(strtoupper($method), $this->getAllowedMethods($endpoint));
     }
 
-    /**
-     * Atualizar permissões
-     */
+
     public function updatePermissions($endpoint, $methods): void
     {
         $this->apiPermissions()->updateOrCreate(

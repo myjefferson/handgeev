@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Inertia\Inertia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Services\SubscriptionService;
@@ -18,8 +19,23 @@ class SubscriptionController extends Controller
 
     public function pricing()
     {
-        $currentPlan = auth()->user()->getPlan();
-        return view('subscription.pricing', compact('currentPlan'));
+        $currentPlan = auth()->check() ? auth()->user()->getPlan() : null;
+        
+        return Inertia::render('Subscription/Pricing', [
+            'auth' => [
+                'user' => auth()->check() ? [
+                    'id' => auth()->user()->id,
+                    'name' => auth()->user()->name,
+                    'email' => auth()->user()->email,
+                ] : null
+            ],
+            'currentPlan' => $currentPlan,
+            'stripePrices' => [
+                'start' => config('services.stripe.prices.start'),
+                'pro'   => config('services.stripe.prices.pro'),
+                'premium'   => config('services.stripe.prices.premium'),
+            ],
+        ]);
     }
 
     public function checkout(Request $request)
@@ -231,7 +247,7 @@ class SubscriptionController extends Controller
                 ->with('error', 'Plano selecionado é inválido.');
         }
 
-        return view('subscription.checkout-redirect', [
+        return Inertia::render('Subscription/CheckoutRedirect', [
             'priceId' => $priceId,
             'planName' => $this->subscriptionService->getFriendlyPlanName($priceId)
         ]);

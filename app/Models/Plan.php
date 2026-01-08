@@ -12,10 +12,11 @@ class Plan extends Model
     protected $fillable = [
         'name',
         'price',
-        'max_workspaces',
-        'max_topics',
-        'max_fields',
-        'max_domains',
+        'structures',
+        'workspaces',
+        'topics',
+        'fields',
+        'domains',
         'can_export',
         'can_use_api',
         'is_active',
@@ -27,10 +28,11 @@ class Plan extends Model
 
     protected $casts = [
         'price' => 'decimal:2',
-        'max_workspaces' => 'integer',
-        'max_topics' => 'integer',
-        'max_fields' => 'integer',
-        'max_domains' => 'integer',
+        'structures' => 'integer',
+        'workspaces' => 'integer',
+        'topics' => 'integer',
+        'fields' => 'integer',
+        'domains' => 'integer',
         'can_export' => 'boolean',
         'can_use_api' => 'boolean',
         'is_active' => 'boolean',
@@ -64,16 +66,26 @@ class Plan extends Model
 
     public function hasUnlimitedWorkspaces(): bool
     {
-        return $this->max_workspaces === 0;
+        return $this->workspaces === 0;
+    }
+
+    public function hasUnlimitedStructures(): bool
+    {
+        return $this->structures === 0;
     }
 
     public function hasUnlimitedTopics(): bool
     {
-        return $this->max_topics === 0;
+        return $this->topics === 0;
     }
 
     public function hasUnlimitedFields(): bool
     {
-        return $this->max_fields === 0;
+        return $this->fields === 0;
+    }
+
+    public function hasUnlimitedDomains(): bool
+    {
+        return $this->domains === 0;
     }
 }

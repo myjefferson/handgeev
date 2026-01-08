@@ -120,15 +120,19 @@ class User extends Authenticatable implements JWTSubject
                     ->with('workspace');
     }
     
+    public function structures(){
+        return $this->hasMany(Structure::class);
+    }
+
     public function workspaces(){
         return $this->hasMany(Workspace::class);
     }
 
     public function fields()
     {
-        return Field::whereHas('topic.workspace', function($query) {
-            $query->where('user_id', $this->id);
-        });
+        // return Field::whereHas('topic.workspace', function($query) {
+        //     $query->where('user_id', $this->id);
+        // });
     }
     
     public function topics()
@@ -144,9 +148,10 @@ class User extends Authenticatable implements JWTSubject
             'plan' => $plan,
             'role' => $this->getRoleNames()->first(),
             'limits' => [
-                'max_workspaces' => $plan->max_workspaces,
-                'max_topics' => $plan->max_topics,
-                'max_fields' => $plan->max_fields,
+                'structures' => $plan->structures,
+                'workspaces' => $plan->workspaces,
+                'topics' => $plan->topics,
+                'fields' => $plan->fields,
                 'can_export' => $plan->can_export,
                 'can_use_api' => $plan->can_use_api,
             ],
@@ -226,9 +231,10 @@ class User extends Authenticatable implements JWTSubject
                 'users.surname',
                 'users.status',
                 'roles.name as plan_name',
-                'plans.max_workspaces',
-                'plans.max_topics',
-                'plans.max_fields',
+                'plans.structures',
+                'plans.workspaces',
+                'plans.topics',
+                'plans.fields',
                 'plans.can_export',
                 'plans.can_use_api',
                 'plans.is_active'
@@ -259,9 +265,10 @@ class User extends Authenticatable implements JWTSubject
                 'users.name',
                 'users.surname',
                 'roles.name as plan_name',
-                'plans.max_workspaces',
-                'plans.max_topics',
-                'plans.max_fields',
+                'plans.structures',
+                'plans.workspaces',
+                'plans.topics',
+                'plans.fields',
                 'plans.can_export',
                 'plans.is_active')
             ->where(['users.id' => $userId])->first();
@@ -274,7 +281,7 @@ class User extends Authenticatable implements JWTSubject
     /**
      * Verifica se pode adicionar mais tópicos
      */
-    public function canAddMoreTopics($workspaceId = null): bool
+    public function canCreateTopics($workspaceId = null): bool
     {
         // Admin, Premium e Pro sempre podem (planos ilimitados)
         if ($this->isAdmin() || $this->isPremium() || $this->isPro()) {
@@ -284,12 +291,13 @@ class User extends Authenticatable implements JWTSubject
         $plan = $this->getPlan();
         
         // Se for plano ilimitado, sempre pode adicionar
-        if ($plan->max_topics === 0) {
+        if ($plan->topics === 0) {
             return true;
         }
+
         
         $currentCount = $this->getCurrentTopicsCount($workspaceId);
-        $canAdd = $currentCount < $plan->max_topics;
+        $canAdd = $currentCount < $plan->topics;
         
         return $canAdd;
     }
@@ -333,7 +341,7 @@ class User extends Authenticatable implements JWTSubject
             return 0; // Ilimitado
         }
         
-        return $plan->max_topics;
+        return $plan->topics;
     }
 
     /**
@@ -348,27 +356,31 @@ class User extends Authenticatable implements JWTSubject
         $plan = $this->getPlan();
         
         // Se for plano ilimitado, retornar um número grande
-        if ($plan->max_topics === 0) {
+        if ($plan->topics === 0) {
             return PHP_INT_MAX;
         }
         
         $currentCount = $this->getCurrentTopicsCount($workspaceId);
-        return max(0, $plan->max_topics - $currentCount);
+        return max(0, $plan->topics - $currentCount);
     }
 
-    /**
-     * Verificar se o plano tem tópicos ilimitados
-     */
-    public function hasUnlimitedTopics(): bool
+    // Verificar limites do plano COM SEGURANÇA
+    public function canCreateStructure(): bool
     {
-        if ($this->isAdmin() || $this->isPremium() || $this->isPro()) {
+        if ($this->isAdmin() || $this->isPremium()) return true;
+        
+        // Usuários com problemas de pagamento podem ter acesso restrito
+        if ($this->hasPaymentIssues()) {
+            // Permitir acesso básico mas mostrar alertas
             return true;
         }
         
         $plan = $this->getPlan();
-        return $plan->max_topics === 0;
-    }
+        $currentStructures = $this->structures()->count();
         
+        return $plan->structures === 0 || $currentStructures < $plan->structures;
+    }
+
     // Verificar limites do plano COM SEGURANÇA
     public function canCreateWorkspace(): bool
     {
@@ -383,10 +395,10 @@ class User extends Authenticatable implements JWTSubject
         $plan = $this->getPlan();
         $currentWorkspaces = $this->workspaces()->count();
         
-        return $plan->max_workspaces === 0 || $currentWorkspaces < $plan->max_workspaces;
+        return $plan->workspaces === 0 || $currentWorkspaces < $plan->workspaces;
     }
     
-    public function canAddMoreFields($workspaceId = null, $topicId = null): bool
+    public function canCreateField($workspaceId = null, $topicId = null): bool
     {
         // Admin, Premium e Pro sempre podem (planos ilimitados)
         if ($this->isAdmin() || $this->isPremium() || $this->isPro()) {
@@ -396,12 +408,12 @@ class User extends Authenticatable implements JWTSubject
         $plan = $this->getPlan();
         
         // Se for plano ilimitado, sempre pode adicionar
-        if ($plan->max_fields === 0) {
+        if ($plan->fields === 0) {
             return true;
         }
         
         $currentCount = $this->getCurrentFieldsCount($workspaceId, $topicId);
-        $canAdd = $currentCount < $plan->max_fields;
+        $canAdd = $currentCount < $plan->fields;
         
         return $canAdd;
     }
@@ -417,7 +429,7 @@ class User extends Authenticatable implements JWTSubject
             return 0;
         }
         
-        return $plan->max_fields;
+        return $plan->fields;
     }
 
     /**
@@ -477,7 +489,7 @@ class User extends Authenticatable implements JWTSubject
             return 0;
         }
         
-        return $plan->max_fields; // Retorna o limite por tópico (ex: 10)
+        return $plan->fields; // Retorna o limite por tópico (ex: 10)
     }
 
     /**
@@ -490,7 +502,7 @@ class User extends Authenticatable implements JWTSubject
         }
         
         $plan = $this->getPlan();
-        return $plan->max_fields === 0;
+        return $plan->fields === 0;
     }
 
 
@@ -546,9 +558,10 @@ class User extends Authenticatable implements JWTSubject
         $plan = $this->getPlan();
         
         return [
-            'max_workspaces' => $plan->max_workspaces,
-            'max_topics' => $plan->max_topics,
-            'max_fields' => $plan->max_fields,
+            'structures' => $plan->structures,
+            'workspaces' => $plan->workspaces,
+            'topics' => $plan->topics,
+            'fields' => $plan->fields,
             'can_export' => $plan->can_export,
             'can_use_api' => $plan->can_use_api,
             'current_workspaces' => $this->workspaces()->count(),
@@ -566,7 +579,7 @@ class User extends Authenticatable implements JWTSubject
         $plan = $this->getPlan();
         $currentWorkspaces = $this->workspaces()->count();
         
-        return max(0, $plan->max_workspaces - $currentWorkspaces);
+        return max(0, $plan->workspaces - $currentWorkspaces);
     }
 
     public function getRemainingFieldsCount($workspaceId = null, $topicId = null): int
@@ -578,12 +591,12 @@ class User extends Authenticatable implements JWTSubject
         $plan = $this->getPlan();
         
         // Se for plano ilimitado, retornar um número grande
-        if ($plan->max_fields === 0) {
+        if ($plan->fields === 0) {
             return PHP_INT_MAX;
         }
         
         $currentCount = $this->getCurrentFieldsCount($workspaceId, $topicId);
-        return max(0, $plan->max_fields - $currentCount);
+        return max(0, $plan->fields - $currentCount);
     }
 
 

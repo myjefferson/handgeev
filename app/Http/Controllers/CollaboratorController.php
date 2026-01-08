@@ -61,7 +61,7 @@ class CollaboratorController extends Controller
             ->firstOrFail();
         
         // Obter informações de limite de campos (apenas para dono)
-        $canAddMoreFields = $isOwner ? $user->canAddMoreFields($workspace->id) : true; // Colaboradores sempre podem adicionar
+        $canCreateField = $isOwner ? $user->canCreateField($workspace->id) : true; // Colaboradores sempre podem adicionar
         $fieldsLimit = $isOwner ? $user->getFieldsLimit() : null;
         $currentFieldsCount = $isOwner ? $user->getCurrentFieldsCount($workspace->id) : null;
         $remainingFields = $isOwner ? $user->getRemainingFieldsCount($workspace->id) : null;
@@ -71,7 +71,7 @@ class CollaboratorController extends Controller
         
         return view('pages.dashboard.workspace.workspace', compact(
             'workspace',
-            'canAddMoreFields',
+            'canCreateField',
             'fieldsLimit',
             'currentFieldsCount',
             'remainingFields',

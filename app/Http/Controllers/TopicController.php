@@ -2,100 +2,358 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FieldValue; // Adicione esta linha
+use App\Models\TopicRecord; // Adicione esta linha se necessário
+use App\Models\RecordFieldValue;
 use App\Models\Topic;
 use App\Models\Field;
 use App\Models\Workspace;
+use App\Models\Structure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class TopicController extends Controller
 {
+
+    
     /**
      * Adiciona um novo tópico a um workspace.
      */
     public function store(Request $request)
     {
         try {
-            // Valida a requisição.
-            $validated = Validator::make($request->all(), Topic::$rules)->validate();
-            
+            // Validação correta (sem usar Topic::$rules)
+            $validated = $request->validate([
+                'workspace_id' => 'required|exists:workspaces,id',
+                'title' => 'required|string|max:255',
+                'order' => 'required|integer',
+                'structure_id' => 'nullable|exists:structures,id',
+            ]);
+
             $workspace = Workspace::find($validated['workspace_id']);
-            
+
             if (!$workspace) {
-                return response()->json([
-                    'success' => false,
+                return back()->with([
+                    'type' => 'error',
                     'error' => 'not_found',
                     'message' => 'Workspace não encontrado'
                 ], 404);
             }
 
-            // VERIFICAÇÃO DE PERMISSÃO ATUALIZADA - DONO OU COLABORADOR COM PERMISSÃO
+            // Permissões
             $user = Auth::user();
             $isOwner = $workspace->user_id === $user->id;
-            $collaborator = $workspace->collaborators()->where('user_id', $user->id)->where('status', 'accepted')->first();
-            
+            $collaborator = $workspace->collaborators()
+                ->where('user_id', $user->id)
+                ->where('status', 'accepted')
+                ->first();
+
             if (!$isOwner && (!$collaborator || !$collaborator->canEdit())) {
                 return response()->json([
-                    'success' => false,
+                    'type' => 'error',
                     'error' => 'permission_denied',
                     'message' => 'Você não tem permissão para adicionar tópicos neste workspace'
                 ], 403);
             }
 
-            // 🔥 NOVA VERIFICAÇÃO: LIMITE DE TÓPICOS POR PLANO
-            if (!$user->canAddMoreTopics($workspace->id)) {
+            // Verifica se é tópico estruturado
+            $isStructured = !empty($validated['structure_id']);
+
+            if ($isStructured) {
+                $structure = Structure::find($validated['structure_id']);
+                if (!$structure || !$structure->canBeUsedBy($user)) {
+                    return back()->with([
+                        'type' => 'error',
+                        'error' => 'structure_not_accessible',
+                        'message' => 'Você não tem permissão para usar esta estrutura'
+                    ], 403);
+                }
+            }
+
+            // Limite de tópicos
+            if (!$user->canCreateTopics($workspace->id)) {
                 $topicsLimit = $user->getTopicsLimit();
                 $currentTopics = $user->getCurrentTopicsCount($workspace->id);
-                
-                return response()->json([
-                    'success' => false,
+
+                return back()->with([
+                    'type' => 'error',
                     'error' => 'plan_limit_exceeded',
                     'message' => "Limite de tópicos atingido! Seu plano permite {$topicsLimit} tópicos. Você já tem {$currentTopics} tópicos.",
                     'limits' => [
-                        'max_topics' => $topicsLimit,
+                        'topics' => $topicsLimit,
                         'current_topics' => $currentTopics,
                         'remaining' => $user->getRemainingTopicsCount($workspace->id)
                     ]
                 ], 422);
             }
-            
+
+            // Criar tópico
             $topic = Topic::create($validated);
-            
-            // RETORNO ATUALIZADO PARA O JAVASCRIPT
-            return response()->json([
-                'success' => true,
+
+            // Criar registro inicial se for estruturado
+            if ($isStructured) {
+
+                // Criar um registro vazio (agora usando TopicRecord)
+                $record = TopicRecord::create([
+                    'topic_id' => $topic->id,
+                    'order' => 1,
+                ]);
+
+                // Carrega campos da estrutura
+                $structure = Structure::with('fields')->find($validated['structure_id']);
+
+                // Criar valores iniciais
+                foreach ($structure->fields as $field) {
+                    RecordFieldValue::create([
+                        'record_id' => $record->id,
+                        'structure_field_id' => $field->id,
+                        'field_value' => $field->default_value ?? '',
+                    ]);
+                }
+            }
+
+            // Retornar tópico com relacionamentos
+            $topic->load(['structure', 'records.fieldValues']);
+
+            return back()->with([
+                'type' => 'success',
                 'message' => 'Tópico criado com sucesso',
                 'data' => [
                     'topic' => [
                         'id' => $topic->id,
                         'title' => $topic->title,
                         'order' => $topic->order,
-                        'fields_count' => 0
+                        'structure_id' => $topic->structure_id,
+                        'structure' => $topic->structure,
+                        'records_count' => $topic->records()->count(),
+                        'is_structured' => $isStructured
                     ],
                     'limits' => [
                         'remaining_topics' => $user->getRemainingTopicsCount($workspace->id)
                     ]
                 ]
             ], 201);
-            
-        } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'validation_error',
-                'message' => 'Erro de validação',
-                'errors' => $e->errors()
-            ], 422);
+
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
+            Log::error('Erro ao criar tópico: ' . $e->getMessage());
+
+            return back()->with([
+                'type' => 'error',
                 'error' => 'server_error',
                 'message' => 'Erro ao criar tópico: ' . $e->getMessage()
             ], 500);
         }
     }
+
+
+    /**
+     * Adiciona campos da estrutura vinculada como registros no tópico
+     */
+    public function addStructureFields(Topic $topic)
+    {
+        try {
+            DB::beginTransaction();
+
+            if (!$topic->structure) {
+                return response()->json([
+                    'type' => 'error',
+                    'message' => 'Este tópico não possui uma estrutura vinculada.',
+                ], 400);
+            }
+
+            // Verificar permissões
+            $workspace = $topic->workspace;
+            $user = Auth::user();
+            $isOwner = $workspace->user_id === $user->id;
+            $collaborator = $workspace->collaborators()
+                ->where('user_id', $user->id)
+                ->where('status', 'accepted')
+                ->first();
+
+            if (!$isOwner && (!$collaborator || !$collaborator->canEdit())) {
+                return response()->json([
+                    'type' => 'error',
+                    'message' => 'Você não tem permissão para adicionar campos neste tópico.',
+                ], 403);
+            }
+
+            $fields = $topic->structure->fields;
+            
+            // 1. Criar um NOVO registro (TopicRecord)
+            $lastOrder = $topic->topicRecords()->max('order') ?? 0;
+            $record = TopicRecord::create([
+                'topic_id' => $topic->id,
+                'order' => $lastOrder + 1,
+            ]);
+
+            // 2. Criar valores para todos os campos da estrutura
+            $addedCount = 0;
+            
+            foreach ($fields as $field) {
+                RecordFieldValue::create([
+                    'record_id' => $record->id,
+                    'structure_field_id' => $field->id,
+                    'field_value' => $field->default_value ?? '',
+                ]);
+                $addedCount++;
+            }
+
+            DB::commit();
+
+            return redirect()->back()->with([
+                'success' => "Novo registro criado com {$addedCount} campos.",
+                'data' => [
+                    'added_count' => $addedCount,
+                    'record_id' => $record->id,
+                    'total_fields' => $fields->count(),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Erro ao adicionar estrutura:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Erro ao adicionar campos da estrutura: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    private function createFieldsFromStructure(Topic $topic, $structureId)
+    {
+        $structure = Structure::with('fields')->find($structureId);
+        
+        if (!$structure) {
+            throw new \Exception('Estrutura não encontrada');
+        }
+
+        // Criar um registro inicial para o tópico
+        $record = TopicRecord::create([
+            'topic_id' => $topic->id,
+            'order' => 1,
+        ]);
+
+        // Criar valores para cada campo da estrutura
+        foreach ($structure->fields as $structureField) {
+            FieldValue::create([
+                'record_id' => $record->id,
+                'structure_field_id' => $structureField->id,
+                'field_value' => $structureField->default_value ?? '',
+            ]);
+        }
+    }
+
+    /**
+     * Cria um novo registro de tópico seguindo o modelo A (Record + FieldValue)
+     */
+    public function storeRecord(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'topic_id' => 'required|exists:topics,id',
+                'record_order' => 'required|integer',
+                'field_values' => 'sometimes|array', // valores opcionais
+            ]);
+
+            $topic = Topic::with('structure.fields')->findOrFail($validated['topic_id']);
+            $workspace = $topic->workspace;
+
+            // Permissões
+            $user = Auth::user();
+            $isOwner = $workspace->user_id === $user->id;
+            $collaborator = $workspace->collaborators()
+                ->where('user_id', $user->id)
+                ->where('status', 'accepted')
+                ->first();
+
+            if (!$isOwner && (!$collaborator || !$collaborator->canEdit())) {
+                return response()->json([
+                    'type' => 'error',
+                    'error' => 'permission_denied',
+                    'message' => 'Você não tem permissão para adicionar registros neste tópico'
+                ], 403);
+            }
+
+            // Limite de registros
+            if (!$user->canAddMoreRecords($topic->id)) {
+                return response()->json([
+                    'type' => 'error',
+                    'error' => 'plan_limit_exceeded',
+                    'message' => 'Limite de registros atingido para este tópico'
+                ], 422);
+            }
+
+            if (!$topic->structure || $topic->structure->fields->isEmpty()) {
+                return response()->json([
+                    'type' => 'error',
+                    'error' => 'no_structure_fields',
+                    'message' => 'A estrutura vinculada não possui campos definidos.'
+                ], 422);
+            }
+
+            DB::beginTransaction();
+
+            // Criar registro principal
+            $record = TopicRecord::create([ // Mude Record::create para TopicRecord::create
+                'topic_id' => $topic->id,
+                'order' => $validated['record_order'],
+            ]);
+
+            // Criar valores iniciais de cada campo da estrutura
+            $inputValues = $validated['field_values'] ?? [];
+
+            foreach ($topic->structure->fields as $field) {
+
+                FieldValue::create([
+                    'record_id' => $record->id,
+                    'structure_field_id' => $field->id,
+
+                    // valor enviado pelo user OU valor padrão da estrutura OU vazio
+                    'field_value' => $inputValues[$field->id]
+                        ?? $field->default_value
+                        ?? '',
+                ]);
+            }
+
+            DB::commit();
+
+            $record->load('field_values');
+
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Registro criado com sucesso',
+                'record' => $record
+            ], 201);
+
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            return response()->json([
+                'type' => 'error',
+                'error' => 'validation_error',
+                'message' => 'Erro de validação',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Erro ao criar registro: ' . $e->getMessage());
+
+            return response()->json([
+                'type' => 'error',
+                'error' => 'server_error',
+                'message' => 'Erro ao criar registro: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 
     /**
      * Atualiza um tópico existente.
@@ -112,29 +370,32 @@ class TopicController extends Controller
             $topic = Topic::findOrFail($topicId);
             $workspace = $topic->workspace;
 
-            // VERIFICAÇÃO DE PERMISSÃO ATUALIZADA - DONO OU COLABORADOR COM PERMISSÃO
+            // Verificação de permissão — dono ou colaborador com permissão
             $user = Auth::user();
             $isOwner = $workspace->user_id === $user->id;
-            $collaborator = $workspace->collaborators()->where('user_id', $user->id)->where('status', 'accepted')->first();
-            
+
+            $collaborator = $workspace->collaborators()
+                ->where('user_id', $user->id)
+                ->where('status', 'accepted')
+                ->first();
+
             if (!$isOwner && (!$collaborator || !$collaborator->canEdit())) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'permission_denied',
-                    'message' => 'Você não tem permissão para editar este tópico'
-                ], 403);
+                return back()->with([
+                    'alert' => [
+                        'type' => 'error',
+                        'message' => 'Você não tem permissão para editar este tópico.'
+                    ]
+                ]);
             }
 
             // Atualizar o tópico
             $topic->update($validated);
-
-            // Recarregar o tópico atualizado
             $topic->refresh();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Tópico atualizado com sucesso',
-                'topic' => [
+            return back()->with([
+                'type' => 'success',
+                'message' => 'Tópico atualizado com sucesso.',
+                'data' => [
                     'id' => $topic->id,
                     'title' => $topic->title,
                     'order' => $topic->order,
@@ -143,23 +404,67 @@ class TopicController extends Controller
             ]);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'not_found',
-                'message' => 'Tópico não encontrado'
-            ], 404);
+
+            return back()->with([
+                'alert' => [
+                    'type' => 'error',
+                    'message' => 'Tópico não encontrado.'
+                ]
+            ]);
+
         } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'validation_error', 
-                'message' => 'Erro de validação',
-                'errors' => $e->errors()
-            ], 422);
+
+            return back()->with([
+                'alert' => [
+                    'type' => 'error',
+                    'message' => 'Erro de validação. Verifique os campos enviados.',
+                    'details' => $e->errors()
+                ]
+            ]);
+
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'server_error',
-                'message' => 'Erro ao atualizar tópico: ' . $e->getMessage()
+
+            return back()->with([
+                'alert' => [
+                    'type' => 'error',
+                    'message' => 'Erro ao atualizar tópico.',
+                    'details' => $e->getMessage()
+                ]
+            ]);
+        }
+    }
+
+    public function updateTopicStructure(Request $request, $topicId)
+    {
+        try {
+            $validated = $request->validate([
+                'structure_id' => 'required|exists:structures,id',
+            ]);
+
+            $topic = Topic::findOrFail($topicId);
+
+            // Verificar permissão
+            if ($topic->workspace->user_id !== Auth::id()) {
+                return back()->with([
+                    'type' => 'error',
+                    'message' => 'Você não tem permissão para alterar este tópico.'
+                ], 403);
+            }
+
+            // Atualiza a estrutura do tópico
+            $topic->structure_id = $validated['structure_id'];
+            $topic->save();
+
+            return back()->with([
+                'type' => 'success',
+                'message' => 'Estrutura definida com sucesso!',
+                'topic' => $topic->load('structure.fields'),
+            ]);
+
+        } catch (\Exception $e) {
+            return back()->with([
+                'type' => 'error',
+                'message' => 'Erro ao definir estrutura: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -169,46 +474,56 @@ class TopicController extends Controller
      */
     public function destroy(string $id)
     {
-        try{
-            $topic = Topic::with(['workspace', 'fields'])->findOrFail($id);
+        try {
+            $topic = Topic::with(['workspace', 'records.fieldValues'])->findOrFail($id);
             $workspace = $topic->workspace;
 
-            // VERIFICAÇÃO DE PERMISSÃO ATUALIZADA - DONO OU COLABORADOR COM PERMISSÃO
+            // PERMISSÃO
             $user = Auth::user();
             $isOwner = $workspace->user_id === $user->id;
-            $collaborator = $workspace->collaborators()->where('user_id', $user->id)->where('status', 'accepted')->first();
-            
+            $collaborator = $workspace->collaborators()
+                ->where('user_id', $user->id)
+                ->where('status', 'accepted')
+                ->first();
+
             if (!$isOwner && (!$collaborator || !$collaborator->canEdit())) {
-                return response()->json([
-                    'success' => false,
+                return back()->with([
+                    'type' => 'error',
                     'error' => 'permission_denied',
                     'message' => 'Você não tem permissão para excluir este tópico'
                 ], 403);
             }
 
-            $deletedFieldsCount = $topic->fields->count();
-            $topic->fields()->delete();
+            // ⚠️ NÃO APAGA STRUCTURE NEM FIELDS DA STRUCTURE
+
+            // Apagar valores
+            foreach ($topic->records as $record) {
+                $record->fieldValues()->delete();
+            }
+
+            // Apagar registros
+            $topic->records()->delete();
+
+            // Apagar tópico
             $topic->delete();
 
-            // RETORNO ATUALIZADO PARA O JAVASCRIPT
-            return response()->json([
-                'success' => true,
-                'message' => 'Tópico e todos os seus campos foram excluídos com sucesso',
+            return back()->with([
+                'type' => 'success',
+                'message' => 'Tópico e todos os valores vinculados foram excluídos com sucesso',
                 'data' => [
                     'topic_id' => $id,
-                    'deleted_fields' => $deletedFieldsCount
                 ]
             ], 200);
-            
+
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
+            return back()->with([
+                'type' => 'error',
                 'error' => 'not_found',
                 'message' => 'Tópico não encontrado'
             ], 404);
-        } catch(\Exception $e){
-            return response()->json([
-                'success' => false,
+        } catch (\Exception $e) {
+            return back()->with([
+                'type' => 'error',
                 'error' => 'server_error',
                 'message' => 'Erro ao excluir tópico: ' . $e->getMessage()
             ], 500);
@@ -232,8 +547,8 @@ class TopicController extends Controller
 
             // Verificar se realmente precisa de merge
             if ($workspace->topics->count() <= 1) {
-                return response()->json([
-                    'success' => true,
+                return back()->with([
+                    'type' => 'success',
                     'message' => 'Não há tópicos para merge.',
                     'stats' => ['topics_merged' => 0, 'fields_moved' => 0]
                 ]);
@@ -247,8 +562,8 @@ class TopicController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
+            return back()->with([
+                'type' => 'success',
                 'message' => 'Tópicos fundidos com sucesso!',
                 'stats' => $mergeStats,
                 'data' => [
@@ -262,8 +577,8 @@ class TopicController extends Controller
             DB::rollBack();
             Log::error('Erro no merge de tópicos: ' . $e->getMessage());
             
-            return response()->json([
-                'success' => false,
+            return back()->with([
+                'type' => 'success',
                 'error' => 'Erro ao fundir tópicos: ' . $e->getMessage()
             ], 500);
         }
@@ -334,30 +649,41 @@ class TopicController extends Controller
     public function export(Topic $topic)
     {
         try {
-            $workspace = $topic->workspace;
-            
-            // Verificar permissão
             $user = Auth::user();
+
+            $topic->load([
+                'workspace',
+                'structure.fields',
+                'records.fieldValues.structureField'
+            ]);
+
+            $workspace = $topic->workspace;
+
+            // 🔐 Permissão
             $isOwner = $workspace->user_id === $user->id;
-            $collaborator = $workspace->collaborators()->where('user_id', $user->id)->where('status', 'accepted')->first();
-            
+            $collaborator = $workspace->collaborators()
+                ->where('user_id', $user->id)
+                ->where('status', 'accepted')
+                ->first();
+
             if (!$isOwner && (!$collaborator || !$collaborator->canView())) {
                 return response()->json([
-                    'success' => false,
+                    'type' => 'error',
                     'error' => 'permission_denied',
                     'message' => __('workspace.notifications.permission_denied')
                 ], 403);
             }
 
-            // Carregar tópico com campos ordenados
-            $topic->load(['fields' => function($query) {
-                $query->orderBy('order');
-            }]);
-
-            // Estrutura de dados para exportação
             $exportData = [
-                'version' => '1.0',
+                'version' => '2.0',
                 'exported_at' => now()->toISOString(),
+
+                'workspace' => [
+                    'id' => $workspace->id,
+                    'title' => $workspace->title,
+                    'type' => $workspace->type_workspace_id,
+                ],
+
                 'topic' => [
                     'id' => $topic->id,
                     'title' => $topic->title,
@@ -365,39 +691,46 @@ class TopicController extends Controller
                     'created_at' => $topic->created_at->toISOString(),
                     'updated_at' => $topic->updated_at->toISOString(),
                 ],
-                'workspace' => [
-                    'id' => $workspace->id,
-                    'title' => $workspace->title,
-                    'type' => $workspace->type_workspace_id,
-                ],
-                'fields' => $topic->fields->map(function($field) {
-                    return [
+
+                'structure' => [
+                    'id' => $topic->structure->id,
+                    'fields' => $topic->structure->fields->map(fn ($field) => [
                         'id' => $field->id,
                         'key_name' => $field->key_name,
-                        'value' => $field->value,
                         'type' => $field->type,
-                        'is_visible' => $field->is_visible,
                         'order' => $field->order,
-                        'created_at' => $field->created_at->toISOString(),
-                        'updated_at' => $field->updated_at->toISOString(),
-                    ];
-                })->toArray()
+                        'is_visible' => $field->is_visible,
+                    ])->toArray(),
+                ],
+
+                'records' => $topic->records->sortBy('order')->map(fn ($record) => [
+                    'id' => $record->id,
+                    'order' => $record->order,
+                    'created_at' => $record->created_at->toISOString(),
+                    'updated_at' => $record->updated_at->toISOString(),
+
+                    'values' => $record->fieldValues->map(fn ($value) => [
+                        'structure_field_id' => $value->structure_field_id,
+                        'value' => $value->field_value,
+                    ])->toArray(),
+                ])->values()->toArray(),
             ];
 
-            return response()->json([
-                'success' => true,
-                'data' => $exportData,
-                'message' => __('workspace.notifications.export_success')
+            return response()->streamDownload(function () use ($exportData) {
+                echo json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            }, 'topic_'.$workspace->title.'_'.now().'.json', [
+                'Content-Type' => 'application/json',
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return response()->json([
-                'success' => false,
+                'type' => 'error',
                 'error' => 'export_error',
-                'message' => __('workspace.notifications.export_error', ['message' => $e->getMessage()])
+                'message' => $e->getMessage()
             ], 500);
         }
     }
+
 
     /**
      * Importa um tópico de um arquivo JSON
@@ -405,133 +738,137 @@ class TopicController extends Controller
     public function import(Request $request, Workspace $workspace)
     {
         DB::beginTransaction();
-        
+
         try {
             $user = Auth::user();
-            
-            // Verificar permissão de escrita no workspace
+
+            // 🔐 Permissão
             $isOwner = $workspace->user_id === $user->id;
-            $collaborator = $workspace->collaborators()->where('user_id', $user->id)->where('status', 'accepted')->first();
-            
+            $collaborator = $workspace->collaborators()
+                ->where('user_id', $user->id)
+                ->where('status', 'accepted')
+                ->first();
+
             if (!$isOwner && (!$collaborator || !$collaborator->canEdit())) {
                 return response()->json([
-                    'success' => false,
+                    'type' => 'error',
                     'error' => 'permission_denied',
                     'message' => __('workspace.notifications.permission_denied')
                 ], 403);
             }
 
-            // Verificar plano do usuário - apenas Start, Pro, Premium e Admin podem importar
             if ($user->isFree()) {
                 return response()->json([
-                    'success' => false,
+                    'type' => 'error',
                     'error' => 'plan_restriction',
                     'message' => __('workspace.import_export.plan_restriction')
                 ], 403);
             }
 
-            // Validar requisição
-            $validator = Validator::make($request->all(), [
-                'file' => 'required|file|mimes:json|max:10240', // 10MB max
-                'topic_title' => 'required|string|max:200',
+            // 📄 Validação básica
+            $request->validate([
+                'file' => 'required|file|mimes:json|max:10240',
+                'topic_title' => 'nullable|string|max:200',
             ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'validation_error',
-                    'message' => 'Validation error',
-                    'errors' => $validator->errors()
-                ], 422);
+            $importData = json_decode(
+                file_get_contents($request->file('file')->getRealPath()),
+                true
+            );
+
+            if (!is_array($importData)) {
+                throw new \Exception('Invalid JSON');
             }
 
-            // Ler e validar arquivo
-            $file = $request->file('file');
-            $fileContent = file_get_contents($file->getRealPath());
-            $importData = json_decode($fileContent, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'invalid_json',
-                    'message' => __('workspace.notifications.file_invalid')
-                ], 422);
-            }
-
-            // Validar estrutura do arquivo
-            $validationResult = $this->validateImportFile($importData);
-            if (!$validationResult['valid']) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'invalid_structure',
-                    'message' => $validationResult['message']
-                ], 422);
-            }
-
-            // Verificar limites do plano
-            $fieldsCount = count($importData['fields']);
-            if (!$user->canAddMoreFields($workspace->id)) {
-                $remaining = $user->getRemainingFieldsCount($workspace->id);
-                return response()->json([
-                    'success' => false,
-                    'error' => 'plan_limit_exceeded',
-                    'message' => __('workspace.import_export.plan_limit_exceeded', ['remaining' => $remaining])
-                ], 422);
-            }
-
-            // Criar novo tópico
-            $topic = Topic::create([
+            // ==========================
+            // 🏗️ STRUCTURE
+            // ==========================
+            $structure = Structure::create([
                 'workspace_id' => $workspace->id,
-                'title' => $request->topic_title,
-                'order' => $workspace->topics()->max('order') + 1,
+                'name' => $importData['topic']['title'] ?? 'Imported Structure',
             ]);
 
-            // Importar campos
-            $importedFields = 0;
-            $order = 1;
+            $fieldIdMap = [];
 
-            foreach ($importData['fields'] as $fieldData) {
-                // Validar tipo de campo baseado no plano do usuário
-                if (!Field::isTypeAllowed($fieldData['type'], $user)) {
-                    continue; // Pula campos com tipos não permitidos
+            foreach (($importData['structure']['fields'] ?? []) as $fieldData) {
+
+                if (empty($fieldData['key_name'])) {
+                    continue;
                 }
 
-                // Criar campo
-                Field::create([
-                    'topic_id' => $topic->id,
-                    'key_name' => Field::formatKeyName($fieldData['key_name']),
-                    'value' => $fieldData['value'] ?? '',
-                    'type' => $fieldData['type'],
+                if (!StructureField::isTypeAllowed($fieldData['type'] ?? 'text', $user)) {
+                    continue;
+                }
+
+                $field = StructureField::create([
+                    'structure_id' => $structure->id,
+                    'key_name' => StructureField::formatKeyName($fieldData['key_name']),
+                    'type' => $fieldData['type'] ?? 'text',
+                    'order' => $fieldData['order'] ?? 0,
                     'is_visible' => $fieldData['is_visible'] ?? true,
-                    'order' => $order++,
                 ]);
 
-                $importedFields++;
+                // 🔁 Mapeamento antigo → novo
+                $fieldIdMap[$fieldData['id'] ?? uniqid()] = $field->id;
+            }
+
+            // ==========================
+            // 📌 TOPIC
+            // ==========================
+            $topic = Topic::create([
+                'workspace_id' => $workspace->id,
+                'structure_id' => $structure->id,
+                'title' => $request->topic_title
+                    ?? $importData['topic']['title']
+                    ?? 'Imported Topic',
+                'order' => $importData['topic']['order'] ?? 1,
+            ]);
+
+            // ==========================
+            // 📄 RECORDS
+            // ==========================
+            foreach (($importData['records'] ?? []) as $recordData) {
+
+                $record = TopicRecord::create([
+                    'topic_id' => $topic->id,
+                    'order' => $recordData['order'] ?? 0,
+                ]);
+
+                foreach (($recordData['values'] ?? []) as $valueData) {
+
+                    $oldFieldId = $valueData['structure_field_id'] ?? null;
+
+                    if (!$oldFieldId || !isset($fieldIdMap[$oldFieldId])) {
+                        continue;
+                    }
+
+                    RecordFieldValue::create([
+                        'record_id' => $record->id,
+                        'structure_field_id' => $fieldIdMap[$oldFieldId],
+                        'field_value' => $valueData['value'] ?? null,
+                    ]);
+                }
             }
 
             DB::commit();
 
             return response()->json([
-                'success' => true,
+                'type' => 'success',
                 'message' => __('workspace.notifications.import_success'),
                 'data' => [
-                    'topic' => [
-                        'id' => $topic->id,
-                        'title' => $topic->title,
-                        'order' => $topic->order,
-                    ],
-                    'imported_fields' => $importedFields,
-                    'total_fields' => count($importData['fields'])
+                    'topic_id' => $topic->id,
+                    'structure_id' => $structure->id,
+                    'records' => $topic->records()->count(),
                 ]
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
-            
+
             return response()->json([
-                'success' => false,
+                'type' => 'error',
                 'error' => 'import_error',
-                'message' => __('workspace.notifications.import_error', ['message' => $e->getMessage()])
+                'message' => $e->getMessage()
             ], 500);
         }
     }
@@ -551,7 +888,7 @@ class TopicController extends Controller
             
             if (!$isOwner && (!$collaborator || !$collaborator->canView())) {
                 return response()->json([
-                    'success' => false,
+                    'type' => 'error',
                     'error' => 'permission_denied',
                     'message' => __('workspace.notifications.permission_denied')
                 ], 403);
@@ -593,7 +930,7 @@ class TopicController extends Controller
 
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
+                'type' => 'error',
                 'error' => 'download_error',
                 'message' => __('workspace.notifications.export_error', ['message' => $e->getMessage()])
             ], 500);
@@ -704,7 +1041,7 @@ class TopicController extends Controller
             }
 
             return response()->json([
-                'success' => true,
+                'type' => 'success',
                 'data' => [
                     'topics' => $topics
                 ]
@@ -712,7 +1049,7 @@ class TopicController extends Controller
 
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
+                'type' => 'error',
                 'error' => 'server_error',
                 'message' => 'Error loading topics: ' . $e->getMessage()
             ], 500);

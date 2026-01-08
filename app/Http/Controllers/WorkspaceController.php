@@ -2,17 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use Inertia\Inertia;
+use App\Models\Structure;
 use App\Models\Field;
 use App\Models\Topic;
 use App\Models\Workspace;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 use App\Services\HashService;
-use DB;
-use Log;
 
 class WorkspaceController extends Controller
 {
@@ -21,11 +23,6 @@ class WorkspaceController extends Controller
      */
     public function indexWorkspaces()
     {
-        $workspaces = Workspace::where('user_id', Auth::id())->get();
-        if (!$workspaces) {
-            abort(404, 'Workspace não encontrado ou você não tem permissão para acessá-lo');
-        }
-
         $user = auth()->user();
     
         $workspaces = $user->workspaces()
@@ -40,7 +37,10 @@ class WorkspaceController extends Controller
             ->orderBy('joined_at', 'desc')
             ->get();
             
-        return view('pages.dashboard.workspace.my-workspaces', compact('workspaces', 'collaborations'));
+        return Inertia::render('Dashboard/Workspace/MyWorkspaces', [
+            'workspaces' => $workspaces,
+            'collaborations' => $collaborations,
+        ]);
     }
     
     /**
@@ -48,57 +48,41 @@ class WorkspaceController extends Controller
      */
     public function index($id)
     {
-        // Carrega o workspace com os tópicos e fields aninhados
-        $workspace = Workspace::with(['topics' => function($query) {
-                $query->orderBy('order')->with(['fields' => function($query) {
-                    $query->orderBy('order');
-                }]);
-            }])
-            ->where('id', $id)
-            ->where('user_id', Auth::id())
-            ->first();
+        $workspace = Workspace::with([
+            'topics.structure.fields',
+            'topics.records.field_values',
+            'topics.records.field_values.structureField',
+        ])->findOrFail($id);
 
-        if (!$workspace) {
-            abort(404, 'Workspace não encontrado ou você não tem permissão para acessá-lo');
-        }
+        // Carregar estruturas disponíveis para o usuário
+        $availableStructures = Structure::where('user_id', auth()->id())
+            ->withCount('fields')
+            ->get();
 
-        // Obter informações de limite POR TÓPICO usando métodos corrigidos
-        $user = Auth::user();
+        // Calcular limites para cada tópico
         $topicsWithLimits = [];
-        
         foreach ($workspace->topics as $topic) {
-            $topicId = $topic->id;
-            $currentFieldsCount = $user->getCurrentFieldsCount($workspace->id, $topicId);
-            $fieldsLimit = $user->getFieldsLimit();
-            $isUnlimited = $user->hasUnlimitedFields();
-            $canAddMoreFields = $isUnlimited || $currentFieldsCount < $fieldsLimit;
-            $remainingFields = $user->getRemainingFieldsCount($workspace->id, $topicId);
-            
-            $topicsWithLimits[$topicId] = [
-                'canAddMoreFields' => $canAddMoreFields,
+            $fieldsCount = $topic->structure ? $topic->structure->fields->count() : 0;
+            $fieldsLimit = auth()->user()->getPlan()->max_fields ?? 0;
+
+            $topicsWithLimits[$topic->id] = [
+                'currentFieldsCount' => $fieldsCount,
                 'fieldsLimit' => $fieldsLimit,
-                'currentFieldsCount' => $currentFieldsCount,
-                'remainingFields' => $remainingFields,
-                'isUnlimited' => $isUnlimited
+                'remainingFields' => $fieldsLimit - $fieldsCount,
+                'isUnlimited' => auth()->user()->getPlan()->max_fields === null,
             ];
         }
 
-        // Variáveis globais para compatibilidade (podem ser removidas posteriormente)
-        $globalCanAddMoreFields = $user->canAddMoreFields($workspace->id);
-        $globalFieldsLimit = $user->getFieldsLimit();
-        $globalCurrentFieldsCount = $user->getCurrentFieldsCount($workspace->id);
-        $globalRemainingFields = $user->getRemainingFieldsCount($workspace->id);
-        $globalIsUnlimited = $user->hasUnlimitedFields();
-        
-        return view('pages.dashboard.workspace.workspace', compact(
-            'workspace',
-            'topicsWithLimits',
-            'globalCanAddMoreFields',
-            'globalFieldsLimit',
-            'globalCurrentFieldsCount',
-            'globalRemainingFields',
-            'globalIsUnlimited'
-        ));
+        return Inertia::render('Dashboard/Workspace/Workspace', [
+            'workspace' => $workspace,
+            'availableStructures' => $availableStructures,
+            'topicsWithLimits' => $topicsWithLimits,
+            'workspaceLimits' => [
+                'currentTopics' => auth()->user()->current_topics_count,
+                'topicsLimit' => auth()->user()->topics_limit,
+                'canCreateTopics' => auth()->user()->canCreateTopics($id),
+            ]
+        ]);
     }
 
     /**
@@ -298,17 +282,32 @@ class WorkspaceController extends Controller
      */
     public function showImportForm()
     {
+        $user = Auth::user();
+        
         if (
-            !auth()->user()->isStart() &&
-            !auth()->user()->isPro() && 
-            !auth()->user()->isPremium() && 
-            !auth()->user()->isAdmin()
+            !$user->isStart() &&
+            !$user->isPro() && 
+            !$user->isPremium() && 
+            !$user->isAdmin()
         ) {
             return redirect()->route('workspaces.show')
                 ->with('error', 'A importação de workspaces está disponível apenas para usuários Pro.');
         }
 
-        return view('pages.dashboard.workspace.import-workspace');
+        return Inertia::render('Dashboard/Workspace/ImportWorkspace', [
+            'lang' => __('import'),
+            'auth' => [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'is_start' => $user->isStart(),
+                    'is_pro' => $user->isPro(),
+                    'is_premium' => $user->isPremium(),
+                    'is_admin' => $user->isAdmin(),
+                ]
+            ],
+        ]);
     }
 
     /**

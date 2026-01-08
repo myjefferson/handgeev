@@ -6,71 +6,105 @@ use App\Models\Workspace;
 use App\Models\WorkspaceAllowedDomain;
 use App\Models\ApiRequestLog;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Controllers\Controller;
 
 class WorkspaceApiController extends Controller
 {
+    public function index()
+    {
+        $startTime = microtime(true);
+        
+        try {
+            $user = Auth::user();
+            
+            $workspaces = Workspace::where('user_id', $user->id)
+                ->with(['typeWorkspace'])
+                ->get();
+            
+            $responseData = [
+                'metadata' => [
+                    'total' => $workspaces->count(),
+                    'generated_at' => now()->toISOString()
+                ],
+                'workspaces' => $workspaces->map(function($workspace) {
+                    return [
+                        'id' => $workspace->id,
+                        'title' => $workspace->title,
+                        'description' => $workspace->description,
+                        'type' => $workspace->typeWorkspace->description,
+                        'is_published' => $workspace->is_published,
+                        'api_enabled' => $workspace->api_enabled,
+                        'created_at' => $workspace->created_at->toISOString(),
+                        'updated_at' => $workspace->updated_at->toISOString()
+                    ];
+                })
+            ];
+            
+            $this->logApiRequest($user, null, $startTime, 200, 'SUCCESS');
+            return response()->json($responseData);
+            
+        } catch (\Exception $e) {
+            $this->logApiRequest(Auth::user() ?? null, null, $startTime, 500, 'INTERNAL_ERROR');
+            return response()->json(['error' => 'Internal server error'], 500);
+        }
+    }
+
     public function show($workspaceId)
     {
         $startTime = microtime(true);
         
         try {
             $user = Auth::user();
-            $workspace = Workspace::with(['user', 'typeWorkspace', 'topics.fields' => function($query) {
-                $query->where('is_visible', true)->orderBy('order');
-            }])
-            ->where('id', $workspaceId)
-            ->where('user_id', $user->id)
-            ->firstOrFail();
-
             $plan = $user->getPlan();
+            
+            $workspace = Workspace::with(['typeWorkspace'])
+                ->withCount(['topics'])
+                ->where('id', $workspaceId)
+                ->where('user_id', $user->id)
+                ->firstOrFail();
 
-            // Rate limiting
+
+                
+                // Rate limiting
             $rateLimitKey = 'workspace_show:' . $user->id;
-            if (!RateLimiter::attempt($rateLimitKey . ':minute', $plan->api_requests_per_minute ?? 60, function() {}, 60)) {
+                if (!RateLimiter::attempt($rateLimitKey . ':minute', $plan->api_requests_per_minute ?? 60, function() {}, 60)) {
                 $this->logApiRequest($user, $workspace, $startTime, 429, 'RATE_LIMIT_EXCEEDED');
                 return response()->json([
                     'error' => 'Rate limit exceeded',
                     'message' => 'Too many workspace requests'
                 ], 429);
             }
-
-            // Verificar se API está habilitada
-            if (!$workspace->api_enabled) {
-                $this->logApiRequest($user, $workspace, $startTime, 403, 'API_DISABLED');
-                return response()->json([
-                    'error' => 'API disabled',
-                    'message' => 'Workspace API is currently disabled'
-                ], 403);
-            }
-
-            $viewType = request()->get('view');
-
-            if ($viewType === 'full') {
-                $data = $this->getFullWorkspaceData($workspace, $plan, $rateLimitKey);
-            } else {
-                $data = $this->getSimpleWorkspaceData($workspace, $plan, $rateLimitKey);
-            }
-
-            $response = response()->json($data);
+            
+            $responseData = [
+                'workspace' => [
+                    'id' => $workspace->id,
+                    'title' => $workspace->title,
+                    'description' => $workspace->description,
+                    'type' => $workspace->typeWorkspace->description,
+                    'is_published' => $workspace->is_published,
+                    'api_enabled' => $workspace->api_enabled,
+                    'workspace_key_api' => $workspace->workspace_key_api,
+                    'created_at' => $workspace->created_at->toISOString(),
+                    'updated_at' => $workspace->updated_at->toISOString()
+                ],
+                'statistics' => [
+                    // 'structures_count' => $workspace->structures_count, // sempre int
+                    'topics_count' => $workspace->topics_count          // sempre int
+                ]
+            ];
+            
             $this->logApiRequest($user, $workspace, $startTime, 200, 'SUCCESS');
-            return $response;
-
+            return response()->json($responseData);
+            
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            $this->logApiRequest($user ?? null, null, $startTime, 404, 'WORKSPACE_NOT_FOUND');
-            return response()->json([
-                'error' => 'Workspace not found',
-                'message' => 'The requested workspace does not exist or you do not have permission'
-            ], 404);
+            $this->logApiRequest(Auth::user() ?? null, null, $startTime, 404, 'WORKSPACE_NOT_FOUND');
+            return response()->json(['error' => 'Workspace not found'], 404);
         } catch (\Exception $e) {
-            $this->logApiRequest($user ?? null, $workspace ?? null, $startTime, 500, 'INTERNAL_ERROR');
-            return response()->json([
-                'error' => 'Internal server error',
-                'message' => 'An error occurred while processing your request'
-            ], 500);
+            $this->logApiRequest(Auth::user() ?? null, null, $startTime, 500, 'INTERNAL_ERROR');
+            return response()->json(['error' => 'Internal server error'], 500);
         }
     }
 
@@ -180,12 +214,11 @@ class WorkspaceApiController extends Controller
         
         try {
             $user = Auth::user();
-
-            $workspace = Workspace::with(['topics.fields'])
+            $workspace = Workspace::with(['topics.structureFields'])
                 ->where('id', $workspaceId)
                 ->where('user_id', $user->id)
                 ->firstOrFail();
-
+                
             $stats = [
                 'workspace_id' => $workspace->id,
                 'workspace_title' => $workspace->title,
@@ -317,7 +350,7 @@ class WorkspaceApiController extends Controller
 
             // Atualizar domínios permitidos se fornecido
             if (isset($data['allowed_domains'])) {
-                $maxDomains = $plan->max_domains ?? 1;
+                $maxDomains = $plan->domains ?? 1;
                 
                 if (count($data['allowed_domains']) > $maxDomains) {
                     $this->logApiRequest($user, $workspace, $startTime, 403, 'DOMAIN_LIMIT_EXCEEDED');
@@ -325,7 +358,7 @@ class WorkspaceApiController extends Controller
                         'error' => 'Domain limit exceeded',
                         'message' => "Your plan allows maximum {$maxDomains} domains",
                         'current_plan' => $plan->name,
-                        'max_domains' => $maxDomains
+                        'domains' => $maxDomains
                     ], 403);
                 }
 

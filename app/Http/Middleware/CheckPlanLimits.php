@@ -130,12 +130,12 @@ class CheckPlanLimits
 
     private function checkTopicLimits($limits, Request $request): void
     {
-        if (!isset($limits['current_topics'], $limits['max_topics'])) return;
+        if (!isset($limits['current_topics'], $limits['topics'])) return;
         
-        if ($limits['current_topics'] >= $limits['max_topics'] && $this->isWorkspaceRoute($request)) {
+        if ($limits['current_topics'] >= $limits['topics'] && $this->isWorkspaceRoute($request)) {
             session()->flash('error', [
                 'title' => 'Limite de Tópicos Atingido',
-                'message' => "Você atingiu o limite de {$limits['max_topics']} tópicos. Faça upgrade para tópicos ilimitados.",
+                'message' => "Você atingiu o limite de {$limits['topics']} tópicos. Faça upgrade para tópicos ilimitados.",
                 'action' => ['text' => 'Fazer Upgrade', 'url' => route('subscription.pricing')]
             ]);
         }

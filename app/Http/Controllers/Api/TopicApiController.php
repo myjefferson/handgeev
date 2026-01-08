@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Topic;
 use App\Models\Workspace;
+use App\Models\Structure;
 use App\Models\ApiRequestLog;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -15,40 +16,66 @@ class TopicApiController extends Controller
     /**
      * Show topics by workspace
      * **/
-    public function index($workspaceId)
+    public function index($structureId)
     {
+        dd('test');
         $startTime = microtime(true);
-        
+        $user = Auth::user(); // pode ser null
+        $structure = null;
+
         try {
-            $user = Auth::user();
+            $structure = Structure::with(['topics.records'])
+                ->findOrFail($structureId);
 
-            $workspace = Workspace::where('id', $workspaceId)
-                ->where('user_id', $user->id)
-                ->firstOrFail();
+            // Se quiser restringir acesso (opcional)
+            if ($user && !$structure->canBeUsedBy($user)) {
+                return response()->json([
+                    'error' => 'Unauthorized'
+                ], 403);
+            }
 
-            $topics = Topic::where('workspace_id', $workspaceId)
+            $topics = $structure->topics()
                 ->orderBy('order')
                 ->get();
 
-            // Verificar se é uma visualização completa
-            $viewType = request()->get('view');
+            $responseData = [
+                'metadata' => [
+                    'structure_id' => $structure->id,
+                    'structure_name' => $structure->name,
+                    'total' => $topics->count(),
+                    'generated_at' => now()->toISOString()
+                ],
+                'topics' => $topics->map(fn ($topic) => [
+                    'id' => $topic->id,
+                    'title' => $topic->title,
+                    'order' => $topic->order,
+                    'records_count' => $topic->records?->count() ?? 0,
+                    'created_at' => $topic->created_at?->toISOString(),
+                    'updated_at' => $topic->updated_at?->toISOString(),
+                ])
+            ];
 
-            if ($viewType === 'full') {
-                $responseData = $this->getFullTopicsData($topics, $workspace);
-            } else {
-                $responseData = $this->getSimpleTopicsData($topics, $workspace);
-            }
+            $this->logApiRequest($user, null, $startTime, 200, 'SUCCESS');
 
-            $response = response()->json($responseData);
-            $this->logApiRequest($user, $workspace, $startTime, 200, 'SUCCESS');
-            return $response;
+            return response()->json($responseData);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            $this->logApiRequest($user ?? null, null, $startTime, 404, 'WORKSPACE_NOT_FOUND');
-            return response()->json(['error' => 'Workspace not found'], 404);
-        } catch (\Exception $e) {
-            $this->logApiRequest($user ?? null, null, $startTime, 500, 'INTERNAL_ERROR');
-            return response()->json(['error' => 'Internal server error'], 500);
+
+            $this->logApiRequest($user, null, $startTime, 404, 'STRUCTURE_NOT_FOUND');
+
+            return response()->json([
+                'error' => 'Structure not found: '.$e->getMessage()
+            ], 404);
+
+        } catch (\Throwable $e) {
+
+            report($e); // 🔥 essencial para debug real
+
+            $this->logApiRequest($user, null, $startTime, 500, 'INTERNAL_ERROR');
+
+            return response()->json([
+                'error' => 'Internal server error: '.$e->getMessage()
+            ], 500);
         }
     }
 
@@ -59,37 +86,59 @@ class TopicApiController extends Controller
     public function show($topicId)
     {
         $startTime = microtime(true);
-        
+        $user = Auth::user();
+        $topic = null;
+
         try {
-            $user = Auth::user();
+            $topic = Topic::with([
+                'structure.fields',
+                'records'
+            ])->findOrFail($topicId);
 
-            $topic = Topic::with(['workspace', 'fields' => function($query) {
-                $query->orderBy('order');
-            }])
-            ->whereHas('workspace', function($query) use ($user) {
-                $query->where('user_id', $user->id);
-            })
-            ->findOrFail($topicId)->get();
-
-            // Verificar se é uma visualização completa
-            $viewType = request()->get('view');
-
-            if ($viewType === 'full') {
-                $responseData = $this->getFullTopicsData($topic);
-            } else {
-                $responseData = $this->getSimpleTopicsData($topic);
+            // 🔐 Controle de acesso via Structure
+            if ($user && !$topic->structure->canBeUsedBy($user)) {
+                return response()->json([
+                    'error' => 'Unauthorized'
+                ], 403);
             }
 
-            $response = response()->json($responseData);
-            $this->logApiRequest($user, $startTime, 200, 'SUCCESS');
-            return $response;
+            $responseData = [
+                'topic' => [
+                    'id' => $topic->id,
+                    'title' => $topic->title,
+                    'order' => $topic->order,
+                    'structure' => [
+                        'id' => $topic->structure->id,
+                        'name' => $topic->structure->name,
+                        'fields_count' => $topic->structure->fields->count(),
+                    ],
+                    'records_count' => $topic->records->count(),
+                    'created_at' => $topic->created_at?->toISOString(),
+                    'updated_at' => $topic->updated_at?->toISOString(),
+                ]
+            ];
+
+            $this->logApiRequest($user, null, $startTime, 200, 'SUCCESS');
+
+            return response()->json($responseData);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            $this->logApiRequest($user ?? null, null, $startTime, 404, 'TOPIC_NOT_FOUND');
-            return response()->json(['error' => 'Topic not found'], 404);
-        } catch (\Exception $e) {
-            $this->logApiRequest($user ?? null, null, $startTime, 500, 'INTERNAL_ERROR');
-            return response()->json(['error' => 'Internal server error'.$e], 500);
+
+            $this->logApiRequest($user, null, $startTime, 404, 'TOPIC_NOT_FOUND');
+
+            return response()->json([
+                'error' => 'Topic not found'
+            ], 404);
+
+        } catch (\Throwable $e) {
+
+            report($e); // 🔥 essencial
+
+            $this->logApiRequest($user, null, $startTime, 500, 'INTERNAL_ERROR');
+
+            return response()->json([
+                'error' => 'Internal server error'
+            ], 500);
         }
     }
 
@@ -180,69 +229,69 @@ class TopicApiController extends Controller
         return $simpleData;
     }
 
-    public function store(Request $request, $workspaceId)
+    public function store(Request $request, $structureId)
     {
         $startTime = microtime(true);
         
         try {
             $user = Auth::user();
             $plan = $user->getPlan();
-
-            $workspace = Workspace::where('id', $workspaceId)
-                ->where('user_id', $user->id)
-                ->firstOrFail();
-
+            
+            $structure = Structure::with(['workspace'])
+                ->whereHas('workspace', function($query) use ($user) {
+                    $query->where('user_id', $user->id);
+                })
+                ->findOrFail($structureId);
+            
             // Verificar limite de tópicos
-            $currentTopics = $workspace->topics()->count();
-            if ($plan->max_topics > 0 && $currentTopics >= $plan->max_topics) {
-                $this->logApiRequest($user, $workspace, $startTime, 403, 'TOPIC_LIMIT_EXCEEDED');
+            $currentTopics = $structure->topics()->count();
+            if ($plan->topics > 0 && $currentTopics >= $plan->topics) {
+                $this->logApiRequest($user, $structure->workspace, $startTime, 403, 'TOPIC_LIMIT_EXCEEDED');
                 return response()->json([
                     'error' => 'Topic limit exceeded',
-                    'message' => "Your plan allows maximum {$plan->max_topics} topics",
-                    'current_plan' => $plan->name,
-                    'max_topics' => $plan->max_topics,
-                    'current_count' => $currentTopics
+                    'message' => "Your plan allows maximum {$plan->topics} topics",
+                    'current_plan' => $plan->name
                 ], 403);
             }
-
+            
             $validator = Validator::make($request->all(), [
                 'title' => 'required|string|max:200',
-                'order' => 'required|integer|min:0'
+                'order' => 'sometimes|integer|min:0'
             ]);
-
+            
             if ($validator->fails()) {
-                $this->logApiRequest($user, $workspace, $startTime, 422, 'VALIDATION_FAILED');
+                $this->logApiRequest($user, $structure->workspace, $startTime, 422, 'VALIDATION_FAILED');
                 return response()->json([
                     'error' => 'Validation failed',
                     'messages' => $validator->errors()
                 ], 422);
             }
-
+            
             $topic = Topic::create([
-                'workspace_id' => $workspaceId,
+                'structure_id' => $structureId,
                 'title' => $request->title,
-                'order' => $request->order
+                'order' => $request->order ?? 0,
             ]);
-
+            
             $response = response()->json([
                 'message' => 'Topic created successfully',
                 'topic' => [
                     'id' => $topic->id,
                     'title' => $topic->title,
                     'order' => $topic->order,
-                    'workspace_id' => $topic->workspace_id,
+                    'structure_id' => $topic->structure_id,
                     'created_at' => $topic->created_at->toISOString()
                 ]
             ], 201);
-
-            $this->logApiRequest($user, $workspace, $startTime, 201, 'SUCCESS');
+            
+            $this->logApiRequest($user, $structure->workspace, $startTime, 201, 'SUCCESS');
             return $response;
-
+            
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            $this->logApiRequest($user ?? null, null, $startTime, 404, 'WORKSPACE_NOT_FOUND');
-            return response()->json(['error' => 'Workspace not found'], 404);
+            $this->logApiRequest(Auth::user() ?? null, null, $startTime, 404, 'STRUCTURE_NOT_FOUND');
+            return response()->json(['error' => 'Structure not found'], 404);
         } catch (\Exception $e) {
-            $this->logApiRequest($user ?? null, null, $startTime, 500, 'INTERNAL_ERROR');
+            $this->logApiRequest(Auth::user() ?? null, null, $startTime, 500, 'INTERNAL_ERROR');
             return response()->json(['error' => 'Internal server error'], 500);
         }
     }

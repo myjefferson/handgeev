@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Inertia\Inertia;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Auth;
@@ -21,8 +22,13 @@ class WorkspaceSettingController extends Controller
      */
     public function index($id)
     {
-        $workspace = Workspace::find($id);
+        $workspace = Workspace::with(['topics'])
+            ->where('id', $id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
         $hasPasswordWorkspace = !is_null($workspace->password);
+        
         if ($workspace->password) {
             try {
                 $workspace->plain_password = Crypt::decryptString($workspace->password);
@@ -30,8 +36,11 @@ class WorkspaceSettingController extends Controller
                 $workspace->plain_password = null;
             }
         }
-        
-        return view('pages.dashboard.workspace.settings', compact('workspace', 'hasPasswordWorkspace'));
+
+        return Inertia::render('Dashboard/Workspace/Settings', [
+            'workspace' => $workspace,
+            'hasPasswordWorkspace' => $hasPasswordWorkspace,
+        ]);
     }
 
     public function generateNewHashApi($id)
@@ -56,8 +65,8 @@ class WorkspaceSettingController extends Controller
             ]);
         } catch (\Exception $e) {
             // Trata erros e retorna a mensagem de erro
-            return response()->json([
-                'success' => false,
+            return back()->with([
+                'type' => 'error',
                 'message' => 'Ocorreu um erro ao gerar os códigos API.',
                 'error' => $e->getMessage(),
             ]);
@@ -116,8 +125,8 @@ class WorkspaceSettingController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
+            return back()->with([
+                'type' => 'success',
                 'message' => 'Configurações de acesso atualizadas com sucesso!',
                 'data' => [
                     'is_published' => $workspace->is_published,
@@ -128,14 +137,14 @@ class WorkspaceSettingController extends Controller
 
         } catch (ModelNotFoundException $e) {
             DB::rollBack();
-            return response()->json(['error' => 'Workspace não encontrado.'], 404);
+            return back()->with(['error' => 'Workspace não encontrado.'], 404);
                 
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Erro ao atualizar configurações de acesso: ' . $e->getMessage());
             
-            return response()->json([
-                'success' => false,
+            return back()->with([
+                'type' => 'error',
                 'error' => 'Erro interno ao atualizar configurações.'
             ], 500);
         }
@@ -151,13 +160,13 @@ class WorkspaceSettingController extends Controller
                 'type_view_workspace_id' => $request->type_view_workspace,
             ]);
 
-            return response()->json([
-                'success' => true,
+            return back()->with([
+                'type' => 'success',
                 'message' => 'Tipo de visualização alterado com sucesso!',
             ], 200);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
+            return back()->with([
+                'type' => 'error',
                 'message' => 'Ocorreu um erro ao alterar o tipo de visualização do Workspace.',
                 'error' => $e->getMessage(),
             ], 500);
@@ -172,7 +181,7 @@ class WorkspaceSettingController extends Controller
         // Verificar se usuário é Pro ou Admin
         if (!auth()->user()->isPro() && !auth()->user()->isAdmin()) {
             return response()->json([
-                'success' => false,
+                'type' => 'error',
                 'error' => 'server_error',
                 'message' => 'A duplicação de workspaces está disponível apenas para usuários Pro.'
             ], 500);
@@ -198,7 +207,7 @@ class WorkspaceSettingController extends Controller
                 return $topic->fields->count();
             });
             
-            if (!$user->canAddMoreFields(null, $totalFields)) {
+            if (!$user->canCreateField(null, $totalFields)) {
                 return response()->json([
                     'success' => false,
                     'error' => 'limit_exceeded',

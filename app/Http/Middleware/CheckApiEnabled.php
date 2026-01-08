@@ -11,14 +11,16 @@ class CheckApiEnabled
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // Para rotas que têm workspaceId na URL
-        $workspaceId = $request->route('workspaceId') ?? 
-                      $request->route('workspace')?->id;
+        $workspace = $request->route('workspace');
 
-        if ($workspaceId) {
-            $workspace = Workspace::find($workspaceId);
-            
-            if ($workspace && !$workspace->api_enabled) {
+        // Se vier como ID (fallback de segurança)
+        if (is_numeric($workspace)) {
+            $workspace = Workspace::find($workspace);
+        }
+
+        // Se for um model válido
+        if ($workspace instanceof Workspace) {
+            if (!$workspace->api_enabled) {
                 return response()->json([
                     'error' => 'API disabled',
                     'message' => 'The API for this workspace is currently disabled'

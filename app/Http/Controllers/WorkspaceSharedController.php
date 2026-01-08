@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Inertia\Inertia;
 use App\Services\RateLimitService;
 use App\Services\ApiStatisticsService;
 use Illuminate\Support\Facades\Crypt;
@@ -14,62 +15,108 @@ use Auth;
 class WorkspaceSharedController extends Controller
 {
     // Rota para a interface de visualização compartilhada
-    public function showInterfaceApi($global_key_api, $workspace_key_api)
+    public function geevStudio($global_key_api, $workspace_key_api)
     {
         // Encontrar o usuário pelo global_key_api
         $user = User::where('global_key_api', $global_key_api)->firstOrFail();
         
-        // Buscar workspace
-        $workspace = Workspace::with(['topics.fields' => function($query) {
-            $query->orderBy('order', 'asc')->where('is_visible', true);
-        }])
+        // Buscar workspace com relações corretas
+        $workspace = Workspace::with([
+            'topics.records.fieldValues.structureField' => function ($query) {
+                $query->orderBy('order', 'asc');
+            }
+        ])
         ->where('user_id', $user->id)
         ->where('workspace_key_api', $workspace_key_api)
         ->firstOrFail();
-        
-        if (!$workspace->is_published && $workspace->user_id != Auth::user()->id) {
+
+        // Verificar permissões
+        if (!$workspace->is_published && $workspace->user_id != Auth::id()) {
             abort(403);
         }
-        
+
         if ($workspace->type_view_workspace_id != 1) {
             abort(404);
         }
 
         $rateLimitInfo = RateLimitService::getRateLimitStatus($user);
 
-        return view('pages.dashboard.api-management.geev-studio', compact(
-            'user', 
-            'workspace', 
-            'rateLimitInfo',
-            'global_key_api', 
-            'workspace_key_api'
-        ));
+        // Primeiro tópico
+        $firstTopic = $workspace->topics->first();
+
+        // Primeiro campo REAL (RecordFieldValue + StructureField)
+        $firstField = null;
+        if ($firstTopic && $firstTopic->records->isNotEmpty()) {
+            $firstField = $firstTopic->records->first()->fieldValues->first();
+        }
+
+        // Preparar dados para envio
+        $sharedData = [
+            'workspace' => [
+                'id' => $workspace->id,
+                'title' => $workspace->title,
+                'workspace_key_api' => $workspace->workspace_key_api,
+                'is_published' => $workspace->is_published,
+                'topics' => $workspace->topics->map(function($topic) {
+                    return [
+                        'id' => $topic->id,
+                        'title' => $topic->title,
+                        'records' => $topic->records->map(function($record) {
+                            return [
+                                'record_id' => $record->id,
+                                'values' => $record->fieldValues->map(function($value) {
+                                    return [
+                                        'id' => $value->id,
+                                        'key_name' => $value->structureField->name,
+                                        'type' => $value->structureField->type,
+                                        'is_visible' => $value->structureField->is_visible,
+                                        'order' => $value->structureField->order,
+                                        'value' => $value->formatted_value,
+                                    ];
+                                }),
+                            ];
+                        }),
+                    ];
+                })
+            ],
+            'rateLimitInfo' => $rateLimitInfo,
+            'global_key_api' => $global_key_api,
+            'workspace_key_api' => $workspace_key_api,
+            'share_url' => url()->current(),
+            'api_endpoints' => [
+                'first_topic_id' => $firstTopic?->id,
+                'first_field_id' => $firstField?->structure_field_id,
+                'base_url' => url('/api')
+            ]
+        ];
+
+        return Inertia::render('Dashboard/ApiManagement/GeevStudio', $sharedData);
     }
 
     // Seu WorkspaceController - ADICIONAR ESTE MÉTODO
     public function showApiRest($global_key_api, $workspace_key_api)
     {
-        if(Auth::check()){
-            // Encontrar o usuário pelo global_key_api
-            $user = User::where('global_key_api', $global_key_api)->firstOrFail();
-
-            $workspace = Workspace::with(['topics.fields'])
-                ->where('user_id', $user->id)
-                ->where('workspace_key_api', $workspace_key_api)
-                ->firstOrFail();
-                
-            if(!$workspace){
-                abort(404);
-            }
-
-            $apiKey = $workspace->workspace_key_api;
-
-            return view('pages.dashboard.api-management.geev-api', compact(
-                'workspace',
-                'apiKey',
-            ));
+        if (!Auth::check()) {
+            abort(403);
         }
-        return abort(403);
+
+        $user = User::where('global_key_api', $global_key_api)->firstOrFail();
+
+        $rateLimitData = RateLimitService::getRateLimitStatus($user);
+
+        $workspace = Workspace::with(['topics', 'user', 'allowedDomains'])
+            ->where('user_id', $user->id)
+            ->where('workspace_key_api', $workspace_key_api)
+            ->firstOrFail();
+
+        if (!$workspace) {
+            abort(404);
+        }
+
+        return Inertia::render('Dashboard/ApiManagement/GeevApi', [
+            'workspace' => $workspace->load(['topics', 'allowedDomains']),
+            'rateLimitData' => $rateLimitData
+        ]);
     }
 
         /**
@@ -96,7 +143,18 @@ class WorkspaceSharedController extends Controller
             return redirect()->route('workspace.api-rest.show', $dataKey);
         }
 
-        return view('pages.dashboard.api-management.workspace-password', compact('workspace', 'user', 'globalHash', 'workspaceKey'));
+        return Inertia::render('Dashboard/ApiManagement/Protected', [
+            'workspace' => [
+                'title' => $workspace->title,
+            ],
+            'user' => [
+                'name' => $user->name,
+            ],
+            'verifyUrl' => route(
+                'workspace.shared.verify-password',
+                $dataKey
+            ),
+        ]);
     }
 
     /**
@@ -231,10 +289,10 @@ class WorkspaceSharedController extends Controller
 
         $user = User::where('global_key_api', $global_key_api)->firstOrFail();
         $workspace = Workspace::where('workspace_key_api', $workspace_key_api)
-                            ->where('user_id', $user->id)
-                            ->firstOrFail();
-
-        // Usar dados reais
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+            
+            // Usar dados reais
         $rateLimitInfo = RateLimitService::getRateLimitStatus($user);
         $workspaceStats = $this->getWorkspaceStatistics($workspace);
         $apiUsage = ApiStatisticsService::getRealApiUsageStatistics($workspace);
@@ -260,22 +318,40 @@ class WorkspaceSharedController extends Controller
     }
 
     /**
-     * Estatísticas do workspace (mantém igual)
+     * Estatísticas do workspace
      */
     private function getWorkspaceStatistics(Workspace $workspace)
     {
+        // Total de tópicos
+        $totalTopics = $workspace->topics()->count();
+
+        // Busca todos os topics com suas estruturas e fields
+        $topics = $workspace->topics()
+            ->with('structure.fields')
+            ->get();
+
+        // Total de campos existentes nas estruturas dos tópicos
+        $totalFields = $topics->sum(function ($topic) {
+            return $topic->structure?->fields->count() ?? 0;
+        });
+
+        // Campos visíveis (is_visible = true)
+        // Se sua tabela structure_fields tiver essa coluna
+        $visibleFields = $topics->sum(function ($topic) {
+            return $topic->structure?->fields
+                ->where('is_visible', true)
+                ->count() ?? 0;
+        });
+
         return [
-            'total_topics' => $workspace->topics()->count(),
-            'total_fields' => $workspace->topics()->withCount('fields')->get()->sum('fields_count'),
-            'visible_fields' => $workspace->topics()->whereHas('fields', function($q) {
-                $q->where('is_visible', true);
-            })->withCount(['fields' => function($q) {
-                $q->where('is_visible', true);
-            }])->get()->sum('fields_count'),
-            'last_updated' => $workspace->updated_at->toISOString(),
-            'created_at' => $workspace->created_at->toISOString(),
+            'total_topics'     => $totalTopics,
+            'total_fields'     => $totalFields,
+            'visible_fields'   => $visibleFields,
+            'last_updated'     => $workspace->updated_at->toISOString(),
+            'created_at'       => $workspace->created_at->toISOString(),
         ];
     }
+
 
     /**
      * Formatar estatísticas de rate limit
