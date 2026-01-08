@@ -1,3 +1,9 @@
 [deploy]
-buildCommand = "composer install --no-dev --optimize-autoloader --no-interaction && php artisan optimize:clear && php artisan optimize"
+buildCommand = """
+npm install &&
+npm run build &&
+composer install --no-dev --optimize-autoloader --no-interaction &&
+php artisan optimize:clear &&
+php artisan optimize
+"""
 startCommand = "./start.sh"
