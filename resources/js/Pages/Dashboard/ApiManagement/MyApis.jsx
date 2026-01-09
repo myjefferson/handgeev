@@ -70,10 +70,10 @@ export default function MyApis({ workspaces }) {
 
     return (
         <DashboardLayout>
-            <Head>
-                <title>Minhas APIs - HandGeev</title>
-                <meta name="description" content="Gerencie e visualize suas APIs no HandGeev" />
-            </Head>
+            <Head 
+                title="Minhas APIs" 
+                description={`Gerencie e visualize suas APIs no HandGeev`} 
+            />
 
             <div className="min-h-screen max-w-7xl mx-auto">
                 {/* Header */}

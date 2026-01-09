@@ -33,9 +33,10 @@ export default function StructuresShow({ structures }) {
 
     return (
         <DashboardLayout title="Minhas Estruturas" description="Gerencie suas estruturas de dados">
-            <Head>
-                {/* <title>Estruturas - HandGeev</title> */}
-            </Head>
+            <Head 
+                title="Estruturas" 
+                description={`Estruturas de ${auth.user?.name} no HandGeev`} 
+            />
 
             <div className="max-w-7xl mx-auto">
                 {/* Header */}

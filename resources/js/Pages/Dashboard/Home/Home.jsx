@@ -28,9 +28,10 @@ export default function DashboardHome({
             title="Início" 
             description="Início do HandGeev"
         >
-            <Head>
-                <title>Início - HandGeev</title>
-            </Head>
+            <Head 
+                title="Início" 
+                description={`Início`} 
+            />
 
             <div className="max-w-7xl mx-auto min-h-screen p-0 sm:p-0 md:p-6">
                 <Alert />

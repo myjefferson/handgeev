@@ -16,10 +16,6 @@ export default defineConfig({
         }),
         react(),
     ],
-    build: {
-        minify: false,
-        sourcemap: true,
-    },
     resolve: {
         alias: {
             '@': path.resolve(__dirname, 'resources/js'),
