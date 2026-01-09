@@ -701,6 +701,35 @@ LEFT JOIN topics t ON t.structure_id = s.id
 LEFT JOIN users u ON u.id = s.user_id
 GROUP BY s.id, u.id;
 
+
+-- ----------------------------------------------------------------------
+-- TABLE RECORD FIELD VALUES
+-- ----------------------------------------------------------------------
+
+CREATE TABLE public.record_field_values (
+	id bigserial NOT NULL,
+	record_id int8 NOT NULL,
+	structure_field_id int8 NOT NULL,
+	field_value text NULL,
+	created_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	updated_at timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	CONSTRAINT record_field_values_pkey PRIMARY KEY (id)
+);
+CREATE INDEX idx_record_field_values_field_id ON public.record_field_values USING btree (structure_field_id);
+CREATE INDEX idx_record_field_values_record_id ON public.record_field_values USING btree (record_id);
+
+-- Table Triggers
+
+create trigger update_record_field_values_updated_at before
+update
+    on
+    public.record_field_values for each row execute function update_timestamp();
+
+
+-- public.record_field_values chaves estrangeiras
+
+ALTER TABLE public.record_field_values ADD CONSTRAINT record_field_values_record_id_fkey FOREIGN KEY (record_id) REFERENCES public.topic_records(id) ON DELETE CASCADE;
+
 -- ----------------------------------------------------------------------
 -- FUNÇÕES ÚTEIS
 -- ----------------------------------------------------------------------
