@@ -22,8 +22,8 @@ class AppServiceProvider extends ServiceProvider
         Stripe::setApiKey(config('services.stripe.secret'));
         
         if(env('APP_ENV') == 'production'){
+            URL::forceScheme('https');
             if (! $this->app->environment('local')) {
-                URL::forceScheme('https');
             }
         }
 
