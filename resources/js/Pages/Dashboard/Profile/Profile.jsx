@@ -129,7 +129,10 @@ export default function Profile({ userStats }){
 
     return (
         <DashboardLayout>
-            <Head title={__('title')} description={__('description')} />
+            <Head 
+                title={__('title')} 
+                description={__('description')} 
+            />
 
             <div className="min-h-screen bg-slate-900 py-8">
                 <div className="max-w-7xl mx-auto p-0 sm:p-0 md:p-6">
