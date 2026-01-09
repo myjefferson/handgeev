@@ -327,7 +327,7 @@ const ImportWorkspace = ({ auth }) => {
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 .teal-glow-hover:hover {
                     box-shadow: 0 0 20px rgba(45, 212, 191, 0.3);
                 }

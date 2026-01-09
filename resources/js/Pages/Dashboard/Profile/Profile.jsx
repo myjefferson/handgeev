@@ -592,7 +592,7 @@ export default function Profile({ userStats }){
                 user={auth.user}
             />
 
-            <style jsx>{`
+            <style>{`
                 .tab-content {
                     animation: fadeIn 0.3s ease-in-out;
                 }

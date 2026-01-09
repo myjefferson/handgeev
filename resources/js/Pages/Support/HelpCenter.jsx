@@ -541,7 +541,7 @@ export default function HelpCenter() {
                 </div>
             )}
 
-            <style jsx>{`
+            <style>{`
                 .help-search:focus {
                     outline: none;
                     box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.3);

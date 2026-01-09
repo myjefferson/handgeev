@@ -391,7 +391,7 @@ export default function MyWorkspaces({ workspaces, collaborations }){
                 onClose={() => setShowCreateModal(false)}
             />
 
-            <style jsx>{`
+            <style>{`
                 .view-toggle.active {
                     background-color: #0891b2;
                     color: white;

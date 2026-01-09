@@ -373,7 +373,7 @@ export default function Register() {
                 <Footer />
             </div>
 
-            <style jsx>{`
+            <style>{`
                 @keyframes float {
                     0% { transform: translateY(0px); }
                     50% { transform: translateY(-15px); }

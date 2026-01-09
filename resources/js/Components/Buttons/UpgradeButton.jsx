@@ -28,7 +28,7 @@ const UpsellButton = ({
                 </div>
             </Link>
 
-            <style jsx>{`
+            <style>{`
                 .purple-neon-glow {
                     background: rgba(139, 92, 246, 0.12);
                     border: 1px solid rgba(167, 139, 250, 0.6);

@@ -434,7 +434,7 @@ export default function Pricing({ auth, currentPlan, stripePrices }){
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 :root {
                     --teal-primary: #08fff0;
                     --teal-secondary: rgba(8, 255, 240, 0.1);

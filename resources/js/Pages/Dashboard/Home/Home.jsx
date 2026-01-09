@@ -150,7 +150,7 @@ export default function DashboardHome({
                 {/* <QuickToolsSection /> */}
             </div>
 
-            <style jsx>{`
+            <style>{`
                 .teal-glow {
                     box-shadow: 0 0 15px rgba(0, 230, 216, 0.3);
                 }

@@ -333,7 +333,7 @@ export default function DashboardLayout({ children, title = '', description = ''
             </div>
 
             {/* CSS Styles */}
-            <style jsx>{`
+            <style>{`
                 .sidebar-gradient {
                     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
                 }

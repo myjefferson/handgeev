@@ -232,7 +232,7 @@ const About = () => {
                 </div> */}
             </div>
 
-            <style jsx>{`
+            <style>{`
                 .gradient-text {
                     background: linear-gradient(90deg, #08fff0, #00b3a8);
                     -webkit-background-clip: text;

@@ -279,7 +279,7 @@ const Settings = ({ auth, settings }) => {
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 .animate-spin {
                     animation: spin 1s linear infinite;
                 }
