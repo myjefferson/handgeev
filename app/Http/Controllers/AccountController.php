@@ -147,8 +147,9 @@ class AccountController extends Controller
         return $priceIds[$planName] ?? null;
     }
     
-    public function showRecovery(){
-        return view('pages.auth.recovery-account');
+    public function showRecovery()
+    {
+        return Inertia::render('Auth/RecoveryAccount');
     }
 
     /**

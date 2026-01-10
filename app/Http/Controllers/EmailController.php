@@ -269,7 +269,10 @@ class EmailController extends Controller
                 'ip' => $request->ip()
             ]);
             
-            return redirect()->route('login.show')->with('status', 'Enviamos um link de recuperação para seu e-mail! O link expira em 60 minutos.');
+            return redirect()->route('login.show')->with([
+                'type' => 'info',
+                'message', 'Enviamos um link de recuperação para seu e-mail! O link expira em 60 minutos.'
+            ]);
         } catch (\Exception $e) {
             \Log::error('Erro ao enviar email de recuperação', [
                 'user_id' => $user->id,
