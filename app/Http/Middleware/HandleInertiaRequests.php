@@ -43,6 +43,7 @@ class HandleInertiaRequests extends Middleware
                         'language' => $user->language,
                         'timezone' => $user->timezone,
 
+                        'csrf_token' => csrf_token(),
                         'global_key_api' => $user->global_key_api,
                         
                         // Dados do plano

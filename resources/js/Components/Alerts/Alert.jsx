@@ -12,33 +12,60 @@ export default function Alert() {
 
         // Converte mensagens flash (status, success, error, etc)
         if (flash) {
-            Object.entries(flash).forEach(([type, message]) => {
-                if (message) {
-                    allMessages.push({
-                        type,
-                        message: Array.isArray(message)
-                            ? message.join(", ")
-                            : message,
-                        autoHide: true,
-                    });
+            Object.entries(flash).forEach(([type, content]) => {
+                if (content) {
+                    // Se for um objeto estruturado (com title, message, action)
+                    if (typeof content === 'object' && content !== null && !Array.isArray(content)) {
+                        // Extrai a mensagem do objeto
+                        const message = content.message || content.title || JSON.stringify(content);
+                        allMessages.push({
+                            type,
+                            message: message,
+                            list: null,
+                            autoHide: content.autoHide !== false,
+                        });
+                    } 
+                    // Se for uma string simples
+                    else if (typeof content === 'string') {
+                        allMessages.push({
+                            type,
+                            message: content,
+                            autoHide: true,
+                        });
+                    }
+                    // Se for um array (para compatibilidade)
+                    else if (Array.isArray(content)) {
+                        allMessages.push({
+                            type,
+                            message: content.join(", "),
+                            autoHide: true,
+                        });
+                    }
                 }
             });
         }
 
         // Mensagens de erro de validação
         if (errors && Object.keys(errors).length > 0) {
-            allMessages.push({
-                type: "error",
-                message:
-                    Object.keys(errors).length > 1
-                        ? `Existem ${Object.keys(errors).length} erros no formulário:`
-                        : Object.values(errors)[0],
-                list:
-                    Object.keys(errors).length > 1
-                        ? Object.values(errors)
-                        : null,
-                autoHide: false,
-            });
+            const errorMessages = Object.values(errors).flat();
+            
+            // Se houver apenas um erro, mostrar como mensagem simples
+            if (errorMessages.length === 1) {
+                allMessages.push({
+                    type: "error",
+                    message: errorMessages[0],
+                    autoHide: false,
+                });
+            } 
+            // Se houver múltiplos erros, mostrar com lista
+            else {
+                allMessages.push({
+                    type: "error",
+                    message: `Existem ${errorMessages.length} erros no formulário:`,
+                    list: errorMessages,
+                    autoHide: false,
+                });
+            }
         }
 
         setVisibleMessages(allMessages);

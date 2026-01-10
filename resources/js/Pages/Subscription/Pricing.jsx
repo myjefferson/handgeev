@@ -1,24 +1,76 @@
-import React from 'react';
-import { Head, usePage, useForm, Link } from '@inertiajs/react';
+import React, { useState } from 'react';
+import { Head, usePage, useForm, Link, router } from '@inertiajs/react';
 import SiteLayout from '@/Layouts/SiteLayout';
 
-export default function Pricing({ auth, currentPlan, stripePrices }){
+export default function Pricing({ auth, stripePrices }){
     const { props } = usePage();
     const { flash } = props;
+
+    // Estado para controlar o loading de cada botão individualmente
+    const [loadingStates, setLoadingStates] = useState({
+        start: false,
+        pro: false,
+        premium: false
+    });
 
     // Form para checkout
     const checkoutForm = useForm({
         price_id: '',
     });
 
-    const handleCheckout = (priceId) => {
+    const handleCheckout = async (priceId, planType) => {
+        // Ativa o loading para o botão específico
+        setLoadingStates(prev => ({
+            ...prev,
+            [planType]: true
+        }));
+
         checkoutForm.setData('price_id', priceId);
-        checkoutForm.post(route('subscription.checkout'));
+        
+        try {
+            // Usar fetch para fazer a requisição
+            const response = await fetch(route('subscription.checkout'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': auth.user.csrf_token,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({ price_id: priceId })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Erro ao processar checkout');
+            }
+
+            // Se retornar JSON com URL, redirecionar
+            const data = await response.json();
+            if (data.checkout_url) {
+                window.location.href = data.checkout_url;
+            } else {
+                // Se não tiver URL, usar o redirecionamento normal
+                window.location.href = response.url;
+            }
+
+        } catch (error) {
+            console.error('Erro no checkout:', error);
+            
+            // Desativa o loading do botão específico em caso de erro
+            setLoadingStates(prev => ({
+                ...prev,
+                [planType]: false
+            }));
+            
+            // Recarregar a página para mostrar o erro do flash
+            router.visit(route('subscription.pricing'));
+        }
     };
 
     // Helper para verificar plano atual
     const isCurrentPlan = (planType) => {
-        return currentPlan === planType;
+        return auth.user?.plan?.name === planType;
     };
 
     // Configurações dos planos
@@ -65,7 +117,7 @@ export default function Pricing({ auth, currentPlan, stripePrices }){
                 type: isCurrentPlan('start') ? 'current' : 'teal',
                 text: isCurrentPlan('start') ? 'Plano Atual' : (auth.user ? 'Assinar Agora' : 'Login para Assinar'),
                 icon: isCurrentPlan('start') ? 'fa-check' : (auth.user ? 'fa-bolt' : 'fa-sign-in-alt'),
-                action: isCurrentPlan('start') ? null : () => handleCheckout(stripePrices.start),
+                action: isCurrentPlan('start') ? null : () => handleCheckout(stripePrices.start, 'start'),
             }
         },
         {
@@ -89,7 +141,7 @@ export default function Pricing({ auth, currentPlan, stripePrices }){
                 type: isCurrentPlan('pro') ? 'current' : 'purple',
                 text: isCurrentPlan('pro') ? 'Plano Atual' : (auth.user ? 'Assinar Agora' : 'Login para Assinar'),
                 icon: isCurrentPlan('pro') ? 'fa-check' : (auth.user ? 'fa-crown' : 'fa-sign-in-alt'),
-                action: isCurrentPlan('pro') ? null : () => handleCheckout(stripePrices.pro),
+                action: isCurrentPlan('pro') ? null : () => handleCheckout(stripePrices.pro, 'pro'),
                 pulse: !isCurrentPlan('pro') && auth.user
             }
         },
@@ -114,7 +166,7 @@ export default function Pricing({ auth, currentPlan, stripePrices }){
                 type: isCurrentPlan('premium') ? 'current' : 'blue',
                 text: isCurrentPlan('premium') ? 'Plano Atual' : (auth.user ? 'Assinar Agora' : 'Login para Assinar'),
                 icon: isCurrentPlan('premium') ? 'fa-check' : (auth.user ? 'fa-rocket' : 'fa-sign-in-alt'),
-                action: isCurrentPlan('premium') ? null : () => handleCheckout(handleCheckout(stripePrices.premium)),
+                action: isCurrentPlan('premium') ? null : () => handleCheckout(stripePrices.premium, 'premium'),
             }
         }
     ];
@@ -218,33 +270,32 @@ export default function Pricing({ auth, currentPlan, stripePrices }){
             );
         }
 
-        if (buttonConfig.href) {
-            return (
-                <form action={buttonConfig.href} method="POST">
-                    <input type="hidden" name="_token" value={props.csrf_token} />
-                    <button type="submit" className={`${buttonConfig.type}-button w-full py-3 rounded-lg font-semibold`}>
-                        <i className={`fas ${buttonConfig.icon} mr-2`}></i>
-                        {buttonConfig.text}
-                    </button>
-                </form>
-            );
-        }
+        const isButtonLoading = loadingStates[plan.id];
 
         return (
             <button
                 type="button"
-                onClick={buttonConfig.action}
-                disabled={checkoutForm.processing}
-                className={`${buttonConfig.type}-button w-full py-3 rounded-lg font-semibold ${buttonConfig.pulse ? 'pulse' : ''} ${checkoutForm.processing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={() => buttonConfig.action?.()}
+                disabled={isButtonLoading || checkoutForm.processing}
+                className={`${buttonConfig.type}-button w-full py-3 rounded-lg font-semibold cursor-pointer ${buttonConfig.pulse ? 'pulse' : ''} ${isButtonLoading || checkoutForm.processing ? 'opacity-70' : ''}`}
             >
-                <i className={`fas ${buttonConfig.icon} mr-2`}></i>
-                {checkoutForm.processing ? 'Processando...' : buttonConfig.text}
+                {isButtonLoading ? (
+                    <>
+                        <i className="fas fa-spinner fa-spin mr-2"></i>
+                        Processando...
+                    </>
+                ) : (
+                    <>
+                        <i className={`fas ${buttonConfig.icon} mr-2`}></i>
+                        {buttonConfig.text}
+                    </>
+                )}
             </button>
         );
     };
 
     return (
-        <SiteLayout>
+    <SiteLayout>
             <Head title="Planos e Assinatura" description="Handgeev" />
 
             {/* Header */}
@@ -292,6 +343,14 @@ export default function Pricing({ auth, currentPlan, stripePrices }){
                     <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400">
                         <i className="fas fa-exclamation-circle mr-2"></i>
                         {Array.isArray(flash.error) ? flash.error.filter(item => typeof item === 'string').join(', ') : flash.error}
+                    </div>
+                )}
+
+                {/* Mensagem de Carregamento Global */}
+                {Object.values(loadingStates).some(state => state) && (
+                    <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400 flex items-center justify-center">
+                        <i className="fas fa-spinner fa-spin mr-2"></i>
+                        Processando sua assinatura. Aguarde um momento...
                     </div>
                 )}
 

@@ -12,7 +12,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use Spatie\Permission\Traits\HasRoles;
-use App\Models\Field;
+use App\Services\SubscriptionService;
 use App\Models\Topic;
 use Carbon\Carbon;
 use Stripe\Stripe;
@@ -508,19 +508,22 @@ class User extends Authenticatable implements JWTSubject
 
     public function getCurrentFieldsCount($workspaceId = null, $topicId = null): int
     {
-        $query = Field::query();
+        // Usa RecordFieldValue ao invés de Field
+        $query = RecordFieldValue::query();
         
-        //Sempre filtrar pelo usuário dono do workspace
-        $query->whereHas('topic.workspace', function($q) {
+        // Sempre filtrar pelo usuário dono do workspace
+        $query->whereHas('record.topic.workspace', function($q) {
             $q->where('user_id', $this->id);
         });
 
         if ($topicId) {
-            //Contar APENAS campos do tópico específico
-            $query->where('topic_id', $topicId);
+            // Contar APENAS campos do tópico específico
+            $query->whereHas('record', function($q) use ($topicId) {
+                $q->where('topic_id', $topicId);
+            });
         } elseif ($workspaceId) {
             // Contar apenas campos do workspace específico
-            $query->whereHas('topic', function($q) use ($workspaceId) {
+            $query->whereHas('record.topic', function($q) use ($workspaceId) {
                 $q->where('workspace_id', $workspaceId);
             });
         }
@@ -528,13 +531,15 @@ class User extends Authenticatable implements JWTSubject
         $count = $query->count();
         
         // Log para verificar exatamente o que está sendo contado
-        \Log::info("🔍 getCurrentFieldsCount", [
+        \Log::info("🔍 getCurrentFieldsCount (RecordFieldValue)", [
             'user_id' => $this->id,
             'workspace_id' => $workspaceId,
             'topic_id' => $topicId,
             'count' => $count,
             'query_topic_id' => $topicId ? "FILTERED by topic_id: $topicId" : "NOT FILTERED by topic",
-            'actual_topic_fields' => $topicId ? Field::where('topic_id', $topicId)->count() : 'N/A'
+            'actual_record_fields' => $topicId ? RecordFieldValue::whereHas('record', function($q) use ($topicId) {
+                $q->where('topic_id', $topicId);
+            })->count() : 'N/A'
         ]);
         
         return $count;
@@ -832,7 +837,11 @@ class User extends Authenticatable implements JWTSubject
             
         } catch (\Exception $e) {
             \Log::error('Erro em hasActiveStripeSubscription: ' . $e->getMessage());
-            return false;
+            
+            return back()->with([
+                'type' => 'error',
+                'message' => 'Erro ao processar checkout. Tente novamente.'
+            ], 500);
         }
     }
 
@@ -918,6 +927,138 @@ class User extends Authenticatable implements JWTSubject
         } catch (\Exception $e) {
             \Log::error('Erro ao buscar subscription do Stripe: ' . $e->getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Sobrescrever o método createAsStripeCustomer para evitar erro de duplicação
+     */
+    public function createAsStripeCustomer(array $options = [])
+    {
+        if (!empty($this->stripe_id)) {
+            throw new \Exception('Usuário já é um cliente Stripe');
+        }
+        
+        // Verificar se já existe no Stripe pelo email
+        try {
+            Stripe::setApiKey(config('cashier.secret'));
+            
+            $customers = \Stripe\Customer::all([
+                'email' => $this->email,
+                'limit' => 1
+            ]);
+            
+            if (count($customers->data) > 0) {
+                // Customer já existe no Stripe
+                $existingCustomer = $customers->data[0];
+                $this->stripe_id = $existingCustomer->id;
+                $this->save();
+                
+                \Log::info('Customer já existia no Stripe, recuperado:', [
+                    'stripe_id' => $this->stripe_id
+                ]);
+                
+                return $existingCustomer;
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Erro ao verificar customer existente: ' . $e->getMessage());
+        }
+        
+        // Se não existe, criar novo usando o método do trait Billable
+        // Primeiro precisamos garantir que o método existe no trait
+        if (method_exists($this, 'createAsStripeCustomerUsingTrait')) {
+            // Método alternativo se o trait tiver
+            return $this->createAsStripeCustomerUsingTrait($options);
+        }
+        
+        // Fallback: usar API direta do Stripe
+        try {
+            Stripe::setApiKey(config('cashier.secret'));
+            
+            $stripe = new \Stripe\StripeClient(config('cashier.secret'));
+            
+            $customer = $stripe->customers->create(array_merge([
+                'email' => $this->email,
+                'name' => $this->name ?? '',
+                'metadata' => [
+                    'user_id' => $this->id,
+                    'local_user_id' => $this->id,
+                ],
+            ], $options));
+            
+            $this->stripe_id = $customer->id;
+            $this->save();
+            
+            \Log::info('Novo customer criado via API direta:', [
+                'stripe_id' => $this->stripe_id
+            ]);
+            
+            return $customer;
+            
+        } catch (\Exception $e) {
+            \Log::error('Erro ao criar customer no Stripe: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Método alternativo para criar customer no Stripe (para uso no SubscriptionService)
+     */
+    public function createStripeCustomerDirect(array $options = [])
+    {
+        try {
+            Stripe::setApiKey(config('cashier.secret'));
+            
+            $stripe = new \Stripe\StripeClient(config('cashier.secret'));
+            
+            $customer = $stripe->customers->create(array_merge([
+                'email' => $this->email,
+                'name' => $this->name ?? '',
+                'metadata' => [
+                    'user_id' => $this->id,
+                    'local_user_id' => $this->id,
+                ],
+            ], $options));
+            
+            $this->stripe_id = $customer->id;
+            $this->save();
+            
+            \Log::info('Customer criado via método direto:', [
+                'stripe_id' => $this->stripe_id
+            ]);
+            
+            return $customer;
+            
+        } catch (\Stripe\Exception\InvalidRequestException $e) {
+            // Se o erro for "customer already exists", tentar recuperar
+            if (strpos($e->getMessage(), 'already exists') !== false) {
+                \Log::warning('Customer já existe, tentando recuperar:', [
+                    'email' => $this->email
+                ]);
+                
+                $customers = $stripe->customers->all([
+                    'email' => $this->email,
+                    'limit' => 1
+                ]);
+                
+                if (count($customers->data) > 0) {
+                    $existingCustomer = $customers->data[0];
+                    $this->stripe_id = $existingCustomer->id;
+                    $this->save();
+                    
+                    \Log::info('Customer recuperado após erro "already exists":', [
+                        'stripe_id' => $this->stripe_id
+                    ]);
+                    
+                    return $existingCustomer;
+                }
+            }
+            
+            \Log::error('Erro ao criar customer: ' . $e->getMessage());
+            throw $e;
+        } catch (\Exception $e) {
+            \Log::error('Erro geral ao criar customer: ' . $e->getMessage());
+            throw $e;
         }
     }
 

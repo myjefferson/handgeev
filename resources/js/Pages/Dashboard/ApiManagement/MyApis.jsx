@@ -85,45 +85,6 @@ export default function MyApis({ workspaces }) {
                                 Gerencie e visualize suas APIs ativas
                             </p>
                         </div>
-                        
-                        {/* Filtros Rápidos */}
-                        <div className="flex items-center gap-3">
-                            <div className="flex bg-slate-800 rounded-full p-1">
-                                <button
-                                    type="button"
-                                    className={`px-3 py-1 text-sm rounded-full ${
-                                        statusFilter === 'all' 
-                                            ? 'bg-teal-600 text-white' 
-                                            : 'text-slate-400 hover:text-white'
-                                    }`}
-                                    onClick={() => setStatusFilter('all')}
-                                >
-                                    Todas
-                                </button>
-                                <button
-                                    type="button"
-                                    className={`px-3 py-1 text-sm rounded-full ${
-                                        statusFilter === 'active' 
-                                            ? 'bg-teal-600 text-white' 
-                                            : 'text-slate-400 hover:text-white'
-                                    }`}
-                                    onClick={() => setStatusFilter('active')}
-                                >
-                                    Ativas
-                                </button>
-                                <button
-                                    type="button"
-                                    className={`px-3 py-1 text-sm rounded-full ${
-                                        statusFilter === 'inactive' 
-                                            ? 'bg-teal-600 text-white' 
-                                            : 'text-slate-400 hover:text-white'
-                                    }`}
-                                    onClick={() => setStatusFilter('inactive')}
-                                >
-                                    Inativas
-                                </button>
-                            </div>
-                        </div>
                     </div>
 
                     {/* Stats Cards */}
@@ -168,9 +129,9 @@ export default function MyApis({ workspaces }) {
                     {/* Barra de Pesquisa e Filtros */}
                     <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-6 mb-6">
                         <div className="flex flex-col justify-center lg:flex-row lg:items-center lg:justify-between gap-4">
-                            <div className="flex flex-col sm:flex-row gap-4 flex-1 justify-center">
+                            <div className="flex flex-col sm:flex-row gap-4 flex-1 items-center justify-between">
                                 {/* Barra de Pesquisa */}
-                                <div className="relative flex-1 max-w-md">
+                                <div className="relative flex-1 w-full max-w-md">
                                     <input
                                         type="text"
                                         value={searchTerm}
@@ -179,6 +140,44 @@ export default function MyApis({ workspaces }) {
                                         placeholder="Buscar APIs por nome..."
                                     />
                                     <i className="fas fa-search absolute left-3 top-3 text-slate-400"></i>
+                                </div>
+                                {/* Filtros Rápidos */}
+                                <div className="flex items-center gap-3">
+                                    <div className="flex bg-slate-800 rounded-full p-1">
+                                        <button
+                                            type="button"
+                                            className={`px-3 py-1 text-sm rounded-full ${
+                                                statusFilter === 'all' 
+                                                    ? 'bg-teal-600 text-white' 
+                                                    : 'text-slate-400 hover:text-white'
+                                            }`}
+                                            onClick={() => setStatusFilter('all')}
+                                        >
+                                            Todas
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`px-3 py-1 text-sm rounded-full ${
+                                                statusFilter === 'active' 
+                                                    ? 'bg-teal-600 text-white' 
+                                                    : 'text-slate-400 hover:text-white'
+                                            }`}
+                                            onClick={() => setStatusFilter('active')}
+                                        >
+                                            Ativas
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`px-3 py-1 text-sm rounded-full ${
+                                                statusFilter === 'inactive' 
+                                                    ? 'bg-teal-600 text-white' 
+                                                    : 'text-slate-400 hover:text-white'
+                                            }`}
+                                            onClick={() => setStatusFilter('inactive')}
+                                        >
+                                            Inativas
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

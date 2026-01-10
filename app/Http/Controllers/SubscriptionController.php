@@ -22,14 +22,6 @@ class SubscriptionController extends Controller
         $currentPlan = auth()->check() ? auth()->user()->getPlan() : null;
         
         return Inertia::render('Subscription/Pricing', [
-            'auth' => [
-                'user' => auth()->check() ? [
-                    'id' => auth()->user()->id,
-                    'name' => auth()->user()->name,
-                    'email' => auth()->user()->email,
-                ] : null
-            ],
-            'currentPlan' => $currentPlan,
             'stripePrices' => [
                 'start' => config('services.stripe.prices.start'),
                 'pro'   => config('services.stripe.prices.pro'),
@@ -49,62 +41,71 @@ class SubscriptionController extends Controller
         $request->validate([
             'price_id' => 'required|string'
         ]);
-
+        
         $user = Auth::user();
 
+        
         // Verificar se price_id é válido
         if (!$this->subscriptionService->isValidPriceId($request->price_id)) {
             \Log::error('Price ID inválido', ['price_id' => $request->price_id]);
-            return redirect()->route('subscription.pricing')
-                ->with('error', 'Plano selecionado é inválido.');
+            return back()->with('error', 'Plano selecionado é inválido.');
         }
-
+        
         \Log::info('Price ID válido, verificando situação atual...');
-
-        // Verificar se já tem assinatura ativa - AGORA COM UPGRADE
-        if ($user->hasActiveStripeSubscription()) {
-            $planInfo = $this->subscriptionService->getUserPlanInfo($user);
-            $novoPlano = $this->subscriptionService->getFriendlyPlanName($request->price_id);
-            
-            \Log::info('Usuário já tem assinatura, verificando upgrade...', [
-                'plano_atual' => $planInfo['friendly_name'],
-                'novo_plano' => $novoPlano
-            ]);
-
-            // Verificar se é upgrade ou mesmo plano
-            if ($this->subscriptionService->isSamePlan($user, $request->price_id)) {
-                \Log::warning('Usuário tentou assinar mesmo plano', [
-                    'plano' => $planInfo['friendly_name']
-                ]);
-                return redirect()->route('subscription.pricing')
-                    ->with('error', "Você já possui uma assinatura {$planInfo['friendly_name']} ativa.");
-            }
-
-            // É UPGRADE - permitir
-            \Log::info('Iniciando processo de upgrade...');
-            try {
-                $checkout = $this->subscriptionService->createUpgradeSession($user, $request->price_id);
-                \Log::info('Sessão de upgrade criada com sucesso', ['checkout_url' => $checkout->url]);
-                return $checkout;
-                
-            } catch (\Exception $e) {
-                \Log::error('Erro ao criar sessão de upgrade: ' . $e->getMessage());
-                return redirect()->route('subscription.pricing')
-                    ->with('error', 'Erro ao processar upgrade. Tente novamente.');
-            }
-        }
-
-        // ASSINATURA NOVA (usuário não tem assinatura ativa)
-        \Log::info('Criando nova assinatura...');
+        
         try {
-            $checkout = $this->subscriptionService->createCheckoutSession($user, $request->price_id);
-            \Log::info('Sessão criada com sucesso', ['checkout_url' => $checkout->url]);
-            return $checkout;
+            $checkoutUrl = null;
+            $isUpgrade = false;
             
+            // Verificar se já tem assinatura ativa
+            if ($user->hasActiveStripeSubscription()) {
+                $planInfo = $this->subscriptionService->getUserPlanInfo($user);
+                $novoPlano = $this->subscriptionService->getFriendlyPlanName($request->price_id);
+                
+                \Log::info('Usuário já tem assinatura, verificando upgrade...', [
+                    'plano_atual' => $planInfo['friendly_name'],
+                    'novo_plano' => $novoPlano
+                ]);
+
+                // Verificar se é upgrade ou mesmo plano
+                if ($this->subscriptionService->isSamePlan($user, $request->price_id)) {
+                    \Log::warning('Usuário tentou assinar mesmo plano', [
+                        'plano' => $planInfo['friendly_name']
+                    ]);
+                    return back()->with('error', "Você já possui uma assinatura {$planInfo['friendly_name']} ativa.");
+                }
+
+                // É UPGRADE
+                \Log::info('Iniciando processo de upgrade...');
+                $checkout = $this->subscriptionService->createUpgradeSession($user, $request->price_id);
+                $checkoutUrl = $checkout->url;
+                $isUpgrade = true;
+            } else {
+                // NOVA ASSINATURA
+                \Log::info('Criando nova assinatura...');
+                $checkout = $this->subscriptionService->createCheckoutSession($user, $request->price_id);
+                $checkoutUrl = $checkout->url;
+            }
+
+            \Log::info('Sessão criada com sucesso', ['checkout_url' => $checkoutUrl]);
+
+            // Retornar JSON para Inertia redirecionar
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'checkout_url' => $checkoutUrl,
+                    'is_upgrade' => $isUpgrade
+                ]);
+            }
+
+            // Redirecionar para a página de checkout do Stripe
+            return redirect($checkoutUrl);
+
         } catch (\Exception $e) {
             \Log::error('Erro no checkout: ' . $e->getMessage());
-            return redirect()->route('subscription.pricing')
-                ->with('error', 'Erro ao processar checkout. Tente novamente.');
+            return back()->with([
+                'type' => 'error',
+                'error' => 'Erro ao processar checkout. Tente novamente.'
+            ], 500);
         }
     }
 

@@ -22,8 +22,32 @@ class SubscriptionService
         ]);
         
         try {
-            // VERIFICAR SE O USUÁRIO JÁ É CUSTOMER NO STRIPE (mesmo sem stripe_id)
-            if (empty($user->stripe_id)) {
+            // CASO 1: Usuário já tem stripe_id (deve estar salvo no banco)
+            if (!empty($user->stripe_id)) {
+                \Log::info('Usuário já possui stripe_id, verificando validade', [
+                    'stripe_id' => $user->stripe_id
+                ]);
+                
+                try {
+                    Stripe::setApiKey(config('services.stripe.secret'));
+                    $customer = Customer::retrieve($user->stripe_id);
+                    \Log::info('Customer existente validado no Stripe');
+                } catch (\Stripe\Exception\InvalidRequestException $e) {
+                    \Log::warning('Customer não existe no Stripe, recriando', [
+                        'stripe_id_antigo' => $user->stripe_id,
+                        'erro' => $e->getMessage()
+                    ]);
+                    
+                    // Limpar stripe_id inválido
+                    $user->stripe_id = null;
+                    $user->save();
+                    
+                    // Chamar recursivamente para criar novo customer
+                    return $this->createCheckoutSession($user, $priceId);
+                }
+            } 
+            // CASO 2: Usuário não tem stripe_id mas pode já existir no Stripe
+            else {
                 \Log::info('Stripe ID vazio, verificando se usuário já existe no Stripe');
                 
                 try {
@@ -38,19 +62,31 @@ class SubscriptionService
                     if (count($customers->data) > 0) {
                         // Customer já existe no Stripe - recuperar o ID
                         $existingCustomer = $customers->data[0];
+                        
+                        \Log::info('Customer existente recuperado do Stripe', [
+                            'customer_id' => $existingCustomer->id,
+                            'email' => $existingCustomer->email
+                        ]);
+                        
+                        // Atualizar o stripe_id no banco
                         $user->stripe_id = $existingCustomer->id;
                         $user->save();
                         
-                        \Log::info('Customer existente recuperado do Stripe', [
-                            'stripe_id' => $user->stripe_id
+                        \Log::info('stripe_id atualizado no banco de dados', [
+                            'novo_stripe_id' => $user->stripe_id
                         ]);
                     } else {
                         // Criar novo customer
                         \Log::info('Criando novo customer no Stripe');
                         
-                        $user->createAsStripeCustomer([
+                        // Usar o método do Cashier corretamente
+                        $user->createStripeCustomerDirect([
                             'email' => $user->email,
                             'name' => $user->name,
+                            'metadata' => [
+                                'user_id' => $user->id,
+                                'local_user_id' => $user->id,
+                            ]
                         ]);
                         
                         \Log::info('Novo customer criado', [
@@ -58,42 +94,61 @@ class SubscriptionService
                         ]);
                     }
                     
-                } catch (\Exception $e) {
-                    \Log::error('Erro ao verificar/criar customer: ' . $e->getMessage());
-                    throw $e;
-                }
-            } else {
-                // Validar customer existente
-                try {
-                    Stripe::setApiKey(config('services.stripe.secret'));
-                    Customer::retrieve($user->stripe_id);
-                    \Log::info('Customer existente validado no Stripe');
                 } catch (\Stripe\Exception\InvalidRequestException $e) {
-                    \Log::warning('Customer não existe no Stripe, recriando', [
-                        'stripe_id_antigo' => $user->stripe_id,
-                        'erro' => $e->getMessage()
-                    ]);
-                    
-                    // Limpar stripe_id inválido e criar novo
-                    $user->stripe_id = null;
-                    $user->save();
-                    
-                    // Recursivamente chamar a função novamente
-                    return $this->createCheckoutSession($user, $priceId);
+                    // Tratar erro específico de "customer already exists"
+                    if (strpos($e->getMessage(), 'already exists') !== false) {
+                        \Log::warning('Customer já existe, tentando recuperar por email');
+                        
+                        // Tentar buscar novamente
+                        $customers = Customer::all([
+                            'email' => $user->email,
+                            'limit' => 1
+                        ]);
+                        
+                        if (count($customers->data) > 0) {
+                            $existingCustomer = $customers->data[0];
+                            $user->stripe_id = $existingCustomer->id;
+                            $user->save();
+                            
+                            \Log::info('Customer recuperado após erro "already exists"', [
+                                'stripe_id' => $user->stripe_id
+                            ]);
+                        }
+                    } else {
+                        \Log::error('Erro ao verificar/criar customer: ' . $e->getMessage());
+                        throw $e;
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Erro geral ao verificar/criar customer: ' . $e->getMessage());
+                    throw $e;
                 }
             }
         
             \Log::info('Iniciando criação do checkout', [
-                'stripe_id_final' => $user->stripe_id
+                'stripe_id_final' => $user->stripe_id,
+                'price_id' => $priceId
             ]);
             
+            // Verificar se já tem assinatura ativa
+            if ($user->hasActiveStripeSubscription()) {
+                \Log::info('Usuário já possui assinatura ativa, criando sessão de upgrade');
+                return $this->createUpgradeSession($user, $priceId);
+            }
+            
+            // Criar nova assinatura
             return $user->newSubscription('default', $priceId)
                 ->checkout([
                     'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
                     'cancel_url' => route('subscription.pricing'),
                     'customer_update' => ['address' => 'auto'],
                     'locale' => 'auto',
-                    'automatic_tax' => ['enabled' => false]
+                    'automatic_tax' => ['enabled' => false],
+                    'subscription_data' => [
+                        'metadata' => [
+                            'user_id' => $user->id,
+                            'user_email' => $user->email,
+                        ]
+                    ]
                 ]);
             
         } catch (\Exception $e) {

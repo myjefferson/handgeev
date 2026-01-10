@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Head, usePage, useForm, router } from '@inertiajs/react';
+import { Head, usePage, useForm, router, Link } from '@inertiajs/react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import Alert from '@/Components/Alerts/Alert';
 
@@ -233,15 +233,25 @@ const Billing = ({
                                                 {cancelForm.processing ? 'Processando...' : 'Cancelar Assinatura'}
                                             </button>
                                         )}
+                                        {
+                                            ['start', 'pro', 'premium'].includes(auth.user.plan.name) &&
+                                            <Link 
+                                                href={route('subscription.pricing')}
+                                                className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                                            >
+                                                <i class="fas fa-crown text-white w-3 h-3 mr-2 p-0"></i> Veja outros planos
+                                            </Link>
+                                        }
+                                        
                                     </div>
                                 ) : (
                                     <div className="mt-4">
-                                        <a 
+                                        <Link 
                                             href={route('subscription.pricing')}
                                             className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
                                         >
                                             Fazer Upgrade
-                                        </a>
+                                        </Link>
                                     </div>
                                 )}
                             </div>
