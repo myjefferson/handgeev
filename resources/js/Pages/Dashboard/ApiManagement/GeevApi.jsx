@@ -8,7 +8,6 @@ import ApiDocumentationTab from './Partials/GeevApi/ApiDocumentationTab';
 import ApiPermissionsTab from './Partials/GeevApi/ApiPermissionsTab';
 import ApiSettingsTab from './Partials/GeevApi/ApiSettingsTab';
 import Alert from '@/Components/Alerts/Alert';
-import Modal from '@/Components/Workspace/ApiManagement/GeevApi/Modals/Modal';
 import ConfirmModal from '@/Components/Workspace/ApiManagement/GeevApi/Modals/ConfirmModal';
 import JsonExampleModal from '@/Components/Workspace/ApiManagement/GeevApi/Modals/JsonExampleModal';
 import DomainManagementModal from '@/Components/Workspace/ApiManagement/GeevApi/Modals/DomainManagementModal';
