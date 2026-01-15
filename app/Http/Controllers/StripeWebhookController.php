@@ -153,35 +153,52 @@ class StripeWebhookController extends CashierController
                     'status_anterior' => $user->status
                 ]);
                 
-                // VERIFICAR SE É UMA INSTÂNCIA VÁLIDA DO MODEL USER
-                if ($user instanceof \App\Models\User) {
-                    $user->syncStripeSubscriptionStatus();
-                } else {
-                    \Log::error('Objeto user não é uma instância válida do Model User', [
-                        'tipo_objeto' => get_class($user),
-                        'user_data' => $user
-                    ]);
-                    return $this->successMethod();
-                }
+                // 1. Sincronizar com o Stripe
+                $user->syncStripeSubscriptionStatus();
                 
-                // Log da mudança
-                if (isset($payload['data']['object']['items']['data'][0]['price']['id'])) {
-                    $priceId = $payload['data']['object']['items']['data'][0]['price']['id'];
+                // 2. Buscar a subscription no Stripe para obter dados atualizados
+                $stripeSubscription = \Stripe\Subscription::retrieve($payload['data']['object']['id']);
+                
+                // 3. Atualizar ou criar a subscription local
+                if (!empty($stripeSubscription->items->data)) {
+                    $priceId = $stripeSubscription->items->data[0]->price->id;
                     $plan = $this->subscriptionService->getPlanByStripePriceId($priceId);
-                    \Log::info("Assinatura atualizada para {$plan->name} para usuário: {$user->email}");
+                    
+                    if ($plan) {
+                        // Atualizar subscription existente ou criar nova
+                        Subscription::updateOrCreate(
+                            [
+                                'stripe_subscription_id' => $stripeSubscription->id,
+                                'user_id' => $user->id
+                            ],
+                            [
+                                'plan_id' => $plan->id,
+                                'stripe_price_id' => $priceId,
+                                'status' => $stripeSubscription->status,
+                                'current_period_start' => Carbon::createFromTimestamp($stripeSubscription->current_period_start),
+                                'current_period_end' => Carbon::createFromTimestamp($stripeSubscription->current_period_end),
+                                'canceled_at' => $stripeSubscription->cancel_at_period_end ? now() : null,
+                                'ends_at' => $stripeSubscription->cancel_at_period_end ? 
+                                    Carbon::createFromTimestamp($stripeSubscription->current_period_end) : null
+                            ]
+                        );
+                        
+                        \Log::info("Subscription local atualizada via webhook", [
+                            'status' => $stripeSubscription->status,
+                            'plano' => $plan->name
+                        ]);
+                        
+                        // 4. Corrigir assinaturas duplicadas
+                        $this->subscriptionService->fixDuplicateSubscriptions($user);
+                    }
                 }
-            } else {
-                \Log::warning('Usuário não encontrado para customer: ' . $payload['data']['object']['customer']);
             }
 
             $this->logPaymentEvent($payload);
             return $this->successMethod();
             
         } catch (\Exception $e) {
-            \Log::error('Erro no handleCustomerSubscriptionUpdated: ' . $e->getMessage(), [
-                'exception' => $e,
-                'trace' => $e->getTraceAsString()
-            ]);
+            \Log::error('Erro no handleCustomerSubscriptionUpdated: ' . $e->getMessage());
             return $this->successMethod();
         }
     }

@@ -190,8 +190,16 @@ class SubscriptionService
                     'subscription_id' => $stripeSubscription->id,
                     'current_period_start' => $stripeSubscription->current_period_start,
                     'current_period_end' => $stripeSubscription->current_period_end,
-                    'created' => $stripeSubscription->created
+                    'cancel_at_period_end' => $stripeSubscription->cancel_at_period_end ?? false
                 ]);
+
+                // PRIMEIRO: Cancelar TODAS as subscriptions locais anteriores
+                Subscription::where('user_id', $user->id)
+                    ->where('status', 'active')
+                    ->update([
+                        'status' => 'canceled',
+                        'ends_at' => now()
+                    ]);
 
                 // SÓ PROCESSAR SE A SUBSCRIPTION ESTIVER ATIVA
                 if ($stripeSubscription->status === 'active' || $stripeSubscription->status === 'trialing') {
@@ -203,10 +211,10 @@ class SubscriptionService
                         $plan = $this->getPlanByStripePriceId($priceId);
                         
                         if ($plan) {
-                            // CALCULAR DATA DE EXPIRAÇÃO DE FORMA SEGURA
+                            // CALCULAR DATA DE EXPIRAÇÃO
                             $expiresAt = $this->calculateSubscriptionExpiry($stripeSubscription);
                             
-                            \Log::info('Ativando subscription com dados:', [
+                            \Log::info('Ativando nova subscription:', [
                                 'plano' => $plan->name,
                                 'expires_at' => $expiresAt,
                                 'price_id' => $priceId
@@ -217,22 +225,20 @@ class SubscriptionService
                             
                             \Log::info('Usuário ativado usando activateSubscription');
 
-                            // Registrar assinatura no banco com datas seguras
-                            Subscription::updateOrCreate(
-                                [
-                                    'stripe_subscription_id' => $session->subscription,
-                                    'user_id' => $user->id
-                                ],
-                                [
-                                    'plan_id' => $plan->id,
-                                    'stripe_price_id' => $priceId,
-                                    'status' => 'active',
-                                    'current_period_start' => now(),
-                                    'current_period_end' => $expiresAt,
-                                ]
-                            );
+                            // Registrar NOVA assinatura no banco
+                            Subscription::create([
+                                'stripe_subscription_id' => $stripeSubscription->id,
+                                'user_id' => $user->id,
+                                'plan_id' => $plan->id,
+                                'stripe_price_id' => $priceId,
+                                'status' => 'active',
+                                'current_period_start' => Carbon::createFromTimestamp($stripeSubscription->current_period_start),
+                                'current_period_end' => $expiresAt,
+                                'canceled_at' => null,
+                                'ends_at' => null
+                            ]);
 
-                            \Log::info('Processamento concluído com sucesso');
+                            \Log::info('Nova subscription criada com sucesso');
                             
                         } else {
                             throw new \Exception('Plano não encontrado para o price ID: ' . $priceId);
@@ -355,6 +361,14 @@ class SubscriptionService
             ->first();
 
         if ($localSubscription) {
+            // Verificar se o período atual já terminou
+            $isPeriodEnded = $localSubscription->current_period_end && 
+                            Carbon::parse($localSubscription->current_period_end)->isPast();
+
+            // Só consideramos ativa se o status for 'active' e o período não tiver terminado
+            $isActive = $localSubscription->status === 'active' && !$isPeriodEnded;
+
+            // Grace period: cancelada mas ainda dentro do período
             $isCanceledButActive = $localSubscription->canceled_at !== null &&
                                 $localSubscription->current_period_end &&
                                 Carbon::parse($localSubscription->current_period_end)->isFuture();
@@ -364,11 +378,11 @@ class SubscriptionService
                                 : null;
 
             return [
-                'has_subscription' => true,
+                'has_subscription' => $isActive || $isCanceledButActive,
                 'plan_name' => $localSubscription->plan->name ?? 'unknown',
                 'friendly_name' => $this->getFriendlyPlanName($localSubscription->stripe_price_id ?? ''),
                 'price_id' => $localSubscription->stripe_price_id ?? null,
-                'status' => $isCanceledButActive ? 'active' : $localSubscription->status,
+                'status' => $isCanceledButActive ? 'active' : ($isActive ? 'active' : $localSubscription->status),
                 'current_period_end' => $currentPeriodEnd,
                 'cancel_at_period_end' => $localSubscription->canceled_at !== null,
                 'on_grace_period' => $isCanceledButActive,
