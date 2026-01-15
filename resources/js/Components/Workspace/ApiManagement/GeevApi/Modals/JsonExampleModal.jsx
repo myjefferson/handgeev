@@ -1,6 +1,6 @@
 // resources/js/Components/Modals/JsonExampleModal.jsx
 import React from 'react';
-import Modal from '@/Components/Workspace/ApiManagement/GeevApi/Modals/Modal';
+import Modal from '@/Components/Modals/Modal';
 
 export default function JsonExampleModal({ 
     show = false, 

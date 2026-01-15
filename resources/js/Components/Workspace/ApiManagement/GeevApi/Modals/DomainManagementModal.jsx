@@ -1,7 +1,7 @@
 // resources/js/Components/Modals/DomainManagementModal.jsx
 import React, { useState } from 'react';
 import { useForm, usePage } from '@inertiajs/react';
-import Modal from '@/Components/Workspace/ApiManagement/GeevApi/Modals/Modal';
+import Modal from '@/Components/Modals/Modal';
 
 export default function DomainManagementModal({ 
     show = false, 

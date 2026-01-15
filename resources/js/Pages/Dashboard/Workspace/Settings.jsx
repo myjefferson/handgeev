@@ -11,6 +11,8 @@ import Alert from '@/Components/Alerts/Alert';
 
 export default function Settings({ workspace, hasPasswordWorkspace }) {
     const { auth } = usePage().props;
+
+    console.log(auth)
     const [activeTab, setActiveTab] = useState('overview');
     const [modals, setModals] = useState({
         delete: false,

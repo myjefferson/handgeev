@@ -218,50 +218,63 @@ class WorkspaceController extends Controller
     }
 
     /**
-     * Exclui um workspace.
+     * Exclui um workspace e todos os topicos e recors vinculados.
      */
     public function destroy(string $id)
     {
         try {
-            $workspace = Workspace::with(['topics.fields'])->findOrFail($id);
+            $workspace = Workspace::findOrFail($id);
 
-            if($workspace->user_id !== Auth::id()) {
+            if ($workspace->user_id !== Auth::id()) {
                 return response()->json([
                     'error' => 'Você não tem permissão para excluir este workspace'
                 ], 403);
             }
 
-            // CORREÇÃO: Contar os campos antes de deletar
-            $totalFields = 0;
-            foreach ($workspace->topics as $topic) {
-                $totalFields += $topic->fields->count();
-            }
+            DB::transaction(function () use ($workspace) {
 
-            // Primeiro: deletar todos os campos de todos os tópicos
-            // Usando whereHas para eficiência
-            Field::whereHas('topic', function($query) use ($id) {
-                $query->where('workspace_id', $id);
-            })->delete();
+                // 1️⃣ Apagar record_field_values
+                DB::table('record_field_values')
+                    ->whereIn('record_id', function ($query) use ($workspace) {
+                        $query->select('tr.id')
+                            ->from('topic_records as tr')
+                            ->join('topics as t', 't.id', '=', 'tr.topic_id')
+                            ->where('t.workspace_id', $workspace->id);
+                    })
+                    ->delete();
 
-            // Segundo: deletar todos os tópicos do workspace
-            Topic::where('workspace_id', $id)->delete();
+                // 2️⃣ Apagar topic_records
+                DB::table('topic_records')
+                    ->whereIn('topic_id', function ($query) use ($workspace) {
+                        $query->select('id')
+                            ->from('topics')
+                            ->where('workspace_id', $workspace->id);
+                    })
+                    ->delete();
 
-            // Terceiro: deletar o workspace
-            $workspace->delete();
+                // 3️⃣ Apagar topics
+                DB::table('topics')
+                    ->where('workspace_id', $workspace->id)
+                    ->delete();
+
+                // 4️⃣ Apagar workspace
+                DB::table('workspaces')
+                    ->where('id', $workspace->id)
+                    ->delete();
+            });
 
             return redirect(route('workspaces.show'))->with([
                 'success' => true,
-                'message' => 'Workspace excluído com sucesso',
-                'deleted_topics' => $workspace->topics->count(),
-                'deleted_fields' => $totalFields
+                'message' => 'Workspace excluído com sucesso'
             ]);
-        } catch(ModelNotFoundException $e) {
-            return redirect()->back()->withErrors($e->errors())->withInput();
-        } catch(\Exception $e) {
-            return redirect()->back()->withErrors($e->errors())->withInput();
+
+        } catch (ModelNotFoundException $e) {
+            return redirect()->back()->withErrors('Workspace não encontrado');
+        } catch (\Throwable $e) {
+            report($e);
+            return redirect()->back()->withErrors('Erro ao excluir workspace');
         }
     }
-
     
     public function stats(Workspace $workspace)
     {

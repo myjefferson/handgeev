@@ -1,6 +1,6 @@
 // resources/js/Components/Modals/ConfirmModal.jsx
 import React from 'react';
-import Modal from '@/Components/Workspace/ApiManagement/GeevApi/Modals/Modal';
+import Modal from '@/Components/Modals/Modal';
 
 export default function ConfirmModal({ 
     show = false, 
@@ -40,7 +40,7 @@ export default function ConfirmModal({
 
     return (
         <Modal show={show} onClose={onClose} maxWidth="md">
-            <div className="bg-slate-800 rounded-lg shadow border border-slate-700">
+            <div className="bg-slate-800 relative rounded-lg items-center z-10 shadow border border-slate-700">
                 <div className="p-4 md:p-5 text-center">
                     <i className={`${getIcon()} text-4xl mb-4`}></i>
                     <h3 className="text-lg font-normal text-white mb-5">{message}</h3>

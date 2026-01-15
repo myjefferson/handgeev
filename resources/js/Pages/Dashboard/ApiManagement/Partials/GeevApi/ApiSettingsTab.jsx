@@ -4,10 +4,12 @@ import { usePage, router, useForm } from '@inertiajs/react';
 import Modal from '@/Components/Workspace/ApiManagement/GeevApi/Modals/Modal';
 // import { useToast } from '@/Hooks/useToast';
 
-export default function ApiSettingsTab({ workspace }) {
+export default function ApiSettingsTab({ 
+    workspace,
+    setShowConfirmModal
+}) {
     const { auth } = usePage().props;
     // const { showToast } = useToast();
-    const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [modalConfig, setModalConfig] = useState({});
     const [domains, setDomains] = useState(workspace.allowed_domains || []);
     const [activeDomains, setActiveDomains] = useState([]);
@@ -643,36 +645,6 @@ export default function ApiSettingsTab({ workspace }) {
                     </div>
                 </div>
             </div>
-
-            {/* Modal de Confirmação */}
-            <Modal 
-                show={showConfirmModal} 
-                onClose={() => setShowConfirmModal(false)}
-                maxWidth="md"
-            >
-                <div className="bg-slate-800 rounded-lg shadow border border-slate-700">
-                    <div className="p-4 md:p-5 text-center">
-                        <i className="fas fa-exclamation-triangle text-amber-400 text-4xl mb-4"></i>
-                        <h3 className="text-lg font-normal text-white mb-5">{modalConfig.message}</h3>
-                        <div className="flex justify-center space-x-4">
-                            <button 
-                                onClick={modalConfig.action}
-                                disabled={processing}
-                                className="py-2 px-4 text-sm font-medium text-white bg-teal-500 rounded-lg hover:bg-teal-600 focus:ring-4 focus:outline-none focus:ring-teal-300 disabled:opacity-50"
-                            >
-                                {processing ? 'Processando...' : 'Confirmar'}
-                            </button>
-                            <button 
-                                onClick={() => setShowConfirmModal(false)}
-                                disabled={processing}
-                                className="py-2 px-4 text-sm font-medium text-slate-400 bg-slate-700 rounded-lg hover:bg-slate-600 hover:text-white focus:ring-4 focus:outline-none focus:ring-slate-600 disabled:opacity-50"
-                            >
-                                Cancelar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </Modal>
         </div>
     );
 }

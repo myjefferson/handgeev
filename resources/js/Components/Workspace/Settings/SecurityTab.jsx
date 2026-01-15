@@ -74,7 +74,7 @@ export default function SecurityTab({ workspace, auth }) {
                                 icon="desktop"
                             />
                             
-                            {['free', 'pro', 'premium', 'admin'].includes(auth.user.plan?.name.toLowerCase()) ? (
+                            {['start', 'pro', 'premium', 'admin'].includes(auth.user.plan?.name.toLowerCase()) ? (
                                 <ViewTypeOption
                                     id="json-geev-api"
                                     name="type_view_workspace"
