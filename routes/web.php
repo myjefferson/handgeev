@@ -91,7 +91,7 @@ Route::middleware(['languages'])->group(function(){
         });
     }); 
 
-    Route::get('/account/deactivated', function () { return view('pages.auth.account-deactivated');})->name('account.deactivated')->middleware('account.deactivated');
+    Route::get('/account/deactivated', [AccountController::class, 'showDeactivatedAccount'])->name('account.deactivated')->middleware('account.deactivated');
 });
 
 
