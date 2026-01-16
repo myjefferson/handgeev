@@ -31,7 +31,7 @@ export default function ExportDocumentationModal({
 
     return (
         <Modal show={show} onClose={onClose} maxWidth="lg">
-            <div className="bg-slate-800 rounded-lg p-6">
+            <div className="bg-slate-800 rounded-lg p-6 relative">
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-lg font-semibold text-white">Exportar Documentação</h3>
                     <button 

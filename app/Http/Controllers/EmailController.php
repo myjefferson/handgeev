@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Inertia\Inertia;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -315,19 +316,52 @@ class EmailController extends Controller
      */
     public function showVerifyCodeEmail()
     {
-        if(Auth::check()){
+        if (Auth::check()) {
             $user = Auth::user();
             
             if ($user->hasVerifiedEmail()) {
                 return redirect()->route('dashboard.home');
             }
 
+            // Enviar código de verificação
             $this->sendVerificationCode($user);
     
-            return view('pages.auth.verify-email', [
-                'email' => $user->email
+            return Inertia::render('Email/VerifyEmail', [
+                'email' => $user->email,
+                'translations' => [
+                    'title' => __('verification_email.title'),
+                    'header' => [
+                        'title' => __('verification_email.header.title'),
+                        'sent_to' => __('verification_email.header.sent_to'),
+                    ],
+                    'form' => [
+                        'code_label' => __('verification_email.form.code_label'),
+                        'code_placeholder' => __('verification_email.form.code_placeholder'),
+                        'submit_button' => __('verification_email.form.submit_button'),
+                        'resend_code' => __('verification_email.form.resend_code'),
+                        'change_email' => __('verification_email.form.change_email'),
+                        'logout' => __('verification_email.form.logout'),
+                    ],
+                    'modal' => [
+                        'title' => __('verification_email.modal.title'),
+                        'email_label' => __('verification_email.modal.email_label'),
+                        'cancel_button' => __('verification_email.modal.cancel_button'),
+                        'change_button' => __('verification_email.modal.change_button'),
+                    ],
+                    'messages' => [
+                        'code_expires' => __('verification_email.messages.code_expires'),
+                    ],
+                    'icons' => [
+                        'email' => __('verification_email.icons.email'),
+                        'check' => __('verification_email.icons.check'),
+                        'redo' => __('verification_email.icons.redo'),
+                        'edit' => __('verification_email.icons.edit'),
+                        'logout' => __('verification_email.icons.logout'),
+                    ]
+                ]
             ]);
         }
+        
         return redirect()->route('login.show');
     }
 

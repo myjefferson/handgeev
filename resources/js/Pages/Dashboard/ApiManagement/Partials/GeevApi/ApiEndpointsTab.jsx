@@ -11,7 +11,7 @@ export default function ApiEndpointsTab({ workspace }) {
 
     // Gerar estrutura de endpoints
     const generateEndpoints = () => {
-        const baseWorkspacePath = `/api/workspaces/${workspace.id}`;
+        const baseWorkspacePath = `/api/v1/workspaces/${workspace.id}`;
         const baseUrl = window.location.origin;
 
         return {
@@ -180,8 +180,8 @@ export default function ApiEndpointsTab({ workspace }) {
                 },
                 {
                     method: 'GET',
-                    path: `/api/topics/{topicId}`,
-                    full_url: `${baseUrl}/api/topics/{topicId}`,
+                    path: `/api/v1/topics/{topicId}`,
+                    full_url: `${baseUrl}/api/v1/topics/{topicId}`,
                     description: 'Obter detalhes de um tópico específico com todos os campos',
                     parameters: [
                         { name: 'topicId', optional: false, description: 'ID do tópico' }
@@ -207,8 +207,8 @@ export default function ApiEndpointsTab({ workspace }) {
                 },
                 {
                     method: 'PUT',
-                    path: `/api/topics/{topicId}`,
-                    full_url: `${baseUrl}/api/topics/{topicId}`,
+                    path: `/api/v1/topics/{topicId}`,
+                    full_url: `${baseUrl}/api/v1/topics/{topicId}`,
                     description: 'Atualizar tópico',
                     parameters: [
                         { name: 'topicId', optional: false, description: 'ID do tópico' },
@@ -222,8 +222,8 @@ export default function ApiEndpointsTab({ workspace }) {
                 },
                 {
                     method: 'DELETE',
-                    path: `/api/topics/{topicId}`,
-                    full_url: `${baseUrl}/api/topics/{topicId}`,
+                    path: `/api/v1/topics/{topicId}`,
+                    full_url: `${baseUrl}/api/v1/topics/{topicId}`,
                     description: 'Excluir tópico',
                     parameters: [
                         { name: 'topicId', optional: false, description: 'ID do tópico' }
@@ -233,8 +233,8 @@ export default function ApiEndpointsTab({ workspace }) {
             fields: [
                 {
                     method: 'GET',
-                    path: `/api/topics/{topicId}/fields`,
-                    full_url: `${baseUrl}/api/topics/{topicId}/fields`,
+                    path: `/api/v1/topics/{topicId}/fields`,
+                    full_url: `${baseUrl}/api/v1/topics/{topicId}/fields`,
                     description: 'Listar todos os campos de um tópico',
                     parameters: [
                         { name: 'topicId', optional: false, description: 'ID do tópico' },
@@ -272,8 +272,8 @@ export default function ApiEndpointsTab({ workspace }) {
                 },
                 {
                     method: 'POST',
-                    path: `/api/topics/{topicId}/fields`,
-                    full_url: `${baseUrl}/api/topics/{topicId}/fields`,
+                    path: `/api/v1/topics/{topicId}/fields`,
+                    full_url: `${baseUrl}/api/v1/topics/{topicId}/fields`,
                     description: 'Criar novo campo em um tópico',
                     parameters: [
                         { name: 'topicId', optional: false, description: 'ID do tópico' },
@@ -293,8 +293,8 @@ export default function ApiEndpointsTab({ workspace }) {
                 },
                 {
                     method: 'GET',
-                    path: `/api/fields/{fieldId}`,
-                    full_url: `${baseUrl}/api/fields/{fieldId}`,
+                    path: `/api/v1/fields/{fieldId}`,
+                    full_url: `${baseUrl}/api/v1/fields/{fieldId}`,
                     description: 'Obter detalhes de um campo específico',
                     parameters: [
                         { name: 'fieldId', optional: false, description: 'ID do campo' }
@@ -315,8 +315,8 @@ export default function ApiEndpointsTab({ workspace }) {
                 },
                 {
                     method: 'PUT',
-                    path: `/api/fields/{fieldId}`,
-                    full_url: `${baseUrl}/api/fields/{fieldId}`,
+                    path: `/api/v1/fields/{fieldId}`,
+                    full_url: `${baseUrl}/api/v1/fields/{fieldId}`,
                     description: 'Atualizar campo',
                     parameters: [
                         { name: 'fieldId', optional: false, description: 'ID do campo' },
@@ -336,8 +336,8 @@ export default function ApiEndpointsTab({ workspace }) {
                 },
                 {
                     method: 'PATCH',
-                    path: `/api/fields/{fieldId}/visibility`,
-                    full_url: `${baseUrl}/api/fields/{fieldId}/visibility`,
+                    path: `/api/v1/fields/{fieldId}/visibility`,
+                    full_url: `${baseUrl}/api/v1/fields/{fieldId}/visibility`,
                     description: 'Atualizar apenas a visibilidade do campo',
                     parameters: [
                         { name: 'fieldId', optional: false, description: 'ID do campo' },
@@ -349,8 +349,8 @@ export default function ApiEndpointsTab({ workspace }) {
                 },
                 {
                     method: 'DELETE',
-                    path: `/api/fields/{fieldId}`,
-                    full_url: `${baseUrl}/api/fields/{fieldId}`,
+                    path: `/api/v1/fields/{fieldId}`,
+                    full_url: `${baseUrl}/api/v1/fields/{fieldId}`,
                     description: 'Excluir campo',
                     parameters: [
                         { name: 'fieldId', optional: false, description: 'ID do campo' }
@@ -552,7 +552,7 @@ export default function ApiEndpointsTab({ workspace }) {
                                                     POST
                                                 </span>
                                                 <code className="text-cyan-300 text-sm">
-                                                    {window.location.origin}/api/auth/login/token
+                                                    {window.location.origin}/api/v1/auth/login/token
                                                 </code>
                                             </div>
                                             <p className="text-slate-300 text-sm mb-3">

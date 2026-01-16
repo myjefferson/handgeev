@@ -53,7 +53,7 @@ export default function RateLimitModal({
 
     return (
         <Modal show={show} onClose={onClose} maxWidth="md">
-            <div className="bg-slate-800 rounded-lg p-6">
+            <div className="bg-slate-800 rounded-lg p-6 relative">
                 <div className="flex justify-between items-center mb-6">
                     <div>
                         <h3 className="text-lg font-semibold text-white">Limites de Requisição</h3>
@@ -61,7 +61,7 @@ export default function RateLimitModal({
                     </div>
                     <button 
                         onClick={onClose}
-                        className="text-slate-400 hover:text-white"
+                        className="text-slate-400 hover:text-white cursor-pointer"
                     >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>

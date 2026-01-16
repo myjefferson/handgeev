@@ -131,7 +131,7 @@ export default function GeevApi({ workspace, rateLimitData }) {
                                 {/* Botão para abrir modal de Rate Limit */}
                                 <button 
                                     onClick={() => setShowRateLimitModal(true)}
-                                    className="flex items-center text-cyan-400 hover:text-cyan-300 transition-colors text-sm"
+                                    className="flex items-center text-cyan-400 hover:text-cyan-300 transition-colors text-sm cursor-pointer"
                                 >
                                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
@@ -140,7 +140,7 @@ export default function GeevApi({ workspace, rateLimitData }) {
                                 </button>
                                 <button 
                                     onClick={handleBack}
-                                    className="flex items-center text-cyan-400 hover:text-cyan-300 transition-colors"
+                                    className="flex items-center text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer"
                                 >
                                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
@@ -186,12 +186,12 @@ export default function GeevApi({ workspace, rateLimitData }) {
                                     <div>
                                         <h3 className="text-lg font-semibold text-white">Base URL</h3>
                                         <p className="text-slate-300 font-mono text-sm mt-1">
-                                            {window.location.origin}/api
+                                            {window.location.origin}/api/v1
                                         </p>
                                     </div>
                                     <button 
                                         onClick={() => copyToClipboard(`${window.location.origin}/api`)}
-                                        className="p-2 text-cyan-400 hover:text-cyan-300 transition-colors"
+                                        className="p-2 text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer"
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
@@ -253,7 +253,7 @@ export default function GeevApi({ workspace, rateLimitData }) {
                                                                 title: 'Gerar Workspace Key',
                                                                 message: 'Deseja gerar uma nova Workspace Key? Esta chave será usada para autenticar todas as requisições à API.',
                                                                 action: () => {
-                                                                    router.post(`/api/${workspace.id}/generate-api-key`);
+                                                                    router.post(`/api/v1/${workspace.id}/generate-api-key`);
                                                                     setShowConfirmModal(false);
                                                                 },
                                                                 type: 'info'
@@ -290,7 +290,7 @@ export default function GeevApi({ workspace, rateLimitData }) {
                                 {tabs.map((tab) => (
                                     <li key={tab.id} className="mr-2" role="presentation">
                                         <button
-                                            className={`inline-block p-4 border-b-2 rounded-t-lg flex items-center transition-colors ${
+                                            className={`inline-block cursor-pointer p-4 border-b-2 rounded-t-lg flex items-center transition-colors ${
                                                 activeTab === tab.id
                                                     ? 'text-cyan-400 border-cyan-400'
                                                     : 'text-slate-400 border-transparent hover:text-slate-300 hover:border-slate-300'
