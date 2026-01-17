@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Inertia\Inertia;
 use App\Models\User;
 use App\Models\Plan;
+use App\Models\Structure;
+use App\Models\StructureField;
 use App\Models\RecordFieldValue;
 use App\Services\HashService;
 use App\Services\SubscriptionService;
@@ -120,6 +122,9 @@ class UserController extends Controller
                 ]);
             }
 
+            // Criar estruturas padrão para o usuário
+            $this->createDefaultStructures($user);
+
             // Enviar email de verificação
             Mail::to($user->email)->queue(new VerificationEmail($user, $verificationCode));
 
@@ -189,6 +194,74 @@ class UserController extends Controller
             return redirect()->back()
                 ->with('error', 'Erro ao atualizar perfil: ' . $e->getMessage())
                 ->withInput();
+        }
+    }
+
+    /**
+     * Cria estruturas padrão para um novo usuário
+     */
+    private function createDefaultStructures(User $user): void
+    {
+        // 1. Estrutura de Key-Value (Chave e Valor) - A MAIS IMPORTANTE
+        $keyValueStructure = Structure::create([
+            'user_id' => $user->id,
+            'name' => 'Key-Value',
+            'description' => 'Estrutura básica de pares chave-valor para armazenamento simples',
+            'is_public' => false,
+        ]);
+
+        // Campos da estrutura Key-Value
+        $keyValueFields = [
+            ['name' => 'chave', 'type' => 'text', 'default_value' => '', 'is_required' => true, 'order' => 1],
+            ['name' => 'valor', 'type' => 'text', 'default_value' => '', 'is_required' => false, 'order' => 2],
+            ['name' => 'ativo', 'type' => 'boolean', 'default_value' => 'true', 'is_required' => true, 'order' => 6],
+        ];
+
+        foreach ($keyValueFields as $fieldData) {
+            StructureField::create(array_merge($fieldData, ['structure_id' => $keyValueStructure->id]));
+        }
+
+        // Estrutura de Produtos
+        $productStructure = Structure::create([
+            'user_id' => $user->id,
+            'name' => 'Produtos',
+            'description' => 'Estrutura para gerenciamento de produtos',
+            'is_public' => false,
+        ]);
+
+        // Campos da estrutura de Produtos
+        $productFields = [
+            ['name' => 'Nome', 'type' => 'text', 'is_required' => true, 'order' => 1],
+            ['name' => 'Descrição', 'type' => 'text', 'is_required' => false, 'order' => 2],
+            ['name' => 'Preço', 'type' => 'decimal', 'is_required' => true, 'order' => 3],
+            ['name' => 'Estoque', 'type' => 'number', 'is_required' => true, 'order' => 4],
+            ['name' => 'Ativo', 'type' => 'boolean', 'is_required' => true, 'order' => 5, 'default_value' => 'true'],
+            ['name' => 'Data de Criação', 'type' => 'datetime', 'is_required' => false, 'order' => 6],
+        ];
+
+        foreach ($productFields as $field) {
+            StructureField::create(array_merge($field, ['structure_id' => $productStructure->id]));
+        }
+
+        // Estrutura de Usuários
+        $userStructure = Structure::create([
+            'user_id' => $user->id,
+            'name' => 'Usuários',
+            'description' => 'Estrutura padrão para gerenciamento de usuários',
+            'is_public' => false,
+        ]);
+
+        // Campos da estrutura de Usuários
+        $userFields = [
+            ['name' => 'Nome', 'type' => 'text', 'is_required' => true, 'order' => 1],
+            ['name' => 'Email', 'type' => 'email', 'is_required' => true, 'order' => 2],
+            ['name' => 'Telefone', 'type' => 'text', 'is_required' => false, 'order' => 3],
+            ['name' => 'Data de Nascimento', 'type' => 'date', 'is_required' => false, 'order' => 4],
+            ['name' => 'Ativo', 'type' => 'boolean', 'is_required' => true, 'order' => 5, 'default_value' => 'true'],
+        ];
+
+        foreach ($userFields as $field) {
+            StructureField::create(array_merge($field, ['structure_id' => $userStructure->id]));
         }
     }
 

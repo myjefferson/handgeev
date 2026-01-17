@@ -25,7 +25,7 @@ const AccountDeactivated = () => {
     };
 
     const handleLogout = () => {
-        router.post(route('logout'));
+        router.get(route('logout'));
     };
 
     return (

@@ -190,14 +190,6 @@ export default function Register() {
                                     {/*Alert Messagens*/}
                                     <Alert/>
 
-                                    {/* Mensagens de Erro */}
-                                    {errors && Object.keys(errors).length > 0 && (
-                                        <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
-                                            <i className="fas fa-exclamation-circle mr-2"></i>
-                                            {Object.values(errors)[0]}
-                                        </div>
-                                    )}
-
                                     {/* Informações do Plano Selecionado */}
                                     {planInfo && (
                                         <div className="mb-6 p-4 bg-gradient-to-r from-teal-500/10 to-purple-500/10 border border-teal-400/30 rounded-xl slide-down-animation">

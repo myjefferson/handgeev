@@ -324,7 +324,7 @@ class EmailController extends Controller
             }
 
             // Enviar código de verificação
-            $this->sendVerificationCode($user);
+            // $this->sendVerificationCode($user);
     
             return Inertia::render('Email/VerifyEmail', [
                 'email' => $user->email,
