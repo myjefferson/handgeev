@@ -86,8 +86,9 @@ class AccountController extends Controller
             ]);
         }
 
-        // Verificar se o email foi confirmado
-        if (!$user->email_verified) {
+        // MODIFICAÇÃO AQUI: Pular verificação de email para usuários do Google
+        // Verificar se o email foi confirmado, mas pular para usuários Google
+        if (!$user->email_verified && empty($user->google_id)) {
             Auth::login($user);
             $request->session()->regenerate();
 

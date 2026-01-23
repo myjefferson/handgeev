@@ -46,7 +46,7 @@ const LanguageSwitcher = () => {
         <div className="relative" ref={dropdownRef}>
             <button 
                 onClick={toggleDropdown}
-                className="flex items-center justify-between w-full px-4 py-2 text-sm font-medium text-gray-300 bg-slate-800 border border-slate-600 rounded-lg hover:bg-slate-700 hover:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors duration-200"
+                className="flex items-center justify-between w-full px-4 py-2 text-sm font-medium text-gray-300 bg-slate-800 border border-slate-600 rounded-lg hover:bg-slate-700 hover:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors duration-200 cursor-pointer"
                 type="button"
             >
                 <div className="flex items-center space-x-2">

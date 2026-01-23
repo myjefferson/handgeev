@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Crypt;
 use App\Models\Workspace;
 use App\Models\Topic;
 use App\Models\User;
+use App\Models\InputConnection;
 use Illuminate\Http\Request;
 use Auth;
 
@@ -50,6 +51,13 @@ class WorkspaceSharedController extends Controller
             $firstField = $firstTopic->records->first()->fieldValues->first();
         }
 
+        // $workspace->load(['topics.structure', 'topics.fields']);
+
+        $inputConnections = InputConnection::where('workspace_id', $workspace->id)
+            ->with(['structure', 'triggerField', 'source', 'mappings.targetField'])
+            ->orderBy('execution_order')
+            ->get();
+
         // Preparar dados para envio
         $sharedData = [
             'workspace' => [
@@ -87,10 +95,11 @@ class WorkspaceSharedController extends Controller
                 'first_topic_id' => $firstTopic?->id,
                 'first_field_id' => $firstField?->structure_field_id,
                 'base_url' => url('/api')
-            ]
+            ],
+            'inputConnections' => $inputConnections,
         ];
 
-        return Inertia::render('Dashboard/ApiManagement/GeevStudio', $sharedData);
+        return Inertia::render('Dashboard/ApiManagement/GeevStudio/GeevStudio', $sharedData);
     }
 
     // Seu WorkspaceController - ADICIONAR ESTE MÉTODO

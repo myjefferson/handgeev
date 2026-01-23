@@ -46,6 +46,7 @@ class User extends Authenticatable implements JWTSubject
         'name',
         'surname',
         'password',
+        'google_id',
         'avatar',
         'email_verified_at',
         'plan_expires_at',
@@ -166,9 +167,22 @@ class User extends Authenticatable implements JWTSubject
     /**
      * Verifica se o email foi verificado
      */
-    public function hasVerifiedEmail(): bool
+    public function hasVerifiedEmail()
     {
-        return $this->email_verified;
+        // Para usuários Google, considerar sempre verificado
+        if (!empty($this->google_id) || $this->provider_name === 'google') {
+            return true;
+        }
+        
+        return $this->email_verified && $this->email_verified_at !== null;
+    }
+
+    public function markEmailAsVerified()
+    {
+        $this->forceFill([
+            'email_verified' => true,
+            'email_verified_at' => $this->freshTimestamp(),
+        ])->save();
     }
 
     /**

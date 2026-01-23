@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import GoogleButton from '@/Components/Buttons/GoogleButton';
 import Alert from '@/Components/Alerts/Alert';
 
 import SiteLayout from "@/Layouts/SiteLayout";
@@ -142,16 +143,18 @@ export default function Login() {
                                 <button 
                                     type="submit" 
                                     disabled={processing}
-                                    className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-slate-900 bg-gradient-to-r from-teal-400 to-teal-600 hover:from-teal-300 hover:to-teal-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="group relative w-full flex justify-center py-3 mb-5 px-4 border border-transparent text-sm font-medium rounded-lg text-slate-900 bg-gradient-to-r from-teal-400 to-teal-600 hover:from-teal-300 hover:to-teal-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                 >
                                     <span className="absolute left-0 inset-y-0 flex items-center pl-3">
                                         <i className="fas fa-sign-in-alt"></i>
                                     </span>
                                     {processing ? 'Entrando...' : __('submit_button')}
                                 </button>
+                                <GoogleButton/>
                             </div>
                         </form>
 
+                        
                         <div className="mt-6 text-center">
                             <p className="text-sm text-slate-400">
                                 {__('no_account')}

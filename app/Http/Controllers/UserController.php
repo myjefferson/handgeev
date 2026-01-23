@@ -242,27 +242,6 @@ class UserController extends Controller
         foreach ($productFields as $field) {
             StructureField::create(array_merge($field, ['structure_id' => $productStructure->id]));
         }
-
-        // Estrutura de Usuários
-        $userStructure = Structure::create([
-            'user_id' => $user->id,
-            'name' => 'Usuários',
-            'description' => 'Estrutura padrão para gerenciamento de usuários',
-            'is_public' => false,
-        ]);
-
-        // Campos da estrutura de Usuários
-        $userFields = [
-            ['name' => 'Nome', 'type' => 'text', 'is_required' => true, 'order' => 1],
-            ['name' => 'Email', 'type' => 'email', 'is_required' => true, 'order' => 2],
-            ['name' => 'Telefone', 'type' => 'text', 'is_required' => false, 'order' => 3],
-            ['name' => 'Data de Nascimento', 'type' => 'date', 'is_required' => false, 'order' => 4],
-            ['name' => 'Ativo', 'type' => 'boolean', 'is_required' => true, 'order' => 5, 'default_value' => 'true'],
-        ];
-
-        foreach ($userFields as $field) {
-            StructureField::create(array_merge($field, ['structure_id' => $userStructure->id]));
-        }
     }
 
     /**
@@ -442,8 +421,9 @@ class UserController extends Controller
             return redirect()->route('login.show');
         }
 
-        // Verificar se o email foi verificado
-        if (!$user->hasVerifiedEmail()) {
+        // MODIFICAÇÃO: Pular verificação para usuários Google
+        // Verificar se o email foi verificado (exceto para Google)
+        if (!$user->hasVerifiedEmail() && empty($user->google_id)) {
             return redirect()->route('verify.code.email.show')
                 ->with('error', 'Por favor, verifique seu email antes de escolher um plano.');
         }

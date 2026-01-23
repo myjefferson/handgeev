@@ -22,6 +22,8 @@ use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\ApiManagementController;
 use App\Http\Controllers\StructureController;
 use App\Http\Controllers\RecordController;
+use App\Http\Controllers\InputConnectionController;
+use App\Http\Controllers\Auth\GoogleController;
 
 use App\Http\Controllers\StripeWebhookController;
 
@@ -58,6 +60,9 @@ Route::middleware(['languages'])->group(function(){
         Route::get('/support/recovery-password/{token}','showResetForm')->name('recovery.password.show');
         Route::post('/support/recovery-password','updatePasswordRecovery')->name('recovery.password.update');
     });
+
+    Route::get('/auth/google', [GoogleController::class, 'redirect'])->name('google.login');
+    Route::get('/auth/google/callback', [GoogleController::class, 'callback']);
     
     Route::controller(EmailController::class)->group(function(){
         Route::get('/email/verify/code/form', 'showVerifyCodeEmail')->name('verify.code.email.show');
@@ -280,6 +285,10 @@ Route::middleware([
             Route::put('/jwt-requirement/toggle', 'toggleJwtRequirement')->name('workspace.api.jwt-requirement.toggle');
         });
     });
+
+    Route::get('/workspaces/{workspace}/input-connections/{connection}/logs', [InputConnectionController::class, 'logs'])->name('workspaces.input-connections.logs');
+    Route::post('/workspaces/{workspace}/input-connections/{connection}/execute', [InputConnectionController::class, 'execute'])->name('workspaces.input-connections.execute');
+    Route::resource('workspaces.input-connections', InputConnectionController::class)->except(['show']);
 });
 
 Route::middleware(['account.deactivated'])->group(function () {

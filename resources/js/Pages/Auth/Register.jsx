@@ -343,7 +343,7 @@ export default function Register() {
                                             <button 
                                                 type="submit" 
                                                 disabled={processing}
-                                                className={`teal-glow w-full text-slate-900 focus:ring-4 focus:outline-none focus:ring-teal-300 font-medium rounded-lg text-md px-5 py-3.5 text-center transition-colors ${
+                                                className={`teal-glow w-full text-slate-900 focus:ring-4 focus:outline-none focus:ring-teal-300 font-medium rounded-lg text-md px-5 py-3.5 text-center transition-colors cursor-pointer ${
                                                     planInfo 
                                                         ? 'bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700' 
                                                         : 'bg-teal-400 hover:bg-teal-500'

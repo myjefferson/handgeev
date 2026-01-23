@@ -111,6 +111,7 @@ CREATE TABLE users (
     surname VARCHAR(30),
     avatar VARCHAR(255) NULL,
     email VARCHAR(40) NOT NULL UNIQUE, -- Adicionando UNIQUE para emails
+    email_verified BOOLEAN NOT NULL DEFAULT FALSE, -- BOOLEAN substitui TINYINT(1)
     email_verified_at TIMESTAMP WITH TIME ZONE NULL,
     timezone VARCHAR(50) DEFAULT 'UTC',
     language VARCHAR(10) DEFAULT 'pt_BR',
@@ -119,7 +120,10 @@ CREATE TABLE users (
     global_key_api TEXT,
     email_verification_code VARCHAR(255) NULL,
     email_verification_sent_at TIMESTAMP WITH TIME ZONE NULL,
-    email_verified BOOLEAN NOT NULL DEFAULT FALSE, -- BOOLEAN substitui TINYINT(1)
+
+    -- Colunas para autenticação social (Google)
+    google_id VARCHAR(255) NULL,
+    provider_name VARCHAR(50) NULL,
     
     stripe_id VARCHAR(255) NULL,
     pm_type VARCHAR(255) NULL,
@@ -135,6 +139,10 @@ CREATE TABLE users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     delete_at TIMESTAMP WITH TIME ZONE NULL
 );
+
+-- Índices para autenticação social
+CREATE INDEX idx_users_google_id ON users(google_id);
+CREATE INDEX idx_users_email_provider ON users(email, provider_name);
 
 -- Aplica o trigger ON UPDATE CURRENT_TIMESTAMP
 CREATE TRIGGER update_users_updated_at
@@ -762,6 +770,77 @@ BEGIN
     RETURN new_structure_id;
 END;
 $$;
+
+
+-- Tabela input_connections
+CREATE TABLE input_connections (
+    id SERIAL PRIMARY KEY,
+    workspace_id INTEGER NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    structure_id INTEGER NOT NULL REFERENCES structures(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    is_active BOOLEAN DEFAULT true,
+    trigger_field_id INTEGER REFERENCES structure_fields(id) ON DELETE SET NULL,
+    execution_order INTEGER DEFAULT 1,
+    timeout_seconds INTEGER DEFAULT 30,
+    prevent_loops BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- Índices para input_connections
+CREATE INDEX idx_input_connections_workspace_id ON input_connections(workspace_id);
+CREATE INDEX idx_input_connections_structure_id ON input_connections(structure_id);
+CREATE INDEX idx_input_connections_trigger_field_id ON input_connections(trigger_field_id);
+
+-- Tabela input_connection_sources
+CREATE TABLE input_connection_sources (
+    id SERIAL PRIMARY KEY,
+    input_connection_id INTEGER NOT NULL REFERENCES input_connections(id) ON DELETE CASCADE,
+    type VARCHAR(50) NOT NULL CHECK (type IN ('rest_api', 'webhook', 'csv', 'excel', 'form')),
+    config JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
+    updated_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL
+);
+
+-- Índices para input_connection_sources
+CREATE INDEX idx_input_connection_sources_input_connection_id ON input_connection_sources(input_connection_id);
+CREATE INDEX idx_input_connection_sources_type ON input_connection_sources(type);
+
+-- Tabela input_connection_mappings
+CREATE TABLE input_connection_mappings (
+    id SERIAL PRIMARY KEY,
+    input_connection_id INTEGER NOT NULL REFERENCES input_connections(id) ON DELETE CASCADE,
+    source_field VARCHAR(255) NOT NULL,
+    target_field_id INTEGER NOT NULL REFERENCES structure_fields(id) ON DELETE CASCADE,
+    transformation VARCHAR(50),
+    created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
+    updated_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL
+);
+
+-- Índices para input_connection_mappings
+CREATE INDEX idx_input_connection_mappings_input_connection_id ON input_connection_mappings(input_connection_id);
+CREATE INDEX idx_input_connection_mappings_target_field_id ON input_connection_mappings(target_field_id);
+
+-- Tabela input_connection_logs
+CREATE TABLE input_connection_logs (
+    id SERIAL PRIMARY KEY,
+    input_connection_id INTEGER NOT NULL REFERENCES input_connections(id) ON DELETE CASCADE,
+    topic_id INTEGER NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('success', 'error', 'pending')),
+    response_data JSONB,
+    error_message TEXT,
+    executed_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL
+);
+
+-- Índices para input_connection_logs
+CREATE INDEX idx_input_connection_logs_input_connection_id ON input_connection_logs(input_connection_id);
+CREATE INDEX idx_input_connection_logs_topic_id ON input_connection_logs(topic_id);
+CREATE INDEX idx_input_connection_logs_status ON input_connection_logs(status);
+CREATE INDEX idx_input_connection_logs_executed_at ON input_connection_logs(executed_at);
+
 
 -- ----------------------------------------------------------------------
 -- INSERÇÃO DE DADOS EXEMPLO (OPCIONAL)

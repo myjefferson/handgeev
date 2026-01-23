@@ -21,7 +21,7 @@ export default function WorkspaceHeader({ workspace, onOpenShare }) {
                     {workspace.type_view_workspace_id === 1 && (
                         <button 
                             onClick={onOpenShare}
-                            className="flex items-center px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 focus:ring-4 focus:ring-teal-300 transition-colors teal-glow-hover"
+                            className="flex items-center px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 focus:ring-4 focus:ring-teal-300 transition-colors teal-glow-hover cursor-pointer"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="mr-2" width="1.4em" height="1.4em" viewBox="0 0 24 24">
                                 <path fill="currentColor" d="M12 9a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3m0 8a5 5 0 0 1-5-5a5 5 0 0 1 5-5a5 5 0 0 1 5 5a5 5 0 0 1-5 5m0-12.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5"/>

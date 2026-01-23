@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Head, usePage, router, useForm } from '@inertiajs/react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
-import ApiStatisticsTab from './Partials/GeevApi/ApiStatisticsTab';
-import ApiEndpointsTab from './Partials/GeevApi/ApiEndpointsTab';
-import ApiDocumentationTab from './Partials/GeevApi/ApiDocumentationTab';
-import ApiPermissionsTab from './Partials/GeevApi/ApiPermissionsTab';
-import ApiSettingsTab from './Partials/GeevApi/ApiSettingsTab';
+import ApiStatisticsTab from './ApiStatisticsTab';
+import ApiEndpointsTab from './ApiEndpointsTab';
+import ApiDocumentationTab from './ApiDocumentationTab';
+import ApiPermissionsTab from './ApiPermissionsTab';
+import ApiSettingsTab from './ApiSettingsTab';
 import Alert from '@/Components/Alerts/Alert';
 import ConfirmModal from '@/Components/Workspace/ApiManagement/GeevApi/Modals/ConfirmModal';
 import JsonExampleModal from '@/Components/Workspace/ApiManagement/GeevApi/Modals/JsonExampleModal';

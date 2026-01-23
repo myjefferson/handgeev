@@ -188,8 +188,8 @@ class SubscriptionService
                 \Log::info('Dados completos da subscription:', [
                     'status' => $stripeSubscription->status,
                     'subscription_id' => $stripeSubscription->id,
-                    'current_period_start' => $stripeSubscription->current_period_start,
-                    'current_period_end' => $stripeSubscription->current_period_end,
+                    'current_period_start' => $stripeSubscription->current_period_start ?? 'null',
+                    'current_period_end' => $stripeSubscription->current_period_end ?? 'null',
                     'cancel_at_period_end' => $stripeSubscription->cancel_at_period_end ?? false
                 ]);
 
@@ -211,11 +211,13 @@ class SubscriptionService
                         $plan = $this->getPlanByStripePriceId($priceId);
                         
                         if ($plan) {
-                            // CALCULAR DATA DE EXPIRAÇÃO
+                            // CALCULAR DATAS COM VALIDAÇÃO
+                            $currentPeriodStart = $this->calculateSubscriptionStart($stripeSubscription);
                             $expiresAt = $this->calculateSubscriptionExpiry($stripeSubscription);
                             
                             \Log::info('Ativando nova subscription:', [
                                 'plano' => $plan->name,
+                                'current_period_start' => $currentPeriodStart,
                                 'expires_at' => $expiresAt,
                                 'price_id' => $priceId
                             ]);
@@ -232,7 +234,7 @@ class SubscriptionService
                                 'plan_id' => $plan->id,
                                 'stripe_price_id' => $priceId,
                                 'status' => 'active',
-                                'current_period_start' => Carbon::createFromTimestamp($stripeSubscription->current_period_start),
+                                'current_period_start' => $currentPeriodStart,
                                 'current_period_end' => $expiresAt,
                                 'canceled_at' => null,
                                 'ends_at' => null
@@ -276,21 +278,57 @@ class SubscriptionService
     }
 
     /**
-     * Calcular data de expiração
+     * Calcular data de início da assinatura com validação
      */
-    private function calculateSubscriptionExpiry($stripeSubscription)
+    private function calculateSubscriptionStart($stripeSubscription): Carbon
     {
+        \Log::info('Calculando data de início:', [
+            'current_period_start' => $stripeSubscription->current_period_start ?? 'null',
+            'created' => $stripeSubscription->created ?? 'null'
+        ]);
+
+        // Prioridade 1: current_period_start
+        if (!empty($stripeSubscription->current_period_start) && is_numeric($stripeSubscription->current_period_start)) {
+            return Carbon::createFromTimestamp($stripeSubscription->current_period_start);
+        }
+        
+        // Prioridade 2: created timestamp
+        if (!empty($stripeSubscription->created) && is_numeric($stripeSubscription->created)) {
+            return Carbon::createFromTimestamp($stripeSubscription->created);
+        }
+        
+        // Prioridade 3: agora
+        \Log::warning('Usando fallback para data de início - datas do Stripe não disponíveis');
+        return now();
+    }
+
+    /**
+     * Calcular data de expiração com validação
+     */
+    private function calculateSubscriptionExpiry($stripeSubscription): Carbon
+    {
+        \Log::info('Calculando data de expiração:', [
+            'current_period_end' => $stripeSubscription->current_period_end ?? 'null',
+            'current_period_start' => $stripeSubscription->current_period_start ?? 'null',
+            'created' => $stripeSubscription->created ?? 'null'
+        ]);
+
         // Prioridade 1: current_period_end
-        if (!empty($stripeSubscription->current_period_end)) {
+        if (!empty($stripeSubscription->current_period_end) && is_numeric($stripeSubscription->current_period_end)) {
             return Carbon::createFromTimestamp($stripeSubscription->current_period_end);
         }
         
-        // Prioridade 2: created + 30 dias (fallback)
-        if (!empty($stripeSubscription->created)) {
+        // Prioridade 2: current_period_start + 30 dias
+        if (!empty($stripeSubscription->current_period_start) && is_numeric($stripeSubscription->current_period_start)) {
+            return Carbon::createFromTimestamp($stripeSubscription->current_period_start)->addMonth();
+        }
+        
+        // Prioridade 3: created + 30 dias
+        if (!empty($stripeSubscription->created) && is_numeric($stripeSubscription->created)) {
             return Carbon::createFromTimestamp($stripeSubscription->created)->addMonth();
         }
         
-        // Prioridade 3: agora + 30 dias (último fallback)
+        // Prioridade 4: agora + 30 dias (último fallback)
         \Log::warning('Usando fallback para data de expiração - datas do Stripe não disponíveis');
         return now()->addMonth();
     }
@@ -640,7 +678,6 @@ class SubscriptionService
             throw $e;
         }
     }
-
 
     /**
      * Reativar assinatura cancelada
