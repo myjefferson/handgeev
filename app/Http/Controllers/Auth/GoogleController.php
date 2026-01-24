@@ -16,11 +16,14 @@ class GoogleController extends Controller
     public function redirect()
     {
         try {
+            Log::info('Google redirect iniciado');
+            
             return Socialite::driver('google')
                 ->redirectUrl(config('services.google.redirect'))
+                ->stateless() // ← ADICIONE ESTA LINHA!
                 ->redirect();
         } catch (\Exception $e) {
-            \Log::error('Erro no redirect do Google: ' . $e->getMessage());
+            Log::error('Erro no redirect do Google: ' . $e->getMessage());
             return redirect('/login')->withErrors([
                 'google' => 'Erro ao redirecionar para Google.'
             ]);
@@ -29,89 +32,133 @@ class GoogleController extends Controller
 
     public function callback()
     {
+        Log::info('=== INICIANDO CALLBACK GOOGLE ===');
+        
         try {
             // Verificar se há erro na requisição
             if (request()->has('error')) {
-                \Log::error('Erro no callback do Google: ' . request('error'));
+                $error = request('error');
+                Log::error('Erro no callback do Google: ' . $error);
                 return redirect('/login')->withErrors([
-                    'google' => 'Erro na autenticação: ' . request('error')
+                    'google' => 'Erro na autenticação: ' . $error
                 ]);
             }
 
-            // Obter usuário do Google
+            // Obter usuário do Google com tratamento de estado
+            Log::info('Tentando obter usuário do Google...');
             $googleUser = Socialite::driver('google')
                 ->redirectUrl(config('services.google.redirect'))
+                ->stateless() // ← ADICIONE ESTA LINHA!
                 ->user();
+            
+            Log::info('Usuário Google obtido', [
+                'email' => $googleUser->getEmail(),
+                'id' => $googleUser->getId()
+            ]);
             
             if (!$googleUser->getEmail()) {
                 throw new \Exception('Email não fornecido pelo Google');
             }
 
-            // Buscar usuário incluindo os deletados (soft delete)
+            // Buscar usuário incluindo os deletados
             $user = User::withTrashed()->where('email', $googleUser->getEmail())->first();
             
+            Log::info('Usuário encontrado no banco?', ['existe' => $user ? 'sim' : 'não']);
+            
             if (!$user) {
-                // Criar novo usuário SEM verificação de email
-                $user = User::create([
+                Log::info('Criando novo usuário...');
+                
+                // CRIAR USUÁRIO CORRETAMENTE
+                $userData = [
                     'name' => $googleUser->getName() ?? $googleUser->getNickname() ?? 'Usuário Google',
-                    'surname' => '', // Deixe vazio ou extraia do nome se possível
+                    'surname' => '',
                     'email' => $googleUser->getEmail(),
                     'google_id' => $googleUser->getId(),
                     'avatar' => $googleUser->getAvatar(),
                     'password' => bcrypt(Str::random(24)),
-                    'email_verified' => true, // IMPORTANTE: Marcar como verificado
-                    'email_verified_at' => now(), // Preencher o timestamp
+                    'email_verified' => true,
+                    'email_verified_at' => now(),
                     'provider_name' => 'google',
                     'timezone' => 'UTC',
                     'language' => app()->getLocale(),
                     'status' => 'active',
-                    'remember_token' => Str::random(60), // ← ADICIONE ESTA LINHA
-                ]);
+                    'remember_token' => Str::random(60),
+                ];
+                
+                Log::info('Dados do novo usuário:', $userData);
+                
+                // CRIAR usando create() que respeita $fillable
+                $user = User::create($userData);
+                
+                Log::info('Usuário criado com ID: ' . $user->id);
 
-                // Atribuir role free ao usuário
+                // Atribuir role free
                 $user->assignRole(User::ROLE_FREE);
+                Log::info('Role atribuída');
 
                 // Gerar hashes API
                 $user->update([
                     'global_key_api' => HashService::generateUniqueHash()
                 ]);
 
-                // Criar estruturas padrão para o usuário
+                // Criar estruturas padrão
                 $this->createDefaultStructures($user);
 
             } else {
-                // Se o usuário foi deletado (soft delete), restaurar a conta
+                Log::info('Usuário já existe, atualizando...');
+                
+                // Se o usuário foi deletado, restaurar
                 if ($user->trashed()) {
+                    Log::info('Restaurando usuário deletado...');
                     $user->restore();
                     $user->update([
                         'status' => 'active',
                         'deleted_at' => null,
-                        'remember_token' => Str::random(60), // ← ADICIONE ESTA LINHA
+                        'remember_token' => Str::random(60),
                     ]);
                 }
 
-                // Atualizar google_id e avatar se não tiver
+                // Atualizar google_id se não tiver
                 if (empty($user->google_id)) {
+                    Log::info('Atualizando google_id...');
                     $user->update([
                         'google_id' => $googleUser->getId(),
                         'avatar' => $googleUser->getAvatar(),
                         'provider_name' => 'google',
-                        'email_verified' => true, // Marcar como verificado
+                        'email_verified' => true,
                         'email_verified_at' => now(),
-                        'remember_token' => Str::random(60), // ← ADICIONE ESTA LINHA
+                        'remember_token' => Str::random(60),
                     ]);
                 }
                 
-                // Garantir que o remember_token existe
+                // Garantir remember_token
                 if (empty($user->remember_token)) {
+                    Log::info('Gerando remember_token...');
                     $user->update([
                         'remember_token' => Str::random(60),
                     ]);
                 }
             }
             
-            // Fazer login - use false se ainda estiver com problemas
-            Auth::login($user, true);
+            Log::info('Tentando fazer login...');
+            
+            // IMPORTANTE: Tente login de forma SEGURA
+            try {
+                // Primeiro, limpar sessão atual
+                session()->flush();
+                
+                // Fazer login SEM remember inicialmente (menos propenso a erros)
+                Auth::login($user);
+                
+                // Depois, regenerar a sessão
+                request()->session()->regenerate();
+                
+                Log::info('Login realizado com sucesso');
+                
+            } catch (\Exception $authError) {
+                Log::error('Erro no Auth::login: ' . $authError->getMessage());
+                throw $authError;
+            }
             
             // Atualizar último login
             $user->update([
@@ -119,28 +166,30 @@ class GoogleController extends Controller
                 'last_login_ip' => request()->ip(),
             ]);
             
-            // Redirecionar para dashboard
-            return redirect()->intended('/dashboard/home');
+            Log::info('Redirecionando para dashboard...');
+            
+            // Redirecionar de forma segura
+            return redirect()->route('dashboard.home');
             
         } catch (\Laravel\Socialite\Two\InvalidStateException $e) {
-            \Log::error('InvalidStateException no login com Google: ' . $e->getMessage());
+            Log::error('InvalidStateException: ' . $e->getMessage());
             return redirect('/login')->withErrors([
                 'google' => 'Sessão expirada. Tente novamente.'
             ]);
         } catch (\GuzzleHttp\Exception\ClientException $e) {
-            \Log::error('ClientException no login com Google: ' . $e->getMessage());
+            Log::error('ClientException: ' . $e->getMessage());
             return redirect('/login')->withErrors([
-                'google' => 'Erro de conexão com Google. Tente novamente.'
+                'google' => 'Erro de conexão com Google. Verifique suas credenciais.'
             ]);
         } catch (\Exception $e) {
-            \Log::error('Erro no login com Google: ', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            Log::error('=== ERRO COMPLETO NO LOGIN GOOGLE ===');
+            Log::error('Mensagem: ' . $e->getMessage());
+            Log::error('Arquivo: ' . $e->getFile());
+            Log::error('Linha: ' . $e->getLine());
+            Log::error('Trace: ' . $e->getTraceAsString());
+            
             return redirect('/login')->withErrors([
-                'google' => 'Falha na autenticação com Google. Tente novamente.'
+                'google' => 'Falha na autenticação. Detalhes: ' . $e->getMessage()
             ]);
         }
     }
