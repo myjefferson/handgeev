@@ -15,14 +15,38 @@ class GoogleController extends Controller
 {
     public function redirect()
     {
-        return Socialite::driver('google')->redirect();
+        try {
+            return Socialite::driver('google')
+                ->redirectUrl(config('services.google.redirect'))
+                ->redirect();
+        } catch (\Exception $e) {
+            \Log::error('Erro no redirect do Google: ' . $e->getMessage());
+            return redirect('/login')->withErrors([
+                'google' => 'Erro ao redirecionar para Google.'
+            ]);
+        }
     }
 
     public function callback()
     {
         try {
-            $googleUser = Socialite::driver('google')->user();
+            // Verificar se há erro na requisição
+            if (request()->has('error')) {
+                \Log::error('Erro no callback do Google: ' . request('error'));
+                return redirect('/login')->withErrors([
+                    'google' => 'Erro na autenticação: ' . request('error')
+                ]);
+            }
+
+            // Obter usuário do Google
+            $googleUser = Socialite::driver('google')
+                ->redirectUrl(config('services.google.redirect'))
+                ->user();
             
+            if (!$googleUser->getEmail()) {
+                throw new \Exception('Email não fornecido pelo Google');
+            }
+
             // Buscar usuário incluindo os deletados (soft delete)
             $user = User::withTrashed()->where('email', $googleUser->getEmail())->first();
             
@@ -41,6 +65,7 @@ class GoogleController extends Controller
                     'timezone' => 'UTC',
                     'language' => app()->getLocale(),
                     'status' => 'active',
+                    'remember_token' => Str::random(60), // ← ADICIONE ESTA LINHA
                 ]);
 
                 // Atribuir role free ao usuário
@@ -61,6 +86,7 @@ class GoogleController extends Controller
                     $user->update([
                         'status' => 'active',
                         'deleted_at' => null,
+                        'remember_token' => Str::random(60), // ← ADICIONE ESTA LINHA
                     ]);
                 }
 
@@ -72,18 +98,47 @@ class GoogleController extends Controller
                         'provider_name' => 'google',
                         'email_verified' => true, // Marcar como verificado
                         'email_verified_at' => now(),
+                        'remember_token' => Str::random(60), // ← ADICIONE ESTA LINHA
+                    ]);
+                }
+                
+                // Garantir que o remember_token existe
+                if (empty($user->remember_token)) {
+                    $user->update([
+                        'remember_token' => Str::random(60),
                     ]);
                 }
             }
             
-            // Fazer login
+            // Fazer login - use false se ainda estiver com problemas
             Auth::login($user, true);
+            
+            // Atualizar último login
+            $user->update([
+                'last_login_at' => now(),
+                'last_login_ip' => request()->ip(),
+            ]);
             
             // Redirecionar para dashboard
             return redirect()->intended('/dashboard/home');
             
+        } catch (\Laravel\Socialite\Two\InvalidStateException $e) {
+            \Log::error('InvalidStateException no login com Google: ' . $e->getMessage());
+            return redirect('/login')->withErrors([
+                'google' => 'Sessão expirada. Tente novamente.'
+            ]);
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            \Log::error('ClientException no login com Google: ' . $e->getMessage());
+            return redirect('/login')->withErrors([
+                'google' => 'Erro de conexão com Google. Tente novamente.'
+            ]);
         } catch (\Exception $e) {
-            \Log::error('Erro no login com Google: ' . $e->getMessage());
+            \Log::error('Erro no login com Google: ', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return redirect('/login')->withErrors([
                 'google' => 'Falha na autenticação com Google. Tente novamente.'
             ]);
