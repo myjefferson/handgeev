@@ -80,7 +80,7 @@ class GoogleController extends Controller
             Auth::login($user, true);
             
             // Redirecionar para dashboard
-            return redirect()->intended('/dashboard');
+            return redirect()->intended('/dashboard/home');
             
         } catch (\Exception $e) {
             \Log::error('Erro no login com Google: ' . $e->getMessage());
