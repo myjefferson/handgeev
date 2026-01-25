@@ -23,6 +23,7 @@ use App\Http\Controllers\ApiManagementController;
 use App\Http\Controllers\StructureController;
 use App\Http\Controllers\RecordController;
 use App\Http\Controllers\InputConnectionController;
+use App\Http\Controllers\Api\IntegrationController;
 use App\Http\Controllers\Auth\GoogleController;
 
 use App\Http\Controllers\StripeWebhookController;
@@ -61,9 +62,21 @@ Route::middleware(['languages'])->group(function(){
         Route::post('/support/recovery-password','updatePasswordRecovery')->name('recovery.password.update');
     });
 
-    Route::get('/auth/google', [GoogleController::class, 'redirect'])->name('google.login');
-    Route::get('/auth/google/callback', [GoogleController::class, 'callback']);
+    //Google Auth
+    Route::controller(GoogleController::class)->group(function(){
+        // Google OAuth
+        Route::get('/auth/google/redirect', 'redirect')->name('google.redirect');
+        Route::get('/auth/google/callback', 'callback')->name('google.callback');
+        // Confirmação de vinculação
+        Route::get('/auth/google/confirm-link', 'showConfirmLink')->name('google.confirm-link');
+        Route::post('/auth/google/confirm-link', 'confirmLink')->name('google.confirm-link.post');
+        Route::get('/auth/google/update-email', 'showUpdateEmail')->name('google.update-email.show');
+        Route::post('/auth/google/update-email', 'updateEmail')->name('google.update-email.post');
+        // Desvincular Google
+        Route::post('/auth/google/unlink', 'unlink')->middleware('auth')->name('google.unlink');
+    });
     
+
     Route::controller(EmailController::class)->group(function(){
         Route::get('/email/verify/code/form', 'showVerifyCodeEmail')->name('verify.code.email.show');
         Route::get('/email/confirm/form', 'showEmailConfirmForm')->name('email.confirm.form');
@@ -79,22 +92,7 @@ Route::middleware(['languages'])->group(function(){
     Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])->withoutMiddleware([ValidateCsrfToken::class]);
 
 
-    // Formulário de senha
-    Route::controller(WorkspaceSharedController::class)->group(function(){
-        Route::get('/shared/workspace/{global_key_api}/{workspace_key_api}/password','showPasswordForm')->name('workspace.shared.password');
-        Route::post('/shared/workspace/{global_key_api}/{workspace_key_api}/verify-password','verifyPassword')->name('workspace.shared.verify-password');
-        Route::get('/shared/workspace/{global_key_api}/{workspace_key_api}/api','sharedApi')->name('workspace.shared.api');
-        Route::get('/shared/{workspace}/permissions', 'getPermissions')->name('api.get.permissions');
-        Route::put('/shared/{workspace}/permissions', 'updatePermissions')->name('api.put.permissions');
-        //Statistics
-        Route::get('/shared/workspace/{global_key_api}/{workspace_key_api}/statistics', 'getApiStatistics')->name('api.get.statistics');
-        Route::get('/shared/workspace/{global_key_api}/{workspace_key_api}/endpoint-statistics', 'getEndpointStatistics')->name('api.get.endpoint-statistics');
-        // Rotas para visualização compartilhada
-        Route::middleware(['workspace.api.password', 'check.api.access'])->group(function(){
-            Route::get('/api/studio/workspace/{global_key_api}/{workspace_key_api}', 'geevStudio')->name('workspace.shared-geev-studio.show');
-            Route::get('/api/rest/workspace/{global_key_api}/{workspace_key_api}', 'showApiRest')->name('workspace.api-rest.show');
-        });
-    }); 
+
 
     Route::get('/account/desactivated', [AccountController::class, 'showDeactivatedAccount'])->name('account.deactivated')->middleware('account.deactivated');
 });
@@ -122,6 +120,24 @@ Route::middleware([
         Route::get('/workspace/{id}/export', 'export')->name('workspace.export');
         Route::get('/workspace/{id}/export/quick', 'exportQuick')->name('workspace.export.quick');
     });
+
+    // Formulário de senha
+    Route::controller(WorkspaceSharedController::class)->group(function(){
+        Route::get('/shared/workspace/{global_key_api}/{workspace_key_api}/password','showPasswordForm')->name('workspace.shared.password');
+        Route::post('/shared/workspace/{global_key_api}/{workspace_key_api}/verify-password','verifyPassword')->name('workspace.shared.verify-password');
+        Route::get('/api/workspace/{global_key_api}/{workspace_key_api}/statistics', 'getApiStatistics');
+        Route::get('/shared/workspace/{global_key_api}/{workspace_key_api}/api','sharedApi')->name('workspace.shared.api');
+        Route::get('/shared/{workspace}/permissions', 'getPermissions')->name('api.get.permissions');
+        Route::put('/shared/{workspace}/permissions', 'updatePermissions')->name('api.put.permissions');
+        //Statistics
+        Route::get('/shared/workspace/{global_key_api}/{workspace_key_api}/statistics', 'getApiStatistics')->name('api.get.statistics');
+        Route::get('/shared/workspace/{global_key_api}/{workspace_key_api}/endpoint-statistics', 'getEndpointStatistics')->name('api.get.endpoint-statistics');
+        // Rotas para visualização compartilhada
+        Route::middleware(['workspace.api.password', 'check.api.access'])->group(function(){
+            Route::get('/api/studio/workspace/{global_key_api}/{workspace_key_api}', 'geevStudio')->name('workspace.shared-geev-studio.show');
+            Route::get('/api/rest/workspace/{global_key_api}/{workspace_key_api}', 'showApiRest')->name('workspace.api-rest.show');
+        });
+    }); 
     
     Route::controller(WorkspaceSettingController::class)->group(function(){
         Route::get('/workspace/setting/{id}', 'index')->name('workspace.setting');
@@ -286,9 +302,34 @@ Route::middleware([
         });
     });
 
-    Route::get('/workspaces/{workspace}/input-connections/{connection}/logs', [InputConnectionController::class, 'logs'])->name('workspaces.input-connections.logs');
-    Route::post('/workspaces/{workspace}/input-connections/{connection}/execute', [InputConnectionController::class, 'execute'])->name('workspaces.input-connections.execute');
-    Route::resource('workspaces.input-connections', InputConnectionController::class)->except(['show']);
+    // Rotas de CRUD para conexões
+    // Route::get('/input-connections', [InputConnectionController::class, 'index'])->name('workspaces.input-connections.index');
+    Route::get('/input-connections/{workspace}/create', [InputConnectionController::class, 'create'])->name('workspaces.input-connections.create');
+    Route::post('/input-connections/{workspace}/store', [InputConnectionController::class, 'store'])->name('workspaces.input-connections.store');
+    Route::get('/input-connections/{connection}', [InputConnectionController::class, 'show'])->name('workspaces.input-connections.show');
+    Route::get('/input-connections/{connection}/edit', [InputConnectionController::class, 'edit'])->name('workspaces.input-connections.edit');
+    Route::put('/input-connections/{connection}', [InputConnectionController::class, 'update'])->name('workspaces.input-connections.update');
+    Route::delete('/input-connections/{connection}', [InputConnectionController::class, 'destroy'])->name('workspaces.input-connections.destroy');
+    
+    // Rotas de execução
+    Route::post('/input-connections/{connection}/execute', [InputConnectionController::class, 'execute'])->name('workspaces.input-connections.execute');    
+    Route::post('/input-connections/{connection}/test', [InputConnectionController::class, 'test'])->name('workspaces.input-connections.test');    
+    // Rotas de logs
+    Route::get('/input-connections/{connection}/logs', [InputConnectionController::class, 'logs'])->name('workspaces.input-connections.logs');
+    // Rotas de templates e configuração
+    Route::get('/input-connections/templates', [InputConnectionController::class, 'templates'])->name('workspaces.input-connections.templates');
+    Route::get('/input-connections/{connection}/fields', [InputConnectionController::class, 'getSourceFields'])->name('workspaces.input-connections.fields');
+    
+    // Rotas de integrações prontas
+    Route::prefix('integrations')->group(function () {
+        Route::get('/viacep', [IntegrationController::class, 'viaCep'])->name('workspaces.integrations.viacep');
+        Route::get('/vehicle-plate', [IntegrationController::class, 'vehiclePlate'])->name('workspaces.integrations.vehicle-plate');
+        Route::get('/google-places', [IntegrationController::class, 'googlePlaces'])->name('workspaces.integrations.google-places');
+        Route::get('/google-geocoding', [IntegrationController::class, 'googleGeocoding'])->name('workspaces.integrations.google-geocoding');
+        Route::get('/cnpj-lookup', [IntegrationController::class, 'cnpjLookup'])->name('workspaces.integrations.cnpj-lookup');
+        Route::get('/templates', [IntegrationController::class, 'templates'])->name('workspaces.integrations.templates');
+        Route::post('/apply-template', [IntegrationController::class, 'applyTemplate'])->name('workspaces.integrations.apply-template');
+    });
 });
 
 Route::middleware(['account.deactivated'])->group(function () {

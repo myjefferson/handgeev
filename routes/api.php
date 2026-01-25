@@ -34,6 +34,12 @@ Route::get('/health', function () {
 })->name('api.health');
 
 
+Route::middleware(['api', 'throttle:60,1'])->prefix('v1')->group(function () {
+    // Endpoints públicos de integração
+    Route::get('/viacep/{cep}', [IntegrationController::class, 'viaCepPublic']);
+    Route::get('/cnpj/{cnpj}', [IntegrationController::class, 'cnpjLookupPublic']);
+});
+
 
 /*
 |--------------------------------------------------------------------------
@@ -45,6 +51,9 @@ Route::middleware([
     'plan.rate_limit',
     'check.api.enabled',
 ])->prefix('v1')->group(function () {
+
+    Route::post('/input-connections/{connection}/execute', [InputConnectionController::class, 'apiExecute']);
+    Route::get('/workspaces/{workspace}/input-connections', [InputConnectionController::class, 'apiIndex']);
 
     /*
     |--------------------------------------------------------------------------

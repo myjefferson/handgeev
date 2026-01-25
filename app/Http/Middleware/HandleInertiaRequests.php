@@ -40,8 +40,12 @@ class HandleInertiaRequests extends Middleware
                         'phone' => $user->phone,
                         'status' => $user->status,
                         'email_verified_at' => $user->email_verified_at,
+                        'updated_at' => $user->updated_at,
                         'language' => $user->language,
                         'timezone' => $user->timezone,
+
+                        'google_id' => $user->google_id,
+                        'provider_name' => $user->provider_name,
 
                         'csrf_token' => csrf_token(),
                         'global_key_api' => $user->global_key_api,

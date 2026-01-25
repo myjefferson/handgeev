@@ -51,11 +51,19 @@ class WorkspaceSharedController extends Controller
             $firstField = $firstTopic->records->first()->fieldValues->first();
         }
 
-        // $workspace->load(['topics.structure', 'topics.fields']);
-
+        // 🟢 CARREGAR TODAS AS CONEXÕES DE ENTRADA com relacionamentos necessários
         $inputConnections = InputConnection::where('workspace_id', $workspace->id)
-            ->with(['structure', 'triggerField', 'source', 'mappings.targetField'])
-            ->orderBy('execution_order')
+            ->with([
+                'structure', 
+                'triggerField', 
+                'source', 
+                'mappings.targetField',
+                'logs' => function($query) {
+                    $query->latest()->limit(5);
+                },
+                'topic' // Se você adicionou topic_id
+            ])
+            ->orderBy('created_at', 'desc')
             ->get();
 
         // Preparar dados para envio
@@ -96,7 +104,11 @@ class WorkspaceSharedController extends Controller
                 'first_field_id' => $firstField?->structure_field_id,
                 'base_url' => url('/api')
             ],
-            'inputConnections' => $inputConnections,
+            // 🟢 Enviar as conexões para a aba do GeevStudio
+            'connections' => $inputConnections, // Mudei de inputConnections para connections
+            // 🟢 Adicionar dados de configuração também
+            'sourceTypes' => \App\Models\InputConnectionSource::getSourceTypes(),
+            'transformations' => \App\Models\InputConnectionMapping::getTransformations(),
         ];
 
         return Inertia::render('Dashboard/ApiManagement/GeevStudio/GeevStudio', $sharedData);
@@ -122,7 +134,7 @@ class WorkspaceSharedController extends Controller
             abort(404);
         }
 
-        return Inertia::render('Dashboard/ApiManagement/GeevApi', [
+        return Inertia::render('Dashboard/ApiManagement/GeevApi/GeevApi', [
             'workspace' => $workspace->load(['topics', 'allowedDomains']),
             'rateLimitData' => $rateLimitData
         ]);

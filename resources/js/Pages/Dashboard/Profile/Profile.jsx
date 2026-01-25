@@ -12,6 +12,8 @@ export default function Profile({ userStats }){
     const [activeTab, setActiveTab] = useState('profile');
     const [showEmailModal, setShowEmailModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showUnlinkModal, setShowUnlinkModal] = useState(false);
+    const [unlinkPassword, setUnlinkPassword] = useState('');   
     const [isLoading, setIsLoading] = useState(false);
 
     // Forms
@@ -43,6 +45,15 @@ export default function Profile({ userStats }){
             window.$('#phone').mask('(00) 00000-0000');
         }
     }, []);
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'Nunca';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
 
     // Handlers
     const handleProfileSubmit = (e) => {
@@ -126,6 +137,20 @@ export default function Profile({ userStats }){
     };
 
     const badgeConfig = getBadgeConfig(getBadgeType());
+
+    const { post: unlinkPost, processing: unlinkProcessing } = useForm();
+    const handleUnlinkGoogle = () => {
+        if (!confirm('Desvincular conta Google?')) return;
+        
+        unlinkPost(route('google.unlink'), {
+            onSuccess: () => {
+                router.reload();
+            },
+            onError: () => {
+                alert('Erro ao desvincular');
+            }
+        });
+    };
 
     return (
         <>
@@ -257,6 +282,19 @@ export default function Profile({ userStats }){
                                                 >
                                                     <i className="fas fa-cog mr-2"></i>
                                                     Configurações da Conta
+                                                </button>
+                                            </li>
+                                            <li className="me-2 w-full" role="presentation">
+                                                <button
+                                                    className={`inline-block p-4 border-b-2 rounded-t-lg w-full ${
+                                                        activeTab === 'google'
+                                                            ? 'text-teal-400 border-teal-400'
+                                                            : 'text-gray-400 border-transparent hover:text-gray-300 hover:border-gray-300'
+                                                    }`}
+                                                    onClick={() => setActiveTab('google')}
+                                                >
+                                                    <i className="fas fa-cog mr-2"></i>
+                                                    Conta Google
                                                 </button>
                                             </li>
                                         </ul>
@@ -567,6 +605,83 @@ export default function Profile({ userStats }){
                                                 </div>
                                             </div>
                                         )}
+
+                                        {activeTab === 'google' && (
+                                            <div className="space-y-6">
+                                                {/* Card Principal - Simplificado */}
+                                                <div className="stat-card rounded-lg p-6">
+                                                    <div className="flex items-center justify-between mb-6">
+                                                        <div>
+                                                            <h3 className="text-lg font-semibold text-white">Conta Google</h3>
+                                                            <p className="text-slate-400 text-sm">
+                                                                {auth.user.google_id 
+                                                                    ? 'Sua conta está vinculada ao Google' 
+                                                                    : 'Vincule sua conta ao Google'
+                                                                }
+                                                            </p>
+                                                        </div>
+                                                        <div className={`px-4 py-2 rounded-full text-sm font-medium ${
+                                                            auth.user.google_id 
+                                                                ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                                                                : 'bg-slate-700/50 text-slate-400 border border-slate-600'
+                                                        }`}>
+                                                            {auth.user.google_id ? 'Vinculada' : 'Não Vinculada'}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Status Simples */}
+                                                    <div className="flex items-center justify-center mb-8">
+                                                        <div className={`h-20 w-20 rounded-full flex items-center justify-center ${
+                                                            auth.user.google_id 
+                                                                ? 'bg-green-500/10 border-2 border-green-500/30' 
+                                                                : 'bg-slate-700/50 border-2 border-slate-600'
+                                                        }`}>
+                                                            <i className={`fab fa-google text-3xl ${
+                                                                auth.user.google_id ? 'text-green-400' : 'text-slate-500'
+                                                            }`}></i>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Botão Único - Vincular ou Desvincular */}
+                                                    <div className="flex flex-col gap-3">
+                                                        {!auth.user.google_id ? (
+                                                            <a
+                                                                href={route('google.redirect')}
+                                                                className="w-full inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-lg transition-all duration-300 font-medium"
+                                                            >
+                                                                <i className="fab fa-google mr-3"></i>
+                                                                Vincular Conta Google
+                                                            </a>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => setShowUnlinkModal(true)}
+                                                                className="w-full inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white rounded-lg transition-all duration-300 font-medium"
+                                                            >
+                                                                <i className="fas fa-unlink mr-3"></i>
+                                                                Desvincular Conta Google
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Informação Mínima */}
+                                                    <div className="mt-6 pt-6 border-t border-slate-700">
+                                                        <div className="text-sm text-slate-400">
+                                                            {auth.user.google_id ? (
+                                                                <p className="flex items-center">
+                                                                    <i className="fas fa-check-circle text-green-400 mr-2"></i>
+                                                                    Você pode fazer login com Google ou email/senha
+                                                                </p>
+                                                            ) : (
+                                                                <p className="flex items-center">
+                                                                    <i className="fas fa-info-circle text-blue-400 mr-2"></i>
+                                                                    Vinculando sua conta, você poderá fazer login com um clique
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -615,6 +730,39 @@ export default function Profile({ userStats }){
                 isLoading={isLoading}
                 user={auth.user}
             />
+
+            {showUnlinkModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-slate-800 rounded-lg p-6 max-w-md w-full">
+                        <div className="text-center mb-6">
+                            <div className="h-12 w-12 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i className="fas fa-unlink text-red-400"></i>
+                            </div>
+                            <h3 className="text-lg font-semibold text-white">Desvincular Conta Google?</h3>
+                            <p className="text-slate-400 text-sm mt-2">
+                                Você não poderá mais fazer login com Google.
+                            </p>
+                        </div>
+
+                        <div className="flex space-x-3">
+                            <button
+                                onClick={() => setShowUnlinkModal(false)}
+                                className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+                                disabled={unlinkProcessing}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleUnlinkGoogle}
+                                disabled={unlinkProcessing}
+                                className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                {unlinkProcessing ? 'Processando...' : 'Desvincular'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };

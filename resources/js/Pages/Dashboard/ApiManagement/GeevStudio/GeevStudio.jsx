@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Head, usePage, Link } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { StudioApiSettingsTab } from './StudioApiSettingsTab';
 import { StudioStatisticsTab } from './StudioStatisticsTab';
 import { StudioWorkspaceTab } from './StudioWorkspaceTab';
 import { StudioCodeExamplesTab } from './StudioCodeExamplesTab';
-import { StudioInputConnectionsTab } from './StudioInputConnectionsTab';
+import StudioInputConnectionsTab from './StudioInputConnectionsTab';
 
 const GeevStudio = () => {
     const { 
@@ -14,15 +14,14 @@ const GeevStudio = () => {
         rateLimitInfo, 
         global_key_api, 
         workspace_key_api,
-        apiStats = {} // Adicione esta prop no backend
+        connections = []
     } = usePage().props;
 
     const [activeTab, setActiveTab] = useState('workspace');
     const [activeLanguage, setActiveLanguage] = useState('javascript');
     const [searchTerm, setSearchTerm] = useState('');
-    const [viewMode, setViewMode] = useState('normal'); // 'normal' ou 'json'
+    const [viewMode, setViewMode] = useState('normal');
     const [expandedTopics, setExpandedTopics] = useState(new Set());
-    const [connections, setConnections] = useState([]);
     const [apiConfig, setApiConfig] = useState({
         enabled: true,
         requireHttps: true,
@@ -33,25 +32,14 @@ const GeevStudio = () => {
         requireApiKey: true,
         logRequests: true
     });
-    const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-    const [apiKey, setApiKey] = useState(''); // Simulação de chave API
-
-    // Estatísticas de exemplo (substitua pelos dados reais do backend)
-    const [statistics, setStatistics] = useState({
-        requestsToday: 143,
-        totalRequests: 5248,
-        popularEndpoint: '/api/v1/workspace',
-        averageResponseTime: '245ms',
-        errorRate: '0.8%',
-        uniqueVisitors: 89,
-        peakHour: '14:00-15:00'
-    });
-
-    // Dados de exemplo para gráficos
-    const [usageData] = useState({
-        labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
-        data: [1200, 1900, 1500, 2200, 1800, 2500]
-    });
+    
+    // Estados para estatísticas
+    const [statistics, setStatistics] = useState(null);
+    const [loadingStats, setLoadingStats] = useState(false);
+    const [statsError, setStatsError] = useState(null);
+    const [usageByPeriod, setUsageByPeriod] = useState([]);
+    const [methodsDistribution, setMethodsDistribution] = useState([]);
+    const [statusDistribution, setStatusDistribution] = useState([]);
 
     // Inicializar tópicos expandidos
     useEffect(() => {
@@ -60,13 +48,89 @@ const GeevStudio = () => {
         }
     }, [workspace]);
 
-    // Gerar API key aleatória (simulação)
+    // Buscar estatísticas quando a aba for ativada
     useEffect(() => {
-        if (showApiKeyModal && !apiKey) {
-            const generatedKey = `gee_${Math.random().toString(36).substr(2, 9)}_${Math.random().toString(36).substr(2, 9)}`;
-            setApiKey(generatedKey);
+        if (activeTab === 'statistics' && !loadingStats) {
+            fetchStatistics();
         }
-    }, [showApiKeyModal, apiKey]);
+    }, [activeTab]);
+
+    // Função para buscar estatísticas
+    const fetchStatistics = async () => {
+        setLoadingStats(true);
+        setStatsError(null);
+        
+        try {
+            const response = await fetch(`/api/workspace/${global_key_api}/${workspace_key_api}/statistics`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${global_key_api}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                setStatistics(data);
+                
+                // Processar dados para gráficos
+                if (data.usage_by_period && Array.isArray(data.usage_by_period)) {
+                    const processedUsage = data.usage_by_period.map(item => ({
+                        label: new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
+                        value: item.count || 0
+                    }));
+                    setUsageByPeriod(processedUsage);
+                } else {
+                    setUsageByPeriod([]);
+                }
+                
+                if (data.methods_distribution && Array.isArray(data.methods_distribution)) {
+                    setMethodsDistribution(data.methods_distribution);
+                } else {
+                    setMethodsDistribution([]);
+                }
+                
+                if (data.status_distribution && Array.isArray(data.status_distribution)) {
+                    setStatusDistribution(data.status_distribution);
+                } else {
+                    setStatusDistribution([]);
+                }
+            } else {
+                throw new Error(data.error || 'Erro ao buscar estatísticas');
+            }
+        } catch (error) {
+            console.error('Erro ao carregar estatísticas:', error);
+            setStatsError(error.message);
+            // Inicializar arrays vazios em caso de erro
+            setUsageByPeriod([]);
+            setMethodsDistribution([]);
+            setStatusDistribution([]);
+        } finally {
+            setLoadingStats(false);
+        }
+    };
+
+    // Atualizar estatísticas periodicamente
+    useEffect(() => {
+        let interval;
+        if (activeTab === 'statistics') {
+            // Atualizar a cada 30 segundos enquanto na aba
+            interval = setInterval(() => {
+                if (!loadingStats) {
+                    fetchStatistics();
+                }
+            }, 30000);
+        }
+        
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [activeTab, loadingStats]);
 
     // Funções auxiliares
     const toggleTopic = (topicId) => {
@@ -86,30 +150,13 @@ const GeevStudio = () => {
             await navigator.clipboard.writeText(text);
             alert(message || 'Copiado!');
         } catch (err) {
-            console.error('Erro ao copiar: ', err);
+            console.error('Erro ao copiar:', err);
             alert('Erro ao copiar');
         }
     };
 
     const generateApiUrl = (topicId) => {
         return `${window.location.origin}/api/v1/topics/${topicId}`;
-    };
-
-    const toggleApiStatus = () => {
-        setApiConfig(prev => ({
-            ...prev,
-            enabled: !prev.enabled
-        }));
-    };
-
-    const saveApiConfig = () => {
-        // Aqui você faria a chamada API para salvar as configurações
-        alert('Configurações salvas com sucesso!');
-    };
-
-    const resetApiKey = () => {
-        setApiKey('');
-        setShowApiKeyModal(true);
     };
 
     // Filtro de pesquisa
@@ -122,10 +169,12 @@ const GeevStudio = () => {
             const searchLower = searchTerm.toLowerCase();
             const topicMatches = topic.title.toLowerCase().includes(searchLower);
             
-            // Verificar campos (se existirem)
-            const fieldMatches = topic.fields?.some(field =>
-                field.key_name?.toLowerCase().includes(searchLower) ||
-                field.value?.toString().toLowerCase().includes(searchLower)
+            // Verificar campos nos registros
+            const fieldMatches = topic.records?.some(record => 
+                record.values?.some(field =>
+                    field.key_name?.toLowerCase().includes(searchLower) ||
+                    field.value?.toString().toLowerCase().includes(searchLower)
+                )
             );
 
             return topicMatches || fieldMatches;
@@ -142,15 +191,17 @@ const GeevStudio = () => {
 
     return (
         <DashboardLayout>
-            {/* <Head>
-                <title>GeevStudio - {workspace.title}</title>
-                <meta name="description" content={`Workspace ${workspace.title} no Handgeev Studio`} />
-            </Head> */}
-
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
                 {/* Header */}
                 <header className="shadow">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-3 lg:px-3 py-3">
+                        <button
+                            onClick={() => window.history.back()}
+                            className="flex items-center text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer mb-5"
+                        >
+                            <i className="fas fa-arrow-left mr-2"></i>
+                            Voltar
+                        </button>
                         <div className="flex items-center justify-between">
                             <div>
                                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -178,7 +229,7 @@ const GeevStudio = () => {
                 </header>
 
                 {/* Main Content */}
-                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-3 py-3">
                     {/* Tabs Navigation */}
                     <div className="border-b border-gray-200 dark:border-gray-700 mb-8">
                         <nav className="-mb-px flex space-x-8">
@@ -212,28 +263,34 @@ const GeevStudio = () => {
                             activeTab={activeTab}
                             searchTerm={searchTerm}
                             setSearchTerm={setSearchTerm}
-                            expandedTopics={expandedTopics}
                             viewMode={viewMode}
+                            setViewMode={setViewMode}
                             filteredTopics={filteredTopics}
-                            workspace={workspace}
+                            expandedTopics={expandedTopics}
+                            toggleTopic={toggleTopic}
                             copyToClipboard={copyToClipboard}
+                            generateApiUrl={generateApiUrl}
+                            workspace={workspace}
                         />
 
                         {/* Aba: Estatísticas */}
                         <StudioStatisticsTab
                             activeTab={activeTab}
                             statistics={statistics}
+                            loadingStats={loadingStats}
+                            statsError={statsError}
                             rateLimitInfo={rateLimitInfo}
-                            usageData={usageData}
+                            usageByPeriod={usageByPeriod}
+                            methodsDistribution={methodsDistribution}
+                            statusDistribution={statusDistribution}
+                            refreshStatistics={fetchStatistics}
                         />
 
                         {/* Aba: API Config */}
                         <StudioApiSettingsTab 
                             activeTab={activeTab}
                             apiConfig={apiConfig}
-                            toggleApiStatus={toggleApiStatus}
-                            saveApiConfig={saveApiConfig}
-                            global_key_api={global_key_api}
+                            setApiConfig={setApiConfig}
                         />
 
                         {/* Aba: Code Examples */}
@@ -241,77 +298,20 @@ const GeevStudio = () => {
                             activeTab={activeTab}
                             activeLanguage={activeLanguage}
                             global_key_api={global_key_api}
+                            workspace_key_api={workspace_key_api}
                             apiConfig={apiConfig}
                             setActiveLanguage={setActiveLanguage}
+                            copyToClipboard={copyToClipboard}
                         />
 
-                        {}
                         <StudioInputConnectionsTab
                             activeTab={activeTab}
                             workspace={workspace}
+                            connections={connections}
                         />
                     </div>
                 </main>
             </div>
-
-            {/* Modal: Nova API Key */}
-            {showApiKeyModal && (
-                <div className="fixed inset-0 z-50 overflow-y-auto">
-                    <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-                            <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-                        </div>
-                        <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                            <div className="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                <div className="sm:flex sm:items-start">
-                                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-teal-100 dark:bg-teal-900 sm:mx-0 sm:h-10 sm:w-10">
-                                        <i className="fas fa-key text-teal-600 dark:text-teal-400"></i>
-                                    </div>
-                                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                                        <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
-                                            Nova API Key Gerada
-                                        </h3>
-                                        <div className="mt-2">
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                                                Sua nova chave de API foi gerada. Guarde-a em um local seguro, pois ela não poderá ser recuperada novamente.
-                                            </p>
-                                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                                                <code className="text-sm text-gray-900 dark:text-gray-100 break-all">
-                                                    {apiKey}
-                                                </code>
-                                            </div>
-                                            <p className="text-xs text-red-500 dark:text-red-400 mt-2">
-                                                <i className="fas fa-exclamation-triangle mr-1"></i>
-                                                Esta chave será exibida apenas uma vez
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        copyToClipboard(apiKey, 'API Key copiada!');
-                                        setShowApiKeyModal(false);
-                                    }}
-                                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-teal-600 text-base font-medium text-white hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 sm:ml-3 sm:w-auto sm:text-sm"
-                                >
-                                    <i className="fas fa-copy mr-2"></i>
-                                    Copiar e Fechar
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowApiKeyModal(false)}
-                                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                                >
-                                    Cancelar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </DashboardLayout>
     );
 };

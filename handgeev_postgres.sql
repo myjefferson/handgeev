@@ -116,6 +116,7 @@ CREATE TABLE users (
     timezone VARCHAR(50) DEFAULT 'UTC',
     language VARCHAR(10) DEFAULT 'pt_BR',
     password TEXT NOT NULL,
+    remember_token VARCHAR(100) NULL,
     phone VARCHAR(20),
     global_key_api TEXT,
     email_verification_code VARCHAR(255) NULL,
@@ -794,14 +795,14 @@ CREATE INDEX idx_input_connections_workspace_id ON input_connections(workspace_i
 CREATE INDEX idx_input_connections_structure_id ON input_connections(structure_id);
 CREATE INDEX idx_input_connections_trigger_field_id ON input_connections(trigger_field_id);
 
--- Tabela input_connection_sources
-CREATE TABLE input_connection_sources (
+-- Migration para input_connection_sources
+CREATE TABLE IF NOT EXISTS input_connection_sources (
     id SERIAL PRIMARY KEY,
     input_connection_id INTEGER NOT NULL REFERENCES input_connections(id) ON DELETE CASCADE,
-    type VARCHAR(50) NOT NULL CHECK (type IN ('rest_api', 'webhook', 'csv', 'excel', 'form')),
+    source_type VARCHAR(50) NOT NULL,
     config JSONB NOT NULL DEFAULT '{}',
-    created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
-    updated_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Índices para input_connection_sources
@@ -814,7 +815,8 @@ CREATE TABLE input_connection_mappings (
     input_connection_id INTEGER NOT NULL REFERENCES input_connections(id) ON DELETE CASCADE,
     source_field VARCHAR(255) NOT NULL,
     target_field_id INTEGER NOT NULL REFERENCES structure_fields(id) ON DELETE CASCADE,
-    transformation VARCHAR(50),
+    transformation_type VARCHAR(50),
+    is_required BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL,
     updated_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL
 );
